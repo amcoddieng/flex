@@ -3,10 +3,10 @@ import mysql from 'mysql2/promise';
 import bcrypt from 'bcrypt';
 
 const pool = mysql.createPool({
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'job_platform',
+  host:'localhost',
+  user:'dieng',
+  password:'Papa1997',
+  database:'job_platform',
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
@@ -21,6 +21,8 @@ export async function GET(request: NextRequest) {
     const role = searchParams.get('role');
 
     const offset = (page - 1) * limit;
+    const safeLimit = Math.max(1, Math.min(1000, limit));
+    const safeOffset = Math.max(0, offset);
     const connection = await pool.getConnection();
 
     try {
@@ -32,8 +34,8 @@ export async function GET(request: NextRequest) {
         params.push(role);
       }
 
-      query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
-      params.push(limit, offset);
+      // LIMIT and OFFSET as direct numbers to avoid prepared-statement type issues
+      query += ` ORDER BY created_at DESC LIMIT ${safeLimit} OFFSET ${safeOffset}`;
 
       const [users] = await connection.execute(query, params);
 
@@ -67,9 +69,12 @@ export async function GET(request: NextRequest) {
     }
   } catch (error: any) {
     console.error('Erreur lors de la récupération des utilisateurs:', error);
+    const message = process.env.NODE_ENV === 'production'
+      ? 'Erreur lors de la récupération des utilisateurs'
+      : (error?.message || String(error));
 
     return NextResponse.json(
-      { error: 'Erreur lors de la récupération des utilisateurs' },
+      { error: message },
       { status: 500 }
     );
   }

@@ -4,8 +4,8 @@ import bcrypt from 'bcrypt';
 
 const pool = mysql.createPool({
   host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
+  user: process.env.DB_USER || 'dieng',
+  password: process.env.DB_PASSWORD || 'Papa1997',
   database: process.env.DB_NAME || 'job_platform',
   waitForConnections: true,
   connectionLimit: 10,
