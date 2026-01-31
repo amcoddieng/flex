@@ -35,9 +35,32 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    setIsLoading(false);
-    router.push("/jobs");
+    try {
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.error || 'Erreur lors de la connexion');
+        setIsLoading(false);
+        return;
+      }
+      console.log('Login successful:', data);
+      // store minimal session info (replace with real auth/JWT later)
+      if (data.userId) localStorage.setItem('userId', data.userId);
+      if (data.role) localStorage.setItem('role', data.role);
+
+      router.push('/jobs');
+    } catch (err: any) {
+      console.error('Login error:', err);
+      alert(err?.message || 'Erreur réseau');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
