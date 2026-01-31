@@ -53,6 +53,17 @@ export default function LoginPage() {
       // store minimal session info (replace with real auth/JWT later)
       if (data.userId) localStorage.setItem('userId', data.userId);
       if (data.role) localStorage.setItem('role', data.role);
+      // store optional extra user info if provided by API
+      if (data.name) localStorage.setItem('userName', data.name);
+      if (data.avatar) localStorage.setItem('userAvatar', data.avatar);
+      if (data.token) localStorage.setItem('token', data.token);
+
+      // notify other components in this tab
+      try {
+        window.dispatchEvent(new CustomEvent('user:login', { detail: { userId: data.userId, name: data.name, avatar: data.avatar, role: data.role } }));
+      } catch (e) {
+        // ignore if window unavailable
+      }
 
       router.push('/jobs');
     } catch (err: any) {
