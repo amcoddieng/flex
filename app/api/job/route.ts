@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import mysql from 'mysql2/promise';
-import { v4 as uuidv4 } from 'uuid';
 
 const pool = mysql.createPool({
   host: process.env.DB_HOST || 'localhost',
@@ -14,10 +13,11 @@ const pool = mysql.createPool({
 
 export async function POST(request: NextRequest) {
   try {
-    const userId = request.headers.get('x-user-id');
-    if (!userId) {
+    const userIdHeader = request.headers.get('x-user-id');
+    if (!userIdHeader) {
       return NextResponse.json({ error: 'Header x-user-id requis' }, { status: 401 });
     }
+    const userId = parseInt(userIdHeader, 10);
 
     const body = await request.json();
     const {
@@ -59,13 +59,10 @@ export async function POST(request: NextRequest) {
 
       const employerId = (empRows as any)[0].id;
 
-      const jobId = uuidv4();
-
-      await connection.execute(
-        `INSERT INTO job_offer (id, employer_id, title, description, company, location, service_type, salary, availability, requirements, contact_email, contact_phone, is_active, posted_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+      const [jobResult] = await connection.execute(
+        `INSERT INTO job_offer (employer_id, title, description, company, location, service_type, salary, availability, requirements, contact_email, contact_phone, is_active, posted_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
         [
-          jobId,
           employerId,
           title,
           description || null,
@@ -80,6 +77,7 @@ export async function POST(request: NextRequest) {
           isActive === undefined ? true : !!isActive,
         ]
       );
+      const jobId = (jobResult as any).insertId;
 
       return NextResponse.json({ success: true, jobId }, { status: 201 });
     } finally {

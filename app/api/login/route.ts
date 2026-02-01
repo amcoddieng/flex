@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
             const profile = (studentProfile as any[])[0];
             profileData.firstName = profile.first_name || null;
             profileData.lastName = profile.last_name || null;
-            profileData.name = `${profileData.firstName || ''} ${profileData.lastName || ''}`.trim() || email.split('@')[0];
+            profileData.name = `${profileData.firstName || ''} ${profileData.lastName || ''}`.trim();
             profileData.avatar = profile.profile_photo;
           }
         } else if (user.role === 'employer') {
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
             // For employers, place companyName into firstName for token convenience
             profileData.firstName = profile.companyName || null;
             profileData.lastName = null;
-            profileData.name = profileData.firstName || email.split('@')[0];
+            profileData.name = profileData.firstName ;
             profileData.avatar = profile.companyLogo;
           }
         }

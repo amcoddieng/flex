@@ -1,11 +1,13 @@
 import jwt from 'jsonwebtoken';
 
-const SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+const SECRET = 'cle_a_modifier';
 
 export interface TokenPayload {
   userId: string;
   email: string;
   role: string;
+  name?: string;
+  avatar?: string;
 }
 
 export interface ExtendedTokenPayload extends TokenPayload {

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import mysql from 'mysql2/promise';
 import bcrypt from 'bcrypt';
-import { v4 as uuidv4 } from 'uuid';
 
 const pool = mysql.createPool({
   host: process.env.DB_HOST || 'localhost',
@@ -35,7 +34,6 @@ export async function POST(request: NextRequest) {
 
     // Hash du mot de passe
     const hashedPassword = await bcrypt.hash(password, 10);
-    const userId = uuidv4();
 
     const connection = await pool.getConnection();
 
@@ -43,32 +41,30 @@ export async function POST(request: NextRequest) {
       // Début de la transaction
       await connection.beginTransaction();
 
-      // Créer l'utilisateur
-      await connection.execute(
-        'INSERT INTO user (id, email, password, role, created_at) VALUES (?, ?, ?, ?, NOW())',
-        [userId, email, hashedPassword, role]
+      // Créer l'utilisateur (id auto-incrémenté)
+      const [userResult] = await connection.execute(
+        'INSERT INTO user (email, password, role, created_at) VALUES (?, ?, ?, NOW())',
+        [email, hashedPassword, role]
       );
+      const userId = (userResult as any).insertId;
 
       // Créer le profil selon le rôle
       if (role === 'STUDENT') {
-        const studentProfileId = uuidv4();
         await connection.execute(
-          'INSERT INTO student_profile (id, user_id, first_name, last_name, created_at) VALUES (?, ?, ?, ?, NOW())',
-          [studentProfileId, userId, firstName || '', lastName || '']
+          'INSERT INTO student_profile (user_id, first_name, last_name, created_at) VALUES (?, ?, ?, NOW())',
+          [userId, firstName || '', lastName || '']
         );
       } else if (role === 'EMPLOYER') {
-        const employerProfileId = uuidv4();
-        const employerCartId = uuidv4();
-
-        await connection.execute(
-          'INSERT INTO employer_profile (id, user_id, created_at) VALUES (?, ?, NOW())',
-          [employerProfileId, userId]
+        const [employerProfileResult] = await connection.execute(
+          'INSERT INTO employer_profile (user_id, created_at) VALUES (?, NOW())',
+          [userId]
         );
+        const employerProfileId = (employerProfileResult as any).insertId;
 
         // Créer le panier pour l'employeur
         await connection.execute(
-          'INSERT INTO employer_cart (id, employer_id) VALUES (?, ?)',
-          [employerCartId, employerProfileId]
+          'INSERT INTO employer_cart (employer_id) VALUES (?)',
+          [employerProfileId]
         );
       }
 
