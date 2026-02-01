@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Briefcase, Menu, X, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { decodeToken } from "@/lib/jwt";
 
 const navItems = [
   { href: "/", label: "Accueil" },
@@ -29,40 +30,17 @@ export function Header() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // load user from localStorage and listen for login/logout events
+  // load user from token instead of localStorage
   useEffect(() => {
-    const loadFromAPI = async (token: string) => {
-      try {
-        const res = await fetch('/api/me', {
-          headers: { Authorization: `Bearer ${token}` },
+    const loadFromToken = (token: string) => {
+      const decoded = decodeToken(token);
+      if (decoded) {
+        setUser({
+          userId: String(decoded.userId),
+          name: decoded.name || undefined,
+          avatar: decoded.avatar || undefined,
+          role: decoded.role || undefined,
         });
-        if (res.ok) {
-          const data = await res.json();
-          if (data.success) {
-            console.log('Fetched user from /api/me:', data);
-            setUser({
-              userId: data.userId,
-              name: data.name,
-              avatar: data.avatar,
-              role: data.role,
-            });
-            return;
-          }
-        }
-      } catch (err) {
-        console.error('Error fetching /api/me:', err);
-      }
-      // Fallback to localStorage if API fails
-      loadFromStorage();
-    };
-
-    const loadFromStorage = () => {
-      const userId = localStorage.getItem('userId');
-      const name = localStorage.getItem('userName') || undefined;
-      const avatar = localStorage.getItem('userAvatar') || undefined;
-      const role = localStorage.getItem('role') || undefined;
-      if (userId || name || avatar || role) {
-        setUser({ userId: userId || undefined, name, avatar, role });
       } else {
         setUser(null);
       }
@@ -70,18 +48,16 @@ export function Header() {
 
     const token = localStorage.getItem('token');
     if (token) {
-      loadFromAPI(token);
+      loadFromToken(token);
     } else {
-      loadFromStorage();
+      setUser(null);
     }
 
     const onLogin = (e: Event) => {
-      // CustomEvent detail set in login page
-      const detail = (e as CustomEvent)?.detail;
-      if (detail) {
-        setUser({ userId: detail.userId, name: detail.name, avatar: detail.avatar, role: detail.role });
-      } else {
-        loadFromStorage();
+      // Get token from localStorage after login
+      const token = localStorage.getItem('token');
+      if (token) {
+        loadFromToken(token);
       }
     };
     const onLogout = () => setUser(null);
@@ -172,10 +148,6 @@ export function Header() {
                     {user.role && <div className="text-xs text-muted-foreground">{user.role}</div>}
                   </div>
                   <Button variant="ghost" onClick={() => {
-                    localStorage.removeItem('userId');
-                    localStorage.removeItem('userName');
-                    localStorage.removeItem('userAvatar');
-                    localStorage.removeItem('role');
                     localStorage.removeItem('token');
                     try { window.dispatchEvent(new Event('user:logout')); } catch (e) {}
                     router.push('/login');
@@ -286,7 +258,7 @@ export function Header() {
                     {user.role && <div className="text-xs text-muted-foreground">{user.role}</div>}
                   </div>
                 </div>
-                <Button variant="outline" size="lg" className="w-full" onClick={() => { localStorage.removeItem('userId'); localStorage.removeItem('userName'); localStorage.removeItem('userAvatar'); localStorage.removeItem('role'); localStorage.removeItem('token'); try { window.dispatchEvent(new Event('user:logout')); } catch (e) {} router.push('/login'); setIsMobileMenuOpen(false); }}>
+                <Button variant="outline" size="lg" className="w-full" onClick={() => { localStorage.removeItem('token'); try { window.dispatchEvent(new Event('user:logout')); } catch (e) {} router.push('/login'); setIsMobileMenuOpen(false); }}>
                   Logout
                 </Button>
               </>

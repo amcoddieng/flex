@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import mysql from 'mysql2/promise';
 import bcrypt from 'bcrypt';
+import { verifyToken } from '@/lib/jwt';
 
 const pool = mysql.createPool({
   host: process.env.DB_HOST || 'localhost',
@@ -15,6 +16,20 @@ const pool = mysql.createPool({
 interface RequestParams {
   params: Promise<{ id: string }>;
 }
+
+// Helper: Verify admin token from Authorization header
+const verifyAdmin = (request: NextRequest): boolean => {
+  const authHeader = request.headers.get('Authorization');
+  if (!authHeader) return false;
+  
+  const parts = authHeader.split(' ');
+  if (parts.length !== 2 || parts[0] !== 'Bearer') return false;
+  
+  const token = parts[1];
+  const decoded = verifyToken(token);
+  
+  return decoded?.role === 'ADMIN';
+};
 
 // GET - Récupérer un utilisateur par ID
 export async function GET(request: NextRequest, { params }: RequestParams) {
@@ -56,9 +71,17 @@ export async function GET(request: NextRequest, { params }: RequestParams) {
   }
 }
 
-// PUT - Mettre à jour un utilisateur
+// PUT - Mettre à jour un utilisateur (Admin only)
 export async function PUT(request: NextRequest, { params }: RequestParams) {
   try {
+    // Verify admin
+    if (!verifyAdmin(request)) {
+      return NextResponse.json(
+        { error: 'Accès refusé. Vous devez être administrateur.' },
+        { status: 403 }
+      );
+    }
+
     const { id } = await params;
     const body = await request.json();
     const { email, password, role } = body;
@@ -147,9 +170,17 @@ export async function PUT(request: NextRequest, { params }: RequestParams) {
   }
 }
 
-// DELETE - Supprimer un utilisateur
+// DELETE - Supprimer un utilisateur (Admin only)
 export async function DELETE(request: NextRequest, { params }: RequestParams) {
   try {
+    // Verify admin
+    if (!verifyAdmin(request)) {
+      return NextResponse.json(
+        { error: 'Accès refusé. Vous devez être administrateur.' },
+        { status: 403 }
+      );
+    }
+
     const { id } = await params;
 
     const connection = await pool.getConnection();

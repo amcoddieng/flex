@@ -76,7 +76,15 @@ export default function RegisterPage() {
         return;
       }
 
-      if (data.userId) localStorage.setItem('userId', data.userId);
+      // If registration provides a token, store it; otherwise user needs to login
+      if (data.token) {
+        localStorage.setItem('token', data.token);
+        try {
+          window.dispatchEvent(new CustomEvent('user:login'));
+        } catch (e) {
+          // ignore
+        }
+      }
 
       router.push('/jobs');
     } catch (err: any) {

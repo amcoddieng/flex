@@ -50,17 +50,12 @@ export default function LoginPage() {
         return;
       }
       console.log('Login successful:', data);
-      // store minimal session info (replace with real auth/JWT later)
-      if (data.userId) localStorage.setItem('userId', data.userId);
-      if (data.role) localStorage.setItem('role', data.role);
-      // store optional extra user info if provided by API
-      if (data.name) localStorage.setItem('userName', data.name);
-      if (data.avatar) localStorage.setItem('userAvatar', data.avatar);
+      // Store only the token - all user info is in the token payload
       if (data.token) localStorage.setItem('token', data.token);
 
-      // notify other components in this tab
+      // notify other components to refresh user from token
       try {
-        window.dispatchEvent(new CustomEvent('user:login', { detail: { userId: data.userId, name: data.name, avatar: data.avatar, role: data.role } }));
+        window.dispatchEvent(new CustomEvent('user:login'));
       } catch (e) {
         // ignore if window unavailable
       }
