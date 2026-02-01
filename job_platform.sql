@@ -14,7 +14,7 @@ USE job_platform;
    ================================ */
 
 CREATE TABLE user (
-    id VARCHAR(36) PRIMARY KEY,
+    id INT PRIMARY KEY AUTO_INCREMENT,
     email VARCHAR(255) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
     role ENUM('STUDENT', 'EMPLOYER', 'ADMIN') NOT NULL,
@@ -26,8 +26,8 @@ CREATE TABLE user (
    ================================ */
 
 CREATE TABLE employer_profile (
-    id VARCHAR(36) PRIMARY KEY,
-    user_id VARCHAR(36) UNIQUE,
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT UNIQUE,
     company_name VARCHAR(255),
     contact_person VARCHAR(255),
     phone VARCHAR(50),
@@ -41,15 +41,15 @@ CREATE TABLE employer_profile (
 );
 
 CREATE TABLE employer_cart (
-    id VARCHAR(36) PRIMARY KEY,
-    employer_id VARCHAR(36) UNIQUE,
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    employer_id INT UNIQUE,
     FOREIGN KEY (employer_id) REFERENCES employer_profile(id) ON DELETE CASCADE
 );
 
 CREATE TABLE cart_item (
-    id VARCHAR(36) PRIMARY KEY,
-    cart_id VARCHAR(36),
-    student_id VARCHAR(36),
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    cart_id INT,
+    student_id INT,
     added_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (cart_id) REFERENCES employer_cart(id) ON DELETE CASCADE
 );
@@ -59,8 +59,8 @@ CREATE TABLE cart_item (
    ================================ */
 
 CREATE TABLE student_profile (
-    id VARCHAR(36) PRIMARY KEY,
-    user_id VARCHAR(36) UNIQUE,
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT UNIQUE,
     first_name VARCHAR(100),
     last_name VARCHAR(100),
     phone VARCHAR(50),
@@ -86,8 +86,8 @@ CREATE TABLE student_profile (
    ================================ */
 
 CREATE TABLE job_offer (
-    id VARCHAR(36) PRIMARY KEY,
-    employer_id VARCHAR(36),
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    employer_id INT,
     title VARCHAR(255),
     description TEXT,
     company VARCHAR(255),
@@ -106,9 +106,9 @@ CREATE TABLE job_offer (
 );
 
 CREATE TABLE job_application (
-    id VARCHAR(36) PRIMARY KEY,
-    job_id VARCHAR(36),
-    student_id VARCHAR(36),
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    job_id INT,
+    student_id INT,
     status ENUM('PENDING', 'ACCEPTED', 'REJECTED', 'INTERVIEW') DEFAULT 'PENDING',
     message TEXT,
     availability TEXT,
@@ -127,8 +127,8 @@ CREATE TABLE job_application (
    ================================ */
 
 CREATE TABLE forum_topic (
-    id VARCHAR(36) PRIMARY KEY,
-    author_id VARCHAR(36),
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    author_id INT,
     author_name VARCHAR(255),
     author_university VARCHAR(255),
     author_department VARCHAR(255),
@@ -143,9 +143,9 @@ CREATE TABLE forum_topic (
 );
 
 CREATE TABLE forum_reply (
-    id VARCHAR(36) PRIMARY KEY,
-    topic_id VARCHAR(36),
-    author_id VARCHAR(36),
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    topic_id INT,
+    author_id INT,
     author_name VARCHAR(255),
     author_university VARCHAR(255),
     content TEXT,
@@ -161,8 +161,8 @@ CREATE TABLE forum_reply (
    ================================ */
 
 CREATE TABLE notification (
-    id VARCHAR(36) PRIMARY KEY,
-    user_id VARCHAR(36),
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT,
     type ENUM('APPLICATION', 'INTERVIEW', 'ACCEPTED', 'REJECTED', 'VALIDATION'),
     title VARCHAR(255),
     message TEXT,

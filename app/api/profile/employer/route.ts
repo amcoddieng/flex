@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import mysql from 'mysql2/promise';
+import { verifyToken, getTokenFromHeader } from '@/lib/jwt';
 
 const pool = mysql.createPool({
   host: process.env.DB_HOST || 'localhost',
@@ -14,14 +15,27 @@ const pool = mysql.createPool({
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    const userId = request.headers.get('x-user-id');
+    
+    // Extract and verify JWT token
+    const authHeader = request.headers.get('authorization');
+    const token = getTokenFromHeader(authHeader);
 
-    if (!userId) {
+    if (!token) {
       return NextResponse.json(
-        { error: 'User ID requis dans les headers (x-user-id)' },
+        { error: 'Token non fourni ou invalide' },
         { status: 401 }
       );
     }
+
+    const payload = verifyToken(token);
+    if (!payload) {
+      return NextResponse.json(
+        { error: 'Token invalide ou expiré' },
+        { status: 401 }
+      );
+    }
+
+    const userId = payload.userId;
 
     const {
       companyName,
@@ -92,14 +106,26 @@ export async function PUT(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    const userId = request.headers.get('x-user-id');
+    // Extract and verify JWT token
+    const authHeader = request.headers.get('authorization');
+    const token = getTokenFromHeader(authHeader);
 
-    if (!userId) {
+    if (!token) {
       return NextResponse.json(
-        { error: 'User ID requis dans les headers (x-user-id)' },
+        { error: 'Token non fourni ou invalide' },
         { status: 401 }
       );
     }
+
+    const payload = verifyToken(token);
+    if (!payload) {
+      return NextResponse.json(
+        { error: 'Token invalide ou expiré' },
+        { status: 401 }
+      );
+    }
+
+    const userId = payload.userId;
 
     const connection = await pool.getConnection();
 

@@ -53,9 +53,38 @@ export default function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    setIsLoading(false);
-    router.push("/jobs");
+    try {
+      const role = userType === 'student' ? 'STUDENT' : 'EMPLOYER';
+      const payload: any = {
+        email: formData.email,
+        password: formData.password,
+        role,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+      };
+
+      const res = await fetch('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || 'Erreur lors de l\'inscription');
+        setIsLoading(false);
+        return;
+      }
+
+      if (data.userId) localStorage.setItem('userId', data.userId);
+
+      router.push('/jobs');
+    } catch (err: any) {
+      console.error('Register error:', err);
+      alert(err?.message || 'Erreur réseau');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   if (!userType) {

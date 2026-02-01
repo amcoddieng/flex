@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Briefcase, Menu, X, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -17,6 +18,8 @@ export function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [hoveredNav, setHoveredNav] = useState<string | null>(null);
+  const [user, setUser] = useState<{ userId?: string; name?: string; avatar?: string; role?: string } | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -24,6 +27,71 @@ export function Header() {
     };
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // load user from localStorage and listen for login/logout events
+  useEffect(() => {
+    const loadFromAPI = async (token: string) => {
+      try {
+        const res = await fetch('/api/me', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success) {
+            console.log('Fetched user from /api/me:', data);
+            setUser({
+              userId: data.userId,
+              name: data.name,
+              avatar: data.avatar,
+              role: data.role,
+            });
+            return;
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching /api/me:', err);
+      }
+      // Fallback to localStorage if API fails
+      loadFromStorage();
+    };
+
+    const loadFromStorage = () => {
+      const userId = localStorage.getItem('userId');
+      const name = localStorage.getItem('userName') || undefined;
+      const avatar = localStorage.getItem('userAvatar') || undefined;
+      const role = localStorage.getItem('role') || undefined;
+      if (userId || name || avatar || role) {
+        setUser({ userId: userId || undefined, name, avatar, role });
+      } else {
+        setUser(null);
+      }
+    };
+
+    const token = localStorage.getItem('token');
+    if (token) {
+      loadFromAPI(token);
+    } else {
+      loadFromStorage();
+    }
+
+    const onLogin = (e: Event) => {
+      // CustomEvent detail set in login page
+      const detail = (e as CustomEvent)?.detail;
+      if (detail) {
+        setUser({ userId: detail.userId, name: detail.name, avatar: detail.avatar, role: detail.role });
+      } else {
+        loadFromStorage();
+      }
+    };
+    const onLogout = () => setUser(null);
+
+    window.addEventListener('user:login', onLogin as EventListener);
+    window.addEventListener('user:logout', onLogout as EventListener);
+    return () => {
+      window.removeEventListener('user:login', onLogin as EventListener);
+      window.removeEventListener('user:logout', onLogout as EventListener);
+    };
   }, []);
 
   // Prevent body scroll when mobile menu is open
@@ -88,24 +156,51 @@ export function Header() {
               ))}
             </nav>
 
-            {/* Auth Buttons with enhanced animations */}
+            {/* Auth Buttons with user info */}
             <div className="hidden md:flex items-center gap-3">
-              <Button 
-                variant="ghost" 
-                asChild 
-                className="font-medium hover:bg-primary/5 transition-all duration-300"
-              >
-                <Link href="/login">Connexion</Link>
-              </Button>
-              <Button 
-                asChild 
-                className="group font-medium shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 hover:scale-105 transition-all duration-300"
-              >
-                <Link href="/register">
-                  Inscription
-                  <ArrowRight className="ml-2 h-4 w-4 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300" />
-                </Link>
-              </Button>
+
+              {user ? (
+                <div className="flex items-center gap-3">
+                  {user.avatar ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={user.avatar} alt="avatar" className="h-9 w-9 rounded-full object-cover" />
+                  ) : (
+                    <div className="h-9 w-9 rounded-full bg-muted-foreground/20 flex items-center justify-center">U</div>
+                  )}
+                  <div className="text-sm text-foreground">
+                    <div className="font-medium">{user.name || 'Utilisateur'}</div>
+                    {user.role && <div className="text-xs text-muted-foreground">{user.role}</div>}
+                  </div>
+                  <Button variant="ghost" onClick={() => {
+                    localStorage.removeItem('userId');
+                    localStorage.removeItem('userName');
+                    localStorage.removeItem('userAvatar');
+                    localStorage.removeItem('role');
+                    localStorage.removeItem('token');
+                    try { window.dispatchEvent(new Event('user:logout')); } catch (e) {}
+                    router.push('/login');
+                  }} className="ml-2">Logout</Button>
+                </div>
+              ) : (
+                <>
+                  <Button 
+                    variant="ghost" 
+                    asChild 
+                    className="font-medium hover:bg-primary/5 transition-all duration-300"
+                  >
+                    <Link href="/login">Connexion</Link>
+                  </Button>
+                  <Button 
+                    asChild 
+                    className="group font-medium shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 hover:scale-105 transition-all duration-300"
+                  >
+                    <Link href="/register">
+                      Inscription
+                      <ArrowRight className="ml-2 h-4 w-4 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300" />
+                    </Link>
+                  </Button>
+                </>
+              )}
             </div>
 
             {/* Mobile Menu Button with animation */}
@@ -177,17 +272,39 @@ export function Header() {
             )}
             style={{ transitionDelay: "400ms" }}
           >
-            <Button variant="outline" asChild size="lg" className="w-full bg-transparent">
-              <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>
-                Connexion
-              </Link>
-            </Button>
-            <Button asChild size="lg" className="w-full">
-              <Link href="/register" onClick={() => setIsMobileMenuOpen(false)}>
-                Inscription
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Link>
-            </Button>
+            {user ? (
+              <>
+                <div className="flex items-center gap-3 p-4 bg-muted/5 rounded-lg">
+                  {user.avatar ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={user.avatar} alt="avatar" className="h-10 w-10 rounded-full object-cover" />
+                  ) : (
+                    <div className="h-10 w-10 rounded-full bg-muted-foreground/20 flex items-center justify-center">U</div>
+                  )}
+                  <div>
+                    <div className="font-medium">{user.name || 'Utilisateur'}</div>
+                    {user.role && <div className="text-xs text-muted-foreground">{user.role}</div>}
+                  </div>
+                </div>
+                <Button variant="outline" size="lg" className="w-full" onClick={() => { localStorage.removeItem('userId'); localStorage.removeItem('userName'); localStorage.removeItem('userAvatar'); localStorage.removeItem('role'); localStorage.removeItem('token'); try { window.dispatchEvent(new Event('user:logout')); } catch (e) {} router.push('/login'); setIsMobileMenuOpen(false); }}>
+                  Logout
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button variant="outline" asChild size="lg" className="w-full bg-transparent">
+                  <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>
+                    Connexion
+                  </Link>
+                </Button>
+                <Button asChild size="lg" className="w-full">
+                  <Link href="/register" onClick={() => setIsMobileMenuOpen(false)}>
+                    Inscription
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Link>
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </div>
