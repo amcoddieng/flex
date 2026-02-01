@@ -41,15 +41,17 @@ export async function POST(request: NextRequest) {
       }
 
       // Fetch user profile based on role to get name, first/last and avatar
-      let profileData: any = { name: email.split('@')[0], avatar: null, firstName: null, lastName: null };
+      let profileData: any = { name: null, avatar: null, firstName: null, lastName: null };
 
       try {
-        if (user.role === 'student') {
+        if (user.role === 'STUDENT') {
           const [studentProfile] = await connection.execute(
             'SELECT first_name, last_name, profile_photo FROM student_profile WHERE user_id = ?',
             [user.id]
           );
           if ((studentProfile as any[]).length > 0) {
+            // afficher dans le console pour debug
+            console.log('studentProfile:', studentProfile);
             const profile = (studentProfile as any[])[0];
             profileData.firstName = profile.first_name || null;
             profileData.lastName = profile.last_name || null;
@@ -82,6 +84,7 @@ export async function POST(request: NextRequest) {
         role: user.role,
         firstName: profileData.firstName,
         lastName: profileData.lastName,
+        name: profileData.name
       });
 
       return NextResponse.json(
@@ -92,7 +95,7 @@ export async function POST(request: NextRequest) {
           role: user.role,
           token,
           name: profileData.name,
-          avatar: profileData.avatar,
+          // avatar: profileData.avatar,
           firstName: profileData.firstName,
           lastName: profileData.lastName,
         },
