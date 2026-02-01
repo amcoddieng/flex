@@ -12,10 +12,25 @@ export interface TokenPayload {
 export interface ExtendedTokenPayload extends TokenPayload {
   firstName?: string | null;
   lastName?: string | null;
+  avatar?: string | null;
 }
 
 export function generateToken(payload: ExtendedTokenPayload): string {
   return jwt.sign(payload, SECRET, { expiresIn: '7d' });
+}
+
+// Client-side JWT decoder (without verification - for client use only)
+export function decodeToken(token: string): ExtendedTokenPayload | null {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    
+    const payload = JSON.parse(atob(parts[1]));
+    return payload as ExtendedTokenPayload;
+  } catch (error) {
+    console.error('Token decode failed:', error);
+    return null;
+  }
 }
 
 export function verifyToken(token: string): ExtendedTokenPayload | null {
