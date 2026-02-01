@@ -6,8 +6,7 @@ export interface TokenPayload {
   userId: string;
   email: string;
   role: string;
-  name?: string;
-  avatar?: string;
+  name: string;
 }
 
 export interface ExtendedTokenPayload extends TokenPayload {
