@@ -104,7 +104,15 @@ export default function AdminStudentsPage() {
       });
       if (!res.ok) throw new Error('Erreur');
       const data = await res.json();
-      setStudents(data.data || []);
+      
+      // Trier les étudiants: PENDING en premier
+      const sortedStudents = (data.data || []).sort((a: Student, b: Student) => {
+        if (a.validation_status === 'PENDING' && b.validation_status !== 'PENDING') return -1;
+        if (a.validation_status !== 'PENDING' && b.validation_status === 'PENDING') return 1;
+        return 0;
+      });
+      
+      setStudents(sortedStudents);
       setTotal(data.pagination?.total || 0);
       setPage(pageNum);
     } catch (err: any) {
@@ -226,6 +234,23 @@ export default function AdminStudentsPage() {
     }
   };
 
+  const quickValidate = async (studentId: number, status: 'VALIDATED' | 'REJECTED') => {
+    try {
+      const res = await fetch(`/api/admin/students/${studentId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ validation_status: status }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Erreur');
+      
+      fetchStudents(page);
+    } catch (err: any) {
+      console.error('quickValidate error', err);
+      alert(err?.message || 'Erreur lors de la validation');
+    }
+  };
+
   if (!isAdmin) {
     return <div className="p-8">Vérification...</div>;
   }
@@ -339,7 +364,7 @@ export default function AdminStudentsPage() {
                   </thead>
                   <tbody>
                     {students.map((student) => (
-                      <tr key={student.id} className="border-b hover:bg-slate-50 transition-colors">
+                      <tr key={student.id} className={`border-b hover:bg-slate-50 transition-colors ${student.validation_status === 'PENDING' ? 'bg-yellow-50' : ''}`}>
                         <td className="p-4">{student.first_name || '-'}</td>
                         <td className="p-4">{student.last_name || '-'}</td>
                         <td className="p-4">{student.email}</td>
@@ -360,15 +385,41 @@ export default function AdminStudentsPage() {
                           </span>
                         </td>
                         <td className="p-4 text-right">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => openDetailModal(student)}
-                            className="flex items-center gap-1"
-                          >
-                            <Eye className="h-4 w-4" />
-                            Détails
-                          </Button>
+                          {student.validation_status === 'PENDING' ? (
+                            <div className="flex items-center gap-2 justify-end">
+                              <Button
+                                size="sm"
+                                className="bg-green-600 hover:bg-green-700"
+                                onClick={() => quickValidate(student.id, 'VALIDATED')}
+                              >
+                                Valider
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => quickValidate(student.id, 'REJECTED')}
+                              >
+                                Invalider
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => openDetailModal(student)}
+                              >
+                                Détails
+                              </Button>
+                            </div>
+                          ) : (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => openDetailModal(student)}
+                              className="flex items-center gap-1"
+                            >
+                              <Eye className="h-4 w-4" />
+                              Détails
+                            </Button>
+                          )}
                         </td>
                       </tr>
                     ))}
