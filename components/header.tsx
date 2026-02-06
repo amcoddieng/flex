@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Briefcase, Menu, X, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { decodeToken } from "@/lib/jwt";
-
 const navItems = [
   { href: "/", label: "Accueil" },
   { href: "/jobs", label: "Offres" },

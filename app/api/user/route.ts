@@ -19,6 +19,7 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '10');
     const role = searchParams.get('role');
+    const search = searchParams.get('search');
 
     const offset = (page - 1) * limit;
     const safeLimit = Math.max(1, Math.min(1000, limit));
@@ -26,12 +27,17 @@ export async function GET(request: NextRequest) {
     const connection = await pool.getConnection();
 
     try {
-      let query = 'SELECT id, email, role, created_at FROM user';
+      let query = 'SELECT id, email, role, created_at FROM user WHERE 1=1';
       const params: any[] = [];
 
       if (role) {
-        query += ' WHERE role = ?';
+        query += ' AND role = ?';
         params.push(role);
+      }
+
+      if (search) {
+        query += ' AND email LIKE ?';
+        params.push(`%${search}%`);
       }
 
       // LIMIT and OFFSET as direct numbers to avoid prepared-statement type issues
@@ -40,12 +46,17 @@ export async function GET(request: NextRequest) {
       const [users] = await connection.execute(query, params);
 
       // Compter le nombre total
-      let countQuery = 'SELECT COUNT(*) as total FROM user';
+      let countQuery = 'SELECT COUNT(*) as total FROM user WHERE 1=1';
       const countParams: any[] = [];
       
       if (role) {
-        countQuery += ' WHERE role = ?';
+        countQuery += ' AND role = ?';
         countParams.push(role);
+      }
+
+      if (search) {
+        countQuery += ' AND email LIKE ?';
+        countParams.push(`%${search}%`);
       }
 
       const [countResult] = await connection.execute(countQuery, countParams);

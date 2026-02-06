@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { decodeToken } from "@/lib/jwt";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import Link from "next/link";
-import { ArrowLeft, Trash2, Shield, ShieldOff } from "lucide-react";
+import { ArrowLeft, Trash2, Shield, ShieldOff, Search } from "lucide-react";
 
 type User = {
   id: number;
@@ -30,25 +31,45 @@ export default function AdminUsersPage() {
   const [total, setTotal] = useState(0);
   const [limit] = useState(20);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterRole, setFilterRole] = useState<string>("");
+  const [availableRoles, setAvailableRoles] = useState<string[]>(["STUDENT", "EMPLOYER", "ADMIN"]);
   const router = useRouter();
+  const hasCheckedAuth = useRef(false);
 
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   const decoded = token ? decodeToken(token) : null;
 
   useEffect(() => {
+    if (hasCheckedAuth.current) return;
+    hasCheckedAuth.current = true;
+
     if (!decoded || decoded.role !== 'ADMIN') {
       router.push('/login');
       return;
     }
     setIsAdmin(true);
-    fetchUsers(1);
   }, [decoded, router]);
+
+  useEffect(() => {
+    if (isAdmin) {
+      fetchUsers(1);
+    }
+  }, [isAdmin]);
 
   const fetchUsers = async (pageNum: number) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/user?page=${pageNum}&limit=${limit}`, {
+      let url = `/api/user?page=${pageNum}&limit=${limit}`;
+      if (filterRole) {
+        url += `&role=${encodeURIComponent(filterRole)}`;
+      }
+      if (searchQuery) {
+        url += `&search=${encodeURIComponent(searchQuery)}`;
+      }
+
+      const res = await fetch(url, {
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       });
       const data = await res.json();
@@ -63,6 +84,22 @@ export default function AdminUsersPage() {
       setLoading(false);
     }
   };
+
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+    setPage(1);
+  };
+
+  const handleRoleFilter = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setFilterRole(e.target.value);
+    setPage(1);
+  };
+
+  useEffect(() => {
+    if (isAdmin) {
+      fetchUsers(1);
+    }
+  }, [searchQuery, filterRole, isAdmin]);
 
   const changeRole = async (id: number, newRole: string) => {
     if (!confirm(`Changer le rôle de l'utilisateur ${id} en ${newRole} ?`)) return;
@@ -150,6 +187,47 @@ export default function AdminUsersPage() {
                   {error}
                 </div>
               )}
+
+              {/* Section Recherche et Filtres */}
+              <div className="p-6 border-b space-y-4">
+                <div className="flex items-center gap-2 mb-4">
+                  <Search className="h-5 w-5 text-slate-400" />
+                  <h3 className="font-semibold text-slate-900">Recherche et Filtres</h3>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                      Rechercher (Email)
+                    </label>
+                    <Input
+                      type="text"
+                      placeholder="Entrez un email..."
+                      value={searchQuery}
+                      onChange={handleSearch}
+                      className="w-full"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                      Filtrer par Rôle
+                    </label>
+                    <select
+                      value={filterRole}
+                      onChange={handleRoleFilter}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-md text-slate-900 bg-white hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="">Tous les rôles</option>
+                      {availableRoles.map((role) => (
+                        <option key={role} value={role}>
+                          {role}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
 
               <div className="p-6 border-b flex items-center justify-between">
                 <div>

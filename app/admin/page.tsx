@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { decodeToken } from "@/lib/jwt";
 import { Button } from "@/components/ui/button";
 import { Users, Users2, Briefcase, FileText, BarChart3 } from "lucide-react";
+import bcrypt from 'bcrypt';
 
 const menuItems = [
   { icon: Users, label: "Utilisateurs", href: "/admin/users" },
@@ -15,7 +16,10 @@ const menuItems = [
   { icon: FileText, label: "Offres d'emploi", href: "/admin/jobs" },
 ];
 
+
 export default function AdminPage() {
+
+
   const [isAdmin, setIsAdmin] = useState(false);
   const router = useRouter();
 

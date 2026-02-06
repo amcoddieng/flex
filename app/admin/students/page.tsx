@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { decodeToken } from "@/lib/jwt";
 import { Button } from "@/components/ui/button";
@@ -34,18 +34,27 @@ export default function AdminStudentsPage() {
   const [limit] = useState(20);
   const [isAdmin, setIsAdmin] = useState(false);
   const router = useRouter();
+  const hasCheckedAuth = useRef(false);
 
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   const decoded = token ? decodeToken(token) : null;
 
   useEffect(() => {
+    if (hasCheckedAuth.current) return;
+    hasCheckedAuth.current = true;
+
     if (!decoded || decoded.role !== 'ADMIN') {
       router.push('/login');
       return;
     }
     setIsAdmin(true);
-    fetchStudents(1);
   }, [decoded, router]);
+
+  useEffect(() => {
+    if (isAdmin) {
+      fetchStudents(1);
+    }
+  }, [isAdmin]);
 
   const fetchStudents = async (pageNum: number) => {
     setLoading(true);
