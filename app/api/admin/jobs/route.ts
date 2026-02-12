@@ -37,6 +37,9 @@ export async function GET(request: NextRequest) {
     try {
       // Récupérer les jobs de l'employeur
       const offset = (page - 1) * limit;
+      const safeLimit = Number.isFinite(limit) ? Math.max(1, Math.floor(limit)) : 20;
+      const safeOffset = Number.isFinite(offset) ? Math.max(0, Math.floor(offset)) : 0;
+
       const [jobs]: any = await connection.execute(
         `SELECT 
           id,
@@ -54,8 +57,8 @@ export async function GET(request: NextRequest) {
         FROM job_offer
         WHERE employer_id = (SELECT id FROM employer_profile WHERE user_id = ?)
         ORDER BY posted_at DESC
-        LIMIT ? OFFSET ?`,
-        [employerId, limit, offset]
+        LIMIT ${safeLimit} OFFSET ${safeOffset}`,
+        [employerId]
       );
 
       // Compter le total

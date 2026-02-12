@@ -11,14 +11,15 @@ const pool = mysql.createPool({
   queueLimit: 0,
 });
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: any }) {
   try {
     const authHeader = request.headers.get('authorization');
     if (!authHeader?.startsWith('Bearer ')) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
     }
 
-    const jobId = parseInt(params.id);
+    const p = await params;
+    const jobId = parseInt(p.id);
     if (isNaN(jobId)) {
       return NextResponse.json({ error: 'ID invalide' }, { status: 400 });
     }
