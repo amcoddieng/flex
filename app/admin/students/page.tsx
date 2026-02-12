@@ -67,6 +67,12 @@ export default function AdminStudentsPage() {
   const router = useRouter();
   const hasCheckedAuth = useRef(false);
 
+  const [studentApplications, setStudentApplications] = useState<any[]>([]);
+  const [applicationsLoading, setApplicationsLoading] = useState(false);
+  const [selectedApplication, setSelectedApplication] = useState<any>(null);
+  const [showApplicationModal, setShowApplicationModal] = useState(false);
+  const [applicationDetailsLoading, setApplicationDetailsLoading] = useState(false);
+
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   const decoded = token ? decodeToken(token) : null;
 
@@ -155,6 +161,23 @@ export default function AdminStudentsPage() {
       .then(data => {
         if (data.success) {
           setSelectedProfile(data.data.profile);
+          
+          // Charger les candidatures de l'étudiant
+          setApplicationsLoading(true);
+          fetch(`/api/admin/applications?student_id=${data.data.profile.id}&page=1&limit=50`, {
+            headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+          })
+            .then(res => res.json())
+            .then(data => {
+              if (data.success) {
+                setStudentApplications(data.data || []);
+              }
+            })
+            .catch(err => {
+              console.error('Erreur chargement candidatures:', err);
+              setStudentApplications([]);
+            })
+            .finally(() => setApplicationsLoading(false));
         }
       })
       .catch(err => {
@@ -249,6 +272,26 @@ export default function AdminStudentsPage() {
       console.error('quickValidate error', err);
       alert(err?.message || 'Erreur lors de la validation');
     }
+  };
+
+  const openApplicationDetailModal = (application: any) => {
+    setSelectedApplication(application);
+    setShowApplicationModal(true);
+    setApplicationDetailsLoading(true);
+
+    fetch(`/api/admin/applications/${application.id}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setSelectedApplication(data.data);
+        }
+      })
+      .catch(err => {
+        console.error('Erreur chargement détails candidature:', err);
+      })
+      .finally(() => setApplicationDetailsLoading(false));
   };
 
   if (!isAdmin) {
@@ -456,27 +499,27 @@ export default function AdminStudentsPage() {
 
       {/* Modal Détails */}
       {showDetailModal && selectedStudent && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-lg max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-slate-900">Détails de l'étudiant</h2>
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full p-8 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-slate-900">Détails de l'étudiant</h2>
               <button
                 onClick={() => {
                   setShowDetailModal(false);
                   setSelectedStudent(null);
                   setSelectedProfile(null);
                 }}
-                className="text-slate-400 hover:text-slate-600"
+                className="text-slate-400 hover:text-slate-600 transition-colors"
               >
-                <X className="h-5 w-5" />
+                <X className="h-6 w-6" />
               </button>
             </div>
 
-            <div className="space-y-6">
+            <div className="space-y-8">
               {/* Infos Utilisateur */}
               <div>
-                <h3 className="text-lg font-semibold text-slate-900 mb-4 border-b pb-2">Informations Compte</h3>
-                <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-slate-900 mb-4 border-b-2 pb-2">Informations Compte</h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">ID</label>
                     <p className="text-slate-900">{selectedStudent.id}</p>
@@ -502,63 +545,63 @@ export default function AdminStudentsPage() {
 
               {/* Infos Profil */}
               {profileLoading ? (
-                <div className="text-center py-4">
+                <div className="text-center py-8">
                   <p className="text-slate-600">Chargement du profil...</p>
                 </div>
               ) : selectedProfile ? (
                 <div>
-                  <h3 className="text-lg font-semibold text-slate-900 mb-4 border-b pb-2">Profil Étudiant</h3>
-                  <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-slate-900 mb-4 border-b-2 pb-2">Profil Étudiant</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
                     {selectedProfile.first_name && (
                       <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">Prénom</label>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">Prénom</label>
                         <p className="text-slate-900">{selectedProfile.first_name}</p>
                       </div>
                     )}
                     {selectedProfile.last_name && (
                       <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">Nom</label>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">Nom</label>
                         <p className="text-slate-900">{selectedProfile.last_name}</p>
                       </div>
                     )}
                     {selectedProfile.phone && (
                       <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">Téléphone</label>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">Téléphone</label>
                         <p className="text-slate-900">{selectedProfile.phone}</p>
                       </div>
                     )}
                     {selectedProfile.university && (
-                      <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">Université</label>
+                      <div className="col-span-2">
+                        <label className="block text-sm font-medium text-slate-700 mb-2">Université</label>
                         <p className="text-slate-900">{selectedProfile.university}</p>
                       </div>
                     )}
                     {selectedProfile.department && (
                       <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">Département</label>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">Département</label>
                         <p className="text-slate-900">{selectedProfile.department}</p>
                       </div>
                     )}
                     {selectedProfile.year_of_study && (
                       <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">Année d'études</label>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">Année d'études</label>
                         <p className="text-slate-900">{selectedProfile.year_of_study}</p>
                       </div>
                     )}
                     {selectedProfile.hourly_rate && (
                       <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">Taux horaire</label>
-                        <p className="text-slate-900">{selectedProfile.hourly_rate}€/h</p>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">Taux horaire</label>
+                        <p className="text-slate-900 font-semibold">{selectedProfile.hourly_rate}€/h</p>
                       </div>
                     )}
                     {selectedProfile.bio && (
-                      <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-1">Bio</label>
+                      <div className="col-span-3">
+                        <label className="block text-sm font-medium text-slate-700 mb-2">Bio</label>
                         <p className="text-slate-900">{selectedProfile.bio}</p>
                       </div>
                     )}
                     <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">Statut de Validation</label>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">Statut de Validation</label>
                       <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
                         selectedProfile.validation_status === 'VALIDATED' ? 'bg-green-100 text-green-800' :
                         selectedProfile.validation_status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :
@@ -570,13 +613,67 @@ export default function AdminStudentsPage() {
                   </div>
                 </div>
               ) : (
-                <div className="text-center py-4">
+                <div className="text-center py-8">
                   <p className="text-slate-600">Aucun profil créé</p>
                 </div>
               )}
+
+              {/* Historique des Candidatures */}
+              <div>
+                <h3 className="text-lg font-semibold text-slate-900 mb-4 border-b-2 pb-2">Historique des Candidatures</h3>
+                {applicationsLoading ? (
+                  <p className="text-slate-600">Chargement des candidatures...</p>
+                ) : studentApplications.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-slate-50">
+                        <tr>
+                          <th className="text-left p-3 font-semibold text-slate-900 text-sm">Offre d'emploi</th>
+                          <th className="text-left p-3 font-semibold text-slate-900 text-sm">Entreprise</th>
+                          <th className="text-left p-3 font-semibold text-slate-900 text-sm">Date Candidature</th>
+                          <th className="text-left p-3 font-semibold text-slate-900 text-sm">Statut</th>
+                          <th className="text-center p-3 font-semibold text-slate-900 text-sm">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y">
+                        {studentApplications.map((app) => (
+                          <tr key={app.id} className="hover:bg-slate-50">
+                            <td className="p-3 text-sm text-slate-900">{app.job_title}</td>
+                            <td className="p-3 text-sm text-slate-600">{app.employer_company || app.company || '-'}</td>
+                            <td className="p-3 text-sm text-slate-600">
+                              {new Date(app.applied_at).toLocaleDateString('fr-FR')}
+                            </td>
+                            <td className="p-3 text-sm">
+                              <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${
+                                app.status === 'ACCEPTED' ? 'bg-green-100 text-green-800' :
+                                app.status === 'REJECTED' ? 'bg-red-100 text-red-800' :
+                                app.status === 'INTERVIEW' ? 'bg-blue-100 text-blue-800' :
+                                'bg-yellow-100 text-yellow-800'
+                              }`}>
+                                {app.status}
+                              </span>
+                            </td>
+                            <td className="p-3 text-center">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => openApplicationDetailModal(app)}
+                              >
+                                Voir
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="text-slate-600">Aucune candidature</p>
+                )}
+              </div>
             </div>
 
-            <div className="flex gap-3 mt-6">
+            <div className="flex gap-3 mt-8">
               <Button
                 variant="outline"
                 onClick={() => {
@@ -610,26 +707,26 @@ export default function AdminStudentsPage() {
 
       {/* Modal Édition */}
       {showEditModal && selectedStudent && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-lg max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-slate-900">Modifier l'étudiant</h2>
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full p-8 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-slate-900">Modifier l'étudiant</h2>
               <button
                 onClick={() => {
                   setShowEditModal(false);
                   setSelectedStudent(null);
                   setSelectedProfile(null);
                 }}
-                className="text-slate-400 hover:text-slate-600"
+                className="text-slate-400 hover:text-slate-600 transition-colors"
               >
-                <X className="h-5 w-5" />
+                <X className="h-6 w-6" />
               </button>
             </div>
 
-            <div className="space-y-6">
+            <div className="space-y-8">
               <div>
-                <h3 className="text-lg font-semibold text-slate-900 mb-4 border-b pb-2">Profil Étudiant</h3>
-                <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-slate-900 mb-6 border-b-2 pb-2">Profil Étudiant</h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-2">Prénom</label>
                     <Input
@@ -660,7 +757,7 @@ export default function AdminStudentsPage() {
                       className="w-full"
                     />
                   </div>
-                  <div>
+                  <div className="col-span-2">
                     <label className="block text-sm font-medium text-slate-700 mb-2">Université</label>
                     <Input
                       type="text"
@@ -702,16 +799,6 @@ export default function AdminStudentsPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Bio</label>
-                    <textarea
-                      value={editData.bio || ''}
-                      onChange={(e) => setEditData({ ...editData, bio: e.target.value })}
-                      placeholder="Bio"
-                      rows={4}
-                      className="w-full px-3 py-2 border border-slate-300 rounded-md text-slate-900 bg-white hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div>
                     <label className="block text-sm font-medium text-slate-700 mb-2">Statut de Validation</label>
                     <select
                       value={editData.validation_status || 'PENDING'}
@@ -723,11 +810,21 @@ export default function AdminStudentsPage() {
                       <option value="REJECTED">Rejeté</option>
                     </select>
                   </div>
+                  <div className="col-span-3">
+                    <label className="block text-sm font-medium text-slate-700 mb-2">Bio</label>
+                    <textarea
+                      value={editData.bio || ''}
+                      onChange={(e) => setEditData({ ...editData, bio: e.target.value })}
+                      placeholder="Bio"
+                      rows={4}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-md text-slate-900 bg-white hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
 
-            <div className="flex gap-3 mt-6">
+            <div className="flex gap-3 mt-8">
               <Button
                 variant="outline"
                 onClick={() => {
@@ -746,6 +843,183 @@ export default function AdminStudentsPage() {
                 disabled={editLoading}
               >
                 {editLoading ? 'Enregistrement...' : 'Enregistrer'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Détails Candidature */}
+      {showApplicationModal && selectedApplication && (
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full p-8 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-slate-900">Détails de la Candidature</h2>
+              <button
+                onClick={() => {
+                  setShowApplicationModal(false);
+                  setSelectedApplication(null);
+                }}
+                className="text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            <div className="space-y-8">
+              {/* Infos Offre */}
+              <div>
+                <h3 className="text-lg font-semibold text-slate-900 mb-4 border-b-2 pb-2">Informations de l'Offre</h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                  <div className="col-span-2">
+                    <label className="block text-sm font-medium text-slate-700 mb-2">Titre</label>
+                    <p className="text-slate-900 font-semibold">{selectedApplication.job_title}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">Entreprise</label>
+                    <p className="text-slate-900">{selectedApplication.company}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">Lieu</label>
+                    <p className="text-slate-900">{selectedApplication.job_location}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">Service</label>
+                    <p className="text-slate-900">{selectedApplication.service_type}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">Salaire</label>
+                    <p className="text-slate-900">{selectedApplication.salary || '-'}</p>
+                  </div>
+                  {selectedApplication.job_description && (
+                    <div className="col-span-3">
+                      <label className="block text-sm font-medium text-slate-700 mb-2">Description</label>
+                      <p className="text-slate-900">{selectedApplication.job_description}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Infos Candidature */}
+              <div>
+                <h3 className="text-lg font-semibold text-slate-900 mb-4 border-b-2 pb-2">Détails de la Candidature</h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">Date Candidature</label>
+                    <p className="text-slate-900">
+                      {new Date(selectedApplication.applied_at).toLocaleDateString('fr-FR')}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">Statut</label>
+                    <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
+                      selectedApplication.status === 'ACCEPTED' ? 'bg-green-100 text-green-800' :
+                      selectedApplication.status === 'REJECTED' ? 'bg-red-100 text-red-800' :
+                      selectedApplication.status === 'INTERVIEW' ? 'bg-blue-100 text-blue-800' :
+                      'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {selectedApplication.status}
+                    </span>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">Date Début Souhaitée</label>
+                    <p className="text-slate-900">
+                      {selectedApplication.start_date 
+                        ? new Date(selectedApplication.start_date).toLocaleDateString('fr-FR')
+                        : '-'
+                      }
+                    </p>
+                  </div>
+                  {selectedApplication.message && (
+                    <div className="col-span-3">
+                      <label className="block text-sm font-medium text-slate-700 mb-2">Message de Candidature</label>
+                      <p className="text-slate-900">{selectedApplication.message}</p>
+                    </div>
+                  )}
+                  {selectedApplication.experience && (
+                    <div className="col-span-3">
+                      <label className="block text-sm font-medium text-slate-700 mb-2">Expérience</label>
+                      <p className="text-slate-900">{selectedApplication.experience}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Infos Entretien (si applicable) */}
+              {selectedApplication.interview_date && (
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-900 mb-4 border-b-2 pb-2">Détails de l'Entretien</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">Date Entretien</label>
+                      <p className="text-slate-900">
+                        {new Date(selectedApplication.interview_date).toLocaleDateString('fr-FR')}
+                      </p>
+                    </div>
+                    {selectedApplication.interview_time && (
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">Heure</label>
+                        <p className="text-slate-900">{selectedApplication.interview_time}</p>
+                      </div>
+                    )}
+                    {selectedApplication.interview_location && (
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">Lieu</label>
+                        <p className="text-slate-900">{selectedApplication.interview_location}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Infos Étudiant */}
+              <div>
+                <h3 className="text-lg font-semibold text-slate-900 mb-4 border-b-2 pb-2">Informations de l'Étudiant</h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">Prénom</label>
+                    <p className="text-slate-900">{selectedApplication.first_name}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">Nom</label>
+                    <p className="text-slate-900">{selectedApplication.last_name}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">Email</label>
+                    <p className="text-slate-900">{selectedApplication.user_email}</p>
+                  </div>
+                  {selectedApplication.phone && (
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">Téléphone</label>
+                      <p className="text-slate-900">{selectedApplication.phone}</p>
+                    </div>
+                  )}
+                  {selectedApplication.university && (
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">Université</label>
+                      <p className="text-slate-900">{selectedApplication.university}</p>
+                    </div>
+                  )}
+                  {selectedApplication.department && (
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">Département</label>
+                      <p className="text-slate-900">{selectedApplication.department}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-8">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowApplicationModal(false);
+                  setSelectedApplication(null);
+                }}
+                className="flex-1"
+              >
+                Fermer
               </Button>
             </div>
           </div>

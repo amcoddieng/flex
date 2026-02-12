@@ -70,6 +70,12 @@ export default function AdminUsersPage() {
   const [editLoading, setEditLoading] = useState(false);
   const [selectedProfile, setSelectedProfile] = useState<UserProfile>(null);
   const [profileLoading, setProfileLoading] = useState(false);
+  const [employerJobs, setEmployerJobs] = useState<any[]>([]);
+  const [jobsLoading, setJobsLoading] = useState(false);
+  const [selectedJob, setSelectedJob] = useState<any>(null);
+  const [showJobModal, setShowJobModal] = useState(false);
+  const [jobDetailsLoading, setJobDetailsLoading] = useState(false);
+  const [jobApplicants, setJobApplicants] = useState<any[]>([]);
   const router = useRouter();
   const hasCheckedAuth = useRef(false);
 
@@ -192,6 +198,25 @@ export default function AdminUsersPage() {
         console.log('Profil reçu:', data);
         if (data.success) {
           setSelectedProfile(data.data.profile);
+          
+          // Si c'est un employeur, récupérer ses jobs
+          if (user.role === 'EMPLOYER') {
+            setJobsLoading(true);
+            fetch(`/api/admin/jobs?employer_id=${user.id}&page=1&limit=50`, {
+              headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+            })
+              .then(res => res.json())
+              .then(data => {
+                if (data.success) {
+                  setEmployerJobs(data.data || []);
+                }
+              })
+              .catch(err => {
+                console.error('Erreur chargement jobs:', err);
+                setEmployerJobs([]);
+              })
+              .finally(() => setJobsLoading(false));
+          }
         }
       })
       .catch(err => {
@@ -281,6 +306,27 @@ export default function AdminUsersPage() {
     } finally {
       setEditLoading(false);
     }
+  };
+
+  const openJobDetailModal = (job: any) => {
+    setSelectedJob(job);
+    setShowJobModal(true);
+    setJobDetailsLoading(true);
+
+    fetch(`/api/admin/jobs/${job.id}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setJobApplicants(data.data.applicants || []);
+        }
+      })
+      .catch(err => {
+        console.error('Erreur chargement détails job:', err);
+        setJobApplicants([]);
+      })
+      .finally(() => setJobDetailsLoading(false));
   };
 
   if (!isAdmin) {
@@ -608,6 +654,59 @@ export default function AdminUsersPage() {
                   <p className="text-slate-600">Aucun profil créé</p>
                 </div>
               )}
+
+              {/* Historique des Jobs (si employeur) */}
+              {selectedUser.role === 'EMPLOYER' && (
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-900 mb-4 border-b pb-2">Historique des Offres d'Emploi</h3>
+                  {jobsLoading ? (
+                    <p className="text-slate-600">Chargement des jobs...</p>
+                  ) : employerJobs.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead className="bg-slate-50">
+                          <tr>
+                            <th className="text-left p-3 font-semibold text-slate-900 text-sm">Titre</th>
+                            <th className="text-left p-3 font-semibold text-slate-900 text-sm">Lieu</th>
+                            <th className="text-left p-3 font-semibold text-slate-900 text-sm">Candidatures</th>
+                            <th className="text-left p-3 font-semibold text-slate-900 text-sm">Statut</th>
+                            <th className="text-left p-3 font-semibold text-slate-900 text-sm">Date</th>
+                            <th className="text-center p-3 font-semibold text-slate-900 text-sm">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y">
+                          {employerJobs.map((job) => (
+                            <tr key={job.id} className="hover:bg-slate-50">
+                              <td className="p-3 text-sm text-slate-900">{job.title}</td>
+                              <td className="p-3 text-sm text-slate-600">{job.location || '-'}</td>
+                              <td className="p-3 text-sm text-slate-900 font-medium">{job.applicants || 0}</td>
+                              <td className="p-3 text-sm">
+                                <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${
+                                  job.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                                }`}>
+                                  {job.is_active ? 'Active' : 'Inactive'}
+                                </span>
+                              </td>
+                              <td className="p-3 text-sm text-slate-600">{new Date(job.posted_at).toLocaleDateString('fr-FR')}</td>
+                              <td className="p-3 text-center">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => openJobDetailModal(job)}
+                                >
+                                  Voir
+                                </Button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <p className="text-slate-600">Aucune offre d'emploi</p>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="flex gap-3 mt-6">
@@ -849,6 +948,130 @@ export default function AdminUsersPage() {
                 disabled={editLoading}
               >
                 {editLoading ? 'Enregistrement...' : 'Enregistrer'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Détails Job */}
+      {showJobModal && selectedJob && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-lg max-w-4xl w-full p-6 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-slate-900">Détails de l'offre d'emploi</h2>
+              <button
+                onClick={() => {
+                  setShowJobModal(false);
+                  setSelectedJob(null);
+                }}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="space-y-6">
+              {/* Infos Job */}
+              <div>
+                <h3 className="text-lg font-semibold text-slate-900 mb-4 border-b pb-2">Informations de l'offre</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Titre</label>
+                    <p className="text-slate-900">{selectedJob.title}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Entreprise</label>
+                    <p className="text-slate-900">{selectedJob.company}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Lieu</label>
+                    <p className="text-slate-900">{selectedJob.location}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Type de Service</label>
+                    <p className="text-slate-900">{selectedJob.service_type}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Salaire</label>
+                    <p className="text-slate-900">{selectedJob.salary || '-'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Statut</label>
+                    <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
+                      selectedJob.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                    }`}>
+                      {selectedJob.is_active ? 'Active' : 'Inactive'}
+                    </span>
+                  </div>
+                  <div className="col-span-2">
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Description</label>
+                    <p className="text-slate-900">{selectedJob.description}</p>
+                  </div>
+                  <div className="col-span-2">
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Exigences</label>
+                    <p className="text-slate-900">{selectedJob.requirements || '-'}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Candidatures */}
+              <div>
+                <h3 className="text-lg font-semibold text-slate-900 mb-4 border-b pb-2">Candidatures ({jobApplicants.length})</h3>
+                {jobDetailsLoading ? (
+                  <p className="text-slate-600">Chargement des candidatures...</p>
+                ) : jobApplicants.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-slate-50">
+                        <tr>
+                          <th className="text-left p-3 font-semibold text-slate-900 text-sm">Étudiant</th>
+                          <th className="text-left p-3 font-semibold text-slate-900 text-sm">Email</th>
+                          <th className="text-left p-3 font-semibold text-slate-900 text-sm">Date Candidature</th>
+                          <th className="text-left p-3 font-semibold text-slate-900 text-sm">Statut</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y">
+                        {jobApplicants.map((applicant) => (
+                          <tr key={applicant.id} className="hover:bg-slate-50">
+                            <td className="p-3 text-sm text-slate-900">
+                              {applicant.first_name} {applicant.last_name}
+                            </td>
+                            <td className="p-3 text-sm text-slate-600">{applicant.user_email || applicant.email}</td>
+                            <td className="p-3 text-sm text-slate-600">
+                              {new Date(applicant.applied_at).toLocaleDateString('fr-FR')}
+                            </td>
+                            <td className="p-3 text-sm">
+                              <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${
+                                applicant.status === 'ACCEPTED' ? 'bg-green-100 text-green-800' :
+                                applicant.status === 'REJECTED' ? 'bg-red-100 text-red-800' :
+                                applicant.status === 'INTERVIEW' ? 'bg-blue-100 text-blue-800' :
+                                'bg-yellow-100 text-yellow-800'
+                              }`}>
+                                {applicant.status}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="text-slate-600">Aucune candidature pour cette offre</p>
+                )}
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowJobModal(false);
+                  setSelectedJob(null);
+                }}
+                className="flex-1"
+              >
+                Fermer
               </Button>
             </div>
           </div>
