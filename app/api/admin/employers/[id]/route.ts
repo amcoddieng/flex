@@ -22,13 +22,14 @@ const verifyAdmin = (request: NextRequest): boolean => {
   return decoded?.role === 'ADMIN';
 };
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: any }) {
   try {
     if (!verifyAdmin(request)) {
       return NextResponse.json({ error: 'Accès refusé. Vous devez être administrateur.' }, { status: 403 });
     }
 
-    const id = parseInt(params.id);
+    const p = await params;
+    const id = parseInt(p.id);
     if (isNaN(id)) return NextResponse.json({ error: 'ID invalide' }, { status: 400 });
 
     const connection = await pool.getConnection();
@@ -54,13 +55,14 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: any }) {
   try {
     if (!verifyAdmin(request)) {
       return NextResponse.json({ error: 'Accès refusé. Vous devez être administrateur.' }, { status: 403 });
     }
 
-    const id = parseInt(params.id);
+    const p = await params;
+    const id = parseInt(p.id);
     if (isNaN(id)) return NextResponse.json({ error: 'ID invalide' }, { status: 400 });
 
     const body = await request.json();
