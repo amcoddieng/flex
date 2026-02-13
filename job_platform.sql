@@ -103,6 +103,7 @@ CREATE TABLE job_offer (
     updated_at DATETIME,
     applicants INT DEFAULT 0,
     is_active BOOLEAN DEFAULT TRUE,
+    blocked BOOLEAN DEFAULT FALSE,
     FOREIGN KEY (employer_id) REFERENCES employer_profile(id) ON DELETE CASCADE
 );
 

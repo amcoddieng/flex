@@ -43,6 +43,7 @@ export async function GET(request: NextRequest, { params }: { params: any }) {
           contact_email,
           contact_phone,
           applicants,
+          blocked,
           is_active,
           posted_at,
           updated_at
@@ -101,5 +102,69 @@ export async function GET(request: NextRequest, { params }: { params: any }) {
       { error: error.message || 'Erreur serveur' },
       { status: 500 }
     );
+  }
+}
+
+export async function PUT(request: NextRequest, { params }: { params: any }) {
+  try {
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
+    }
+
+    const p = await params;
+    const jobId = parseInt(p.id);
+    if (isNaN(jobId)) {
+      return NextResponse.json({ error: 'ID invalide' }, { status: 400 });
+    }
+
+    const body = await request.json();
+    const { is_active, blocked } = body;
+
+    const connection = await pool.getConnection();
+    try {
+      const updates: string[] = [];
+      const args: any[] = [];
+      if (typeof is_active !== 'undefined') { updates.push('is_active = ?'); args.push(is_active ? 1 : 0); }
+      if (typeof blocked !== 'undefined') { updates.push('blocked = ?'); args.push(blocked ? 1 : 0); }
+
+      if (updates.length > 0) {
+        args.push(jobId);
+        await connection.execute(`UPDATE job_offer SET ${updates.join(', ')} WHERE id = ?`, args);
+      }
+
+      return NextResponse.json({ success: true });
+    } finally {
+      connection.release();
+    }
+  } catch (error: any) {
+    console.error('Erreur PUT /api/admin/jobs/[id]:', error);
+    return NextResponse.json({ error: error.message || 'Erreur serveur' }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: NextRequest, { params }: { params: any }) {
+  try {
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
+    }
+
+    const p = await params;
+    const jobId = parseInt(p.id);
+    if (isNaN(jobId)) {
+      return NextResponse.json({ error: 'ID invalide' }, { status: 400 });
+    }
+
+    const connection = await pool.getConnection();
+    try {
+      await connection.execute(`DELETE FROM job_offer WHERE id = ?`, [jobId]);
+      return NextResponse.json({ success: true });
+    } finally {
+      connection.release();
+    }
+  } catch (error: any) {
+    console.error('Erreur DELETE /api/admin/jobs/[id]:', error);
+    return NextResponse.json({ error: error.message || 'Erreur serveur' }, { status: 500 });
   }
 }
