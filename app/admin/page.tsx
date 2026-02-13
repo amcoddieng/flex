@@ -19,9 +19,27 @@ const menuItems = [
 
 export default function AdminPage() {
 
-
   const [isAdmin, setIsAdmin] = useState(false);
+  const [stats, setStats] = useState<any>(null);
+  const [loadingStats, setLoadingStats] = useState(false);
   const router = useRouter();
+
+  // Small donut chart component
+  const Donut = ({ value = 0, total = 1, size = 80, color = '#3b82f6' }: { value?: number; total?: number; size?: number; color?: string }) => {
+    const radius = (size - 10) / 2;
+    const circumference = 2 * Math.PI * radius;
+    const percent = total > 0 ? Math.max(0, Math.min(1, value / total)) : 0;
+    const dash = percent * circumference;
+    return (
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        <g transform={`translate(${size / 2}, ${size / 2})`}>
+          <circle r={radius} fill="transparent" stroke="#e6eefc" strokeWidth={10} />
+          <circle r={radius} fill="transparent" stroke={color} strokeWidth={10} strokeLinecap="round" strokeDasharray={`${dash} ${circumference - dash}`} transform={`rotate(-90)`} />
+          <text x="0" y="4" textAnchor="middle" fontSize={12} fill="#0f172a">{Math.round(percent * 100)}%</text>
+        </g>
+      </svg>
+    );
+  };
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -32,6 +50,20 @@ export default function AdminPage() {
       return;
     }
     setIsAdmin(true);
+    // fetch stats
+    (async () => {
+      setLoadingStats(true);
+      try {
+        const res = await fetch('/api/admin/stats', { headers: token ? { Authorization: `Bearer ${token}` } : undefined });
+        if (!res.ok) throw new Error('Erreur récupération statistiques');
+        const data = await res.json();
+        if (data.success) setStats(data.data);
+      } catch (err) {
+        console.error('fetch stats error', err);
+      } finally {
+        setLoadingStats(false);
+      }
+    })();
   }, [router]);
 
   if (!isAdmin) {
@@ -65,11 +97,55 @@ export default function AdminPage() {
         </div>
 
         <div className="mt-12 bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-bold mb-4 text-slate-900">Informations système</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="p-4 bg-slate-50 rounded">
-              <div className="text-sm text-slate-600">Date</div>
-              <div className="text-lg font-bold">{new Date().toLocaleDateString('fr-FR')}</div>
+          <h2 className="text-xl font-bold mb-4 text-slate-900">Aperçu par section</h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Users section */}
+            <div className="p-6 bg-slate-50 rounded-lg">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold">Utilisateurs</h3>
+                <div className="text-sm text-slate-600">Total: {loadingStats ? '…' : stats?.total_users ?? 0}</div>
+              </div>
+              <div className="flex items-center gap-4">
+                <Donut value={loadingStats ? 0 : (stats?.blocked_users ?? 0)} total={loadingStats ? 1 : (stats?.total_users ?? 1)} color="#ef4444" />
+                <div>
+                  <div className="text-sm text-slate-600">Bloqués</div>
+                  <div className="text-xl font-bold">{loadingStats ? '…' : stats?.blocked_users ?? 0}</div>
+                  <div className="text-sm text-slate-500">Nouveaux 7j: {loadingStats ? '…' : stats?.new_users_last_7_days ?? 0}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Students section */}
+            <div className="p-6 bg-slate-50 rounded-lg">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold">Étudiants</h3>
+                <div className="text-sm text-slate-600">Total: {loadingStats ? '…' : stats?.total_students ?? 0}</div>
+              </div>
+              <div className="flex items-center gap-4">
+                <Donut value={loadingStats ? 0 : (stats?.pending_students ?? 0)} total={loadingStats ? 1 : (stats?.total_students ?? 1)} color="#f59e0b" />
+                <div>
+                  <div className="text-sm text-slate-600">En attente</div>
+                  <div className="text-xl font-bold">{loadingStats ? '…' : stats?.pending_students ?? 0}</div>
+                  <div className="text-sm text-slate-500">Validés: {loadingStats ? '…' : ((stats?.total_students ?? 0) - (stats?.pending_students ?? 0))}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Employers section */}
+            <div className="p-6 bg-slate-50 rounded-lg">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold">Employeurs</h3>
+                <div className="text-sm text-slate-600">Total: {loadingStats ? '…' : stats?.total_employers ?? 0}</div>
+              </div>
+              <div className="flex items-center gap-4">
+                <Donut value={loadingStats ? 0 : (stats?.pending_employers ?? 0)} total={loadingStats ? 1 : (stats?.total_employers ?? 1)} color="#10b981" />
+                <div>
+                  <div className="text-sm text-slate-600">En attente</div>
+                  <div className="text-xl font-bold">{loadingStats ? '…' : stats?.pending_employers ?? 0}</div>
+                  <div className="text-sm text-slate-500">Offres: {loadingStats ? '…' : stats?.total_jobs ?? 0}</div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
