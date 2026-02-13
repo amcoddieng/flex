@@ -52,6 +52,9 @@ export default function AdminEmployersPage() {
   const [profileLoading, setProfileLoading] = useState(false);
   const [editLoading, setEditLoading] = useState(false);
   const [editData, setEditData] = useState<any>({});
+  const [showMsgModal, setShowMsgModal] = useState(false);
+  const [msgAction, setMsgAction] = useState<any>(null);
+  const [msgText, setMsgText] = useState('');
   const router = useRouter();
   const hasCheckedAuth = useRef(false);
 
@@ -128,6 +131,13 @@ export default function AdminEmployersPage() {
 
   const quickValidate = async (employerId: number, status: 'VALIDATED' | 'REJECTED') => {
     try {
+      if (status === 'REJECTED') {
+        setMsgAction({ type: 'reject-employer-quick', id: employerId });
+        setMsgText('');
+        setShowMsgModal(true);
+        return;
+      }
+
       const res = await fetch(`/api/admin/employers/${employerId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
@@ -175,10 +185,72 @@ export default function AdminEmployersPage() {
     }
   };
 
+  // Perform message modal actions for employers
+  const performMsgAction = async () => {
+    if (!msgAction) return;
+    if (!msgText || msgText.trim() === '') { alert('Le message est requis.'); return; }
+
+    try {
+      if (msgAction.type === 'block-employer') {
+        const res = await fetch(`/api/admin/employers/${msgAction.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+          body: JSON.stringify({ blocked: true, notification_message: msgText })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Erreur');
+        alert('Employeur bloqué');
+        setShowDetailModal(false);
+        setSelectedEmployer(null);
+        setSelectedProfile(null);
+        fetchEmployers(page);
+      } else if (msgAction.type === 'reject-employer-quick') {
+        const res = await fetch(`/api/admin/employers/${msgAction.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+          body: JSON.stringify({ validation_status: 'REJECTED', notification_message: msgText })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Erreur');
+        fetchEmployers(page);
+      } else if (msgAction.type === 'reject-employer-edit') {
+        const newEdit = { ...msgAction.editData, notification_message: msgText };
+        const res = await fetch(`/api/admin/employers/${msgAction.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+          body: JSON.stringify(newEdit),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Erreur');
+        alert('Employeur modifié');
+        setShowEditModal(false);
+        setSelectedEmployer(null);
+        setSelectedProfile(null);
+        fetchEmployers(page);
+      }
+    } catch (err: any) {
+      console.error('performMsgAction (employers) error', err);
+      alert(err?.message || 'Erreur');
+    } finally {
+      setShowMsgModal(false);
+      setMsgAction(null);
+      setMsgText('');
+      setEditLoading(false);
+    }
+  };
+
   const toggleBlockStatus = async () => {
     if (!selectedEmployer) return;
     setEditLoading(true);
     try {
+      if (!selectedEmployer.blocked) {
+        setMsgAction({ type: 'block-employer', id: selectedEmployer.id });
+        setMsgText('');
+        setShowMsgModal(true);
+        setEditLoading(false);
+        return;
+      }
+
       const res = await fetch(`/api/admin/employers/${selectedEmployer.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
@@ -199,6 +271,15 @@ export default function AdminEmployersPage() {
     if (!selectedEmployer) return;
     setEditLoading(true);
     try {
+      // If admin set validation to REJECTED and no message, open modal to get it
+      if (editData.validation_status === 'REJECTED' && !editData.notification_message) {
+        setMsgAction({ type: 'reject-employer-edit', id: selectedEmployer.id, editData });
+        setMsgText('');
+        setShowMsgModal(true);
+        setEditLoading(false);
+        return;
+      }
+
       const res = await fetch(`/api/admin/employers/${selectedEmployer.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
@@ -426,6 +507,23 @@ export default function AdminEmployersPage() {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+      {/* Message Modal */}
+      {showMsgModal && (
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Message de notification</h3>
+              <button onClick={() => { setShowMsgModal(false); setMsgAction(null); setMsgText(''); }} className="text-slate-400 hover:text-slate-600"><X className="h-5 w-5" /></button>
+            </div>
+            <p className="text-sm text-slate-600 mb-3">Rédigez le message envoyé à l'utilisateur.</p>
+            <textarea value={msgText} onChange={(e) => setMsgText(e.target.value)} rows={5} className="w-full px-3 py-2 border border-slate-300 rounded-md mb-4" />
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => { setShowMsgModal(false); setMsgAction(null); setMsgText(''); }}>Annuler</Button>
+              <Button onClick={performMsgAction}>Envoyer</Button>
+            </div>
           </div>
         </div>
       )}
