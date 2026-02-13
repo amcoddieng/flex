@@ -148,6 +148,55 @@ export default function AdminPage() {
               </div>
             </div>
           </div>
+          
+          <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Jobs section */}
+            <div className="p-6 bg-slate-50 rounded-lg">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold">Offres</h3>
+                <div className="text-sm text-slate-600">Total: {loadingStats ? '…' : stats?.total_jobs ?? 0}</div>
+              </div>
+              <div className="flex items-center gap-4">
+                <Donut value={loadingStats ? 0 : (stats?.active_jobs ?? 0)} total={loadingStats ? 1 : (stats?.total_jobs ?? 1)} color="#3b82f6" />
+                <div>
+                  <div className="text-sm text-slate-600">Actives</div>
+                  <div className="text-xl font-bold">{loadingStats ? '…' : stats?.active_jobs ?? 0}</div>
+                  <div className="text-sm text-slate-500">Bloquées: {loadingStats ? '…' : ((stats?.total_jobs ?? 0) - (stats?.active_jobs ?? 0))}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Applications section */}
+            <div className="p-6 bg-slate-50 rounded-lg">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold">Candidatures</h3>
+                <div className="text-sm text-slate-600">Total: {loadingStats ? '…' : stats?.total_applications ?? 0}</div>
+              </div>
+              <div className="flex items-center gap-4">
+                <Donut value={loadingStats ? 0 : (stats?.total_applications ?? 0)} total={loadingStats ? 1 : Math.max(1, (stats?.total_applications ?? 1))} color="#6366f1" />
+                <div>
+                  <div className="text-sm text-slate-600">Total candidatures</div>
+                  <div className="text-xl font-bold">{loadingStats ? '…' : stats?.total_applications ?? 0}</div>
+                  <div className="text-sm text-slate-500">Nouvelles utilisateurs 7j: {loadingStats ? '…' : stats?.new_users_last_7_days ?? 0}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* System section */}
+            <div className="p-6 bg-slate-50 rounded-lg">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold">Système</h3>
+                <div className="text-sm text-slate-600">Environnement</div>
+              </div>
+              <div className="flex items-center gap-4">
+                <div>
+                  <div className="text-sm text-slate-600">Date</div>
+                  <div className="text-xl font-bold">{new Date().toLocaleDateString('fr-FR')}</div>
+                  <div className="text-sm text-slate-500">DB: {process.env.DB_NAME || 'job_platform'}</div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -58,6 +58,49 @@ export default function AdminJobsPage() {
   const [selectedJob, setSelectedJob] = useState<any>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
+  // small donut chart used per job
+  const Donut = ({ value = 0, total = 1, size = 48, color = '#3b82f6' }: { value?: number; total?: number; size?: number; color?: string }) => {
+    const radius = (size - 8) / 2;
+    const circumference = 2 * Math.PI * radius;
+    const percent = total > 0 ? Math.max(0, Math.min(1, value / total)) : 0;
+    const dash = percent * circumference;
+    return (
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        <g transform={`translate(${size / 2}, ${size / 2})`}>
+          <circle r={radius} fill="transparent" stroke="#e6eefc" strokeWidth={8} />
+          <circle r={radius} fill="transparent" stroke={color} strokeWidth={8} strokeLinecap="round" strokeDasharray={`${dash} ${circumference - dash}`} transform={`rotate(-90)`} />
+        </g>
+      </svg>
+    );
+  };
+  // small histogram for application statuses
+  const Histogram = ({ counts }: { counts: Record<string, number> }) => {
+    const statuses = [
+      { key: 'PENDING', label: 'En Attente', color: '#f59e0b' },
+      { key: 'ACCEPTED', label: 'Acceptées', color: '#10b981' },
+      { key: 'REJECTED', label: 'Refusées', color: '#ef4444' },
+      { key: 'INTERVIEW', label: 'Entretien', color: '#3b82f6' },
+    ];
+    const total = statuses.reduce((s, st) => s + (counts[st.key] || 0), 0);
+    return (
+      <div className="space-y-3">
+        {statuses.map((st) => {
+          const value = counts[st.key] || 0;
+          const pct = total > 0 ? Math.round((value / total) * 100) : 0;
+          return (
+            <div key={st.key} className="flex items-center gap-3">
+              <div className="w-32 text-sm text-slate-700">{st.label}</div>
+              <div className="flex-1 bg-slate-100 rounded overflow-hidden h-3">
+                <div style={{ width: `${pct}%`, background: st.color, height: '12px' }} />
+              </div>
+              <div className="w-12 text-right text-sm text-slate-700">{value}</div>
+            </div>
+          );
+        })}
+        {total === 0 && <div className="text-sm text-slate-500">Aucune candidature pour cette offre.</div>}
+      </div>
+    );
+  };
   const [showMsgModal, setShowMsgModal] = useState(false);
   const [msgAction, setMsgAction] = useState<any>(null);
   const [msgText, setMsgText] = useState('');
@@ -184,8 +227,14 @@ export default function AdminJobsPage() {
 
                   <div>
                     <h4 className="font-semibold text-slate-900 mb-3">Candidatures ({selectedJob.applicants?.length || 0})</h4>
+                    {/* histogram */}
+                    {(() => {
+                      const counts: Record<string, number> = {};
+                      (selectedJob.applicants || []).forEach((a: any) => { counts[a.status] = (counts[a.status] || 0) + 1; });
+                      return <Histogram counts={counts} />;
+                    })()}
                     {selectedJob.applicants && selectedJob.applicants.length > 0 ? (
-                      <div className="space-y-3">
+                      <div className="space-y-3 mt-4">
                         {selectedJob.applicants.map((a: any) => (
                           <div key={a.id} className="p-3 border rounded-md flex items-center justify-between">
                             <div>
@@ -305,23 +354,29 @@ export default function AdminJobsPage() {
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead className="bg-slate-50 border-b"><tr><th className="text-left p-4 font-semibold text-slate-900">Titre</th><th className="text-left p-4 font-semibold text-slate-900">Société</th><th className="text-left p-4 font-semibold text-slate-900">Localisation</th><th className="text-left p-4 font-semibold text-slate-900">Statut</th><th className="text-right p-4 font-semibold text-slate-900">Actions</th></tr></thead>
-                  <tbody>{jobs.map((job) => (
-                    <tr key={job.id} className={`border-b hover:bg-slate-50 transition-colors ${!job.is_active ? 'opacity-70' : ''}`}>
-                      <td className="p-4 font-medium">{job.title}</td>
-                      <td className="p-4">{job.company}</td>
-                      <td className="p-4">{job.location}</td>
-                      <td className="p-4"><span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${job.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{job.is_active ? 'Active' : 'Fermée'}</span></td>
-                      <td className="p-4"><span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${job.blocked ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>{job.blocked ? 'Bloquée' : 'Active'}</span></td>
-                      <td className="p-4 text-right">
-                        <div className="flex items-center gap-2 justify-end">
-                          <Button size="sm" className="bg-blue-600 text-white hover:bg-blue-700" onClick={() => openDetailModal(job.id)}>Détails</Button>
-                          <Button size="sm" variant="outline" onClick={() => toggleJobActive(job.id, !job.is_active)}>{job.is_active ? 'Désactiver' : 'Activer'}</Button>
-                          <Button size="sm" variant={job.blocked ? 'default' : 'destructive'} onClick={() => toggleJobBlocked(job.id, !job.blocked)}>{job.blocked ? 'Débloquer' : 'Bloquer'}</Button>
-                          <Button size="sm" variant="destructive" onClick={() => deleteJob(job.id)}>Supprimer</Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}</tbody>
+                  <tbody>{jobs.map((job) => {
+                    const totalApps = (job.pending_count || 0) + (job.accepted_count || 0) + (job.rejected_count || 0) + (job.interview_count || 0);
+                    return (
+                      <tr key={job.id} className={`border-b hover:bg-slate-50 transition-colors ${!job.is_active ? 'opacity-70' : ''}`}>
+                        <td className="p-4 font-medium flex items-center gap-3">
+                          <Donut value={job.pending_count || 0} total={Math.max(1, totalApps)} color="#f59e0b" />
+                          <div>{job.title}</div>
+                        </td>
+                        <td className="p-4">{job.company}</td>
+                        <td className="p-4">{job.location}</td>
+                        <td className="p-4"><span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${job.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{job.is_active ? 'Active' : 'Fermée'}</span></td>
+                        <td className="p-4"><span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${job.blocked ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>{job.blocked ? 'Bloquée' : 'Active'}</span></td>
+                        <td className="p-4 text-right">
+                          <div className="flex items-center gap-2 justify-end">
+                            <Button size="sm" className="bg-blue-600 text-white hover:bg-blue-700" onClick={() => openDetailModal(job.id)}>Détails</Button>
+                            <Button size="sm" variant="outline" onClick={() => toggleJobActive(job.id, !job.is_active)}>{job.is_active ? 'Désactiver' : 'Activer'}</Button>
+                            <Button size="sm" variant={job.blocked ? 'default' : 'destructive'} onClick={() => toggleJobBlocked(job.id, !job.blocked)}>{job.blocked ? 'Débloquer' : 'Bloquer'}</Button>
+                            <Button size="sm" variant="destructive" onClick={() => deleteJob(job.id)}>Supprimer</Button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}</tbody>
                 </table>
               </div>
 
