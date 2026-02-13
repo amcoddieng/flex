@@ -119,7 +119,7 @@ export async function PUT(request: NextRequest, { params }: { params: any }) {
     }
 
     const body = await request.json();
-    const { is_active, blocked } = body;
+    const { is_active, blocked, notification_message } = body;
 
     const connection = await pool.getConnection();
     try {
@@ -131,6 +131,38 @@ export async function PUT(request: NextRequest, { params }: { params: any }) {
       if (updates.length > 0) {
         args.push(jobId);
         await connection.execute(`UPDATE job_offer SET ${updates.join(', ')} WHERE id = ?`, args);
+
+        // If blocking, require notification_message and create notification for employer user
+        if (typeof blocked !== 'undefined') {
+          if (blocked === true && !notification_message) {
+            return NextResponse.json({ error: 'Veuillez fournir un message de notification lors du blocage.' }, { status: 400 });
+          }
+
+          // Find employer user_id
+          const [jobRows]: any = await connection.execute(`SELECT employer_id FROM job_offer WHERE id = ?`, [jobId]);
+          const jobRow = Array.isArray(jobRows) ? jobRows[0] : null;
+          if (jobRow && jobRow.employer_id) {
+            const employerId = jobRow.employer_id;
+            const [empRows]: any = await connection.execute(`SELECT user_id FROM employer_profile WHERE id = ?`, [employerId]);
+            const emp = Array.isArray(empRows) ? empRows[0] : null;
+            if (emp && emp.user_id) {
+              const userId = emp.user_id;
+              if (blocked === true) {
+                const title = 'Offre bloquée par l\'administration';
+                await connection.execute(
+                  `INSERT INTO notification (user_id, type, title, message, metadata) VALUES (?, ?, ?, ?, ?)`,
+                  [userId, 'VALIDATION', title, notification_message, JSON.stringify({ action: 'job_blocked', job_id: jobId })]
+                );
+              } else if (blocked === false && notification_message) {
+                const title = 'Offre débloquée';
+                await connection.execute(
+                  `INSERT INTO notification (user_id, type, title, message, metadata) VALUES (?, ?, ?, ?, ?)`,
+                  [userId, 'VALIDATION', title, notification_message, JSON.stringify({ action: 'job_unblocked', job_id: jobId })]
+                );
+              }
+            }
+          }
+        }
       }
 
       return NextResponse.json({ success: true });
@@ -156,8 +188,33 @@ export async function DELETE(request: NextRequest, { params }: { params: any }) 
       return NextResponse.json({ error: 'ID invalide' }, { status: 400 });
     }
 
+    const body = await request.json().catch(() => ({}));
+    const { notification_message } = body as any;
+
     const connection = await pool.getConnection();
     try {
+      // Require a notification message when deleting an offer
+      if (!notification_message) {
+        return NextResponse.json({ error: 'Veuillez fournir un message de notification lors de la suppression.' }, { status: 400 });
+      }
+
+      // Find employer user_id to notify
+      const [jobRows]: any = await connection.execute(`SELECT employer_id FROM job_offer WHERE id = ?`, [jobId]);
+      const jobRow = Array.isArray(jobRows) ? jobRows[0] : null;
+      if (jobRow && jobRow.employer_id) {
+        const employerId = jobRow.employer_id;
+        const [empRows]: any = await connection.execute(`SELECT user_id FROM employer_profile WHERE id = ?`, [employerId]);
+        const emp = Array.isArray(empRows) ? empRows[0] : null;
+        if (emp && emp.user_id) {
+          const userId = emp.user_id;
+          const title = 'Offre supprimée par l\'administration';
+          await connection.execute(
+            `INSERT INTO notification (user_id, type, title, message, metadata) VALUES (?, ?, ?, ?, ?)`,
+            [userId, 'VALIDATION', title, notification_message, JSON.stringify({ action: 'job_deleted', job_id: jobId })]
+          );
+        }
+      }
+
       await connection.execute(`DELETE FROM job_offer WHERE id = ?`, [jobId]);
       return NextResponse.json({ success: true });
     } finally {

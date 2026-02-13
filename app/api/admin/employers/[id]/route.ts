@@ -72,7 +72,21 @@ export async function PUT(request: NextRequest, { params }: { params: any }) {
     try {
       // Mettre à jour blocked sur user si fourni
       if (typeof blocked !== 'undefined') {
+        // require a notification message when blocking
+        if (blocked === true && !body.notification_message) {
+          return NextResponse.json({ error: 'Veuillez fournir un message de notification lors du blocage.' }, { status: 400 });
+        }
+
         await connection.execute(`UPDATE user SET blocked = ? WHERE id = ?`, [blocked ? 1 : 0, id]);
+
+        if (blocked === true) {
+          const title = 'Compte employeur bloqué';
+          const message = body.notification_message || 'Votre compte employeur a été bloqué par l\'administration.';
+          await connection.execute(`INSERT INTO notification (user_id, type, title, message, metadata) VALUES (?, ?, ?, ?, ?)`, [id, 'VALIDATION', title, message, JSON.stringify({ action: 'blocked' })]);
+        } else if (blocked === false && body.notification_message) {
+          const title = 'Compte employeur débloqué';
+          await connection.execute(`INSERT INTO notification (user_id, type, title, message, metadata) VALUES (?, ?, ?, ?, ?)`, [id, 'VALIDATION', title, body.notification_message, JSON.stringify({ action: 'unblocked' })]);
+        }
       }
 
       // Vérifier si profile existe
@@ -82,7 +96,13 @@ export async function PUT(request: NextRequest, { params }: { params: any }) {
       if (profileExists) {
         const updates: string[] = [];
         const params: any[] = [];
-        if (typeof validation_status !== 'undefined') { updates.push('validation_status = ?'); params.push(validation_status); }
+        if (typeof validation_status !== 'undefined') {
+          // require message when rejecting validation
+          if (validation_status === 'REJECTED' && !body.notification_message) {
+            return NextResponse.json({ error: 'Veuillez fournir un message de notification lors du refus de validation.' }, { status: 400 });
+          }
+          updates.push('validation_status = ?'); params.push(validation_status);
+        }
         if (typeof company_name !== 'undefined') { updates.push('company_name = ?'); params.push(company_name); }
         if (typeof contact_person !== 'undefined') { updates.push('contact_person = ?'); params.push(contact_person); }
         if (typeof phone !== 'undefined') { updates.push('phone = ?'); params.push(phone); }
@@ -99,6 +119,12 @@ export async function PUT(request: NextRequest, { params }: { params: any }) {
           `INSERT INTO employer_profile (user_id, company_name, contact_person, phone, email, address, description, validation_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
           [id, company_name || null, contact_person || null, phone || null, null, address || null, description || null, validation_status || 'PENDING']
         );
+      }
+
+      // If validation_status provided and message present, insert notification
+      if (typeof validation_status !== 'undefined' && body.notification_message) {
+        const notifTitle = validation_status === 'VALIDATED' ? 'Profil employeur validé' : 'Profil employeur refusé';
+        await connection.execute(`INSERT INTO notification (user_id, type, title, message, metadata) VALUES (?, ?, ?, ?, ?)`, [id, 'VALIDATION', notifTitle, body.notification_message, JSON.stringify({ validation_status })]);
       }
 
       return NextResponse.json({ success: true });

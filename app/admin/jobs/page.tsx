@@ -58,6 +58,9 @@ export default function AdminJobsPage() {
   const [selectedJob, setSelectedJob] = useState<any>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [showMsgModal, setShowMsgModal] = useState(false);
+  const [msgAction, setMsgAction] = useState<any>(null);
+  const [msgText, setMsgText] = useState('');
 
   useEffect(() => { if (isAdmin) fetchJobs(1); }, [isAdmin]);
 
@@ -112,7 +115,16 @@ export default function AdminJobsPage() {
   };
 
   const toggleJobBlocked = async (jobId: number, blocked: boolean) => {
-    if (!confirm(`${blocked ? 'Bloquer' : 'Débloquer'} cette offre ?`)) return;
+    // If blocking, open message modal to collect notification message
+    if (blocked) {
+      setMsgAction({ jobId, type: 'block' });
+      setMsgText('');
+      setShowMsgModal(true);
+      return;
+    }
+
+    // Unblocking does not require a message
+    if (!confirm(`Débloquer cette offre ?`)) return;
     try {
       const res = await fetch(`/api/admin/jobs/${jobId}`, {
         method: 'PUT',
@@ -126,16 +138,10 @@ export default function AdminJobsPage() {
   };
 
   const deleteJob = async (jobId: number) => {
-    if (!confirm('Confirmer la suppression de cette offre ? Cette action est irréversible.')) return;
-    try {
-      const res = await fetch(`/api/admin/jobs/${jobId}`, {
-        method: 'DELETE',
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Erreur');
-      fetchJobs(page);
-    } catch (err: any) { console.error('deleteJob error', err); alert(err?.message || 'Erreur'); }
+    // Open modal to require deletion message
+    setMsgAction({ jobId, type: 'delete' });
+    setMsgText('');
+    setShowMsgModal(true);
   };
 
   if (!isAdmin) {
@@ -197,6 +203,52 @@ export default function AdminJobsPage() {
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+        )}
+        {/* Message Modal for block/delete actions */}
+        {showMsgModal && (
+          <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold">Message de notification</h3>
+                <button onClick={() => { setShowMsgModal(false); setMsgAction(null); setMsgText(''); }} className="text-slate-400 hover:text-slate-600"><X className="h-5 w-5" /></button>
+              </div>
+              <p className="text-sm text-slate-600 mb-3">Veuillez rédiger le message qui sera envoyé à l'utilisateur concernant cette action.</p>
+              <textarea value={msgText} onChange={(e) => setMsgText(e.target.value)} rows={5} className="w-full px-3 py-2 border border-slate-300 rounded-md mb-4" />
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => { setShowMsgModal(false); setMsgAction(null); setMsgText(''); }}>Annuler</Button>
+                <Button onClick={async () => {
+                  if (!msgAction) return;
+                  if (!msgText || msgText.trim() === '') { alert('Le message est requis.'); return; }
+                  try {
+                    if (msgAction.type === 'block') {
+                      const res = await fetch(`/api/admin/jobs/${msgAction.jobId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+                        body: JSON.stringify({ blocked: true, notification_message: msgText })
+                      });
+                      const data = await res.json();
+                      if (!res.ok) throw new Error(data.error || 'Erreur');
+                    } else if (msgAction.type === 'delete') {
+                      const res = await fetch(`/api/admin/jobs/${msgAction.jobId}`, {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+                        body: JSON.stringify({ notification_message: msgText })
+                      });
+                      const data = await res.json();
+                      if (!res.ok) throw new Error(data.error || 'Erreur');
+                    }
+                    setShowMsgModal(false);
+                    setMsgAction(null);
+                    setMsgText('');
+                    fetchJobs(page);
+                  } catch (err: any) {
+                    console.error('message modal action error', err);
+                    alert(err?.message || 'Erreur');
+                  }
+                }}>Envoyer</Button>
+              </div>
             </div>
           </div>
         )}

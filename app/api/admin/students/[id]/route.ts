@@ -127,10 +127,32 @@ export async function PUT(request: NextRequest, { params }: RequestParams) {
 
       // Mettre à jour les infos utilisateur
       if (body.blocked !== undefined) {
+        // When blocking a profile, require a notification message explaining reasons
+        if (body.blocked === true && !body.notification_message) {
+          return NextResponse.json({ error: 'Veuillez fournir un message de notification lors du blocage.' }, { status: 400 });
+        }
+
         await connection.execute(
           'UPDATE user SET blocked = ? WHERE id = ?',
           [body.blocked ? 1 : 0, userId]
         );
+
+        // insert a notification for the user when blocked/unblocked
+        if (body.blocked === true) {
+          const title = 'Compte bloqué par l\'administration';
+          const message = body.notification_message || 'Votre compte a été bloqué par l\'administration.';
+          await connection.execute(
+            `INSERT INTO notification (user_id, type, title, message, metadata) VALUES (?, ?, ?, ?, ?)`,
+            [userId, 'VALIDATION', title, message, JSON.stringify({ action: 'blocked' })]
+          );
+        } else if (body.blocked === false && body.notification_message) {
+          const title = 'Compte débloqué';
+          const message = body.notification_message;
+          await connection.execute(
+            `INSERT INTO notification (user_id, type, title, message, metadata) VALUES (?, ?, ?, ?, ?)`,
+            [userId, 'VALIDATION', title, message, JSON.stringify({ action: 'unblocked' })]
+          );
+        }
       }
 
       // Mettre à jour le profil étudiant
@@ -196,6 +218,11 @@ export async function PUT(request: NextRequest, { params }: RequestParams) {
             updateParams.push(body.hourly_rate);
           }
           if (body.validation_status !== undefined) {
+            // If admin is rejecting the profile, require a notification message
+            if (body.validation_status === 'REJECTED' && !body.notification_message) {
+              return NextResponse.json({ error: 'Veuillez fournir un message de notification lors du refus de validation.' }, { status: 400 });
+            }
+
             updates.push('validation_status = ?');
             updateParams.push(body.validation_status);
           }
@@ -206,6 +233,15 @@ export async function PUT(request: NextRequest, { params }: RequestParams) {
               `UPDATE student_profile SET ${updates.join(', ')} WHERE user_id = ?`,
               updateParams
             );
+            // After changing validation_status, add a notification when provided
+            if (body.validation_status !== undefined && body.notification_message) {
+              const notifTitle = body.validation_status === 'VALIDATED' ? 'Profil validé' : 'Profil refusé';
+              const notifType = 'VALIDATION';
+              await connection.execute(
+                `INSERT INTO notification (user_id, type, title, message, metadata) VALUES (?, ?, ?, ?, ?)`,
+                [userId, notifType, notifTitle, body.notification_message, JSON.stringify({ validation_status: body.validation_status })]
+              );
+            }
           }
         }
       }
