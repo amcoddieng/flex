@@ -20,6 +20,8 @@ type Employer = {
   phone?: string;
   address?: string;
   description?: string;
+  img?: string;
+  identity?: string;
   validation_status?: string;
 };
 
@@ -57,6 +59,50 @@ export default function AdminEmployersPage() {
   const [msgText, setMsgText] = useState('');
   const router = useRouter();
   const hasCheckedAuth = useRef(false);
+
+  // small donut chart component
+  const Donut = ({ value = 0, total = 1, size = 48, color = '#3b82f6' }: { value?: number; total?: number; size?: number; color?: string }) => {
+    const radius = (size - 8) / 2;
+    const circumference = 2 * Math.PI * radius;
+    const percent = total > 0 ? Math.max(0, Math.min(1, value / total)) : 0;
+    const dash = percent * circumference;
+    return (
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        <g transform={`translate(${size / 2}, ${size / 2})`}>
+          <circle r={radius} fill="transparent" stroke="#e6eefc" strokeWidth={8} />
+          <circle r={radius} fill="transparent" stroke={color} strokeWidth={8} strokeLinecap="round" strokeDasharray={`${dash} ${circumference - dash}`} transform={`rotate(-90)`} />
+        </g>
+      </svg>
+    );
+  };
+
+  // histogram for offers summary
+  const OffersHistogram = ({ jobs }: { jobs: any[] }) => {
+    const activeCount = jobs.filter(j => j.is_active).length;
+    const inactiveCount = jobs.filter(j => !j.is_active).length;
+    const total = jobs.length;
+    const activePct = total > 0 ? Math.round((activeCount / total) * 100) : 0;
+    const inactivePct = total > 0 ? Math.round((inactiveCount / total) * 100) : 0;
+    return (
+      <div className="space-y-3 mt-4">
+        <div className="flex items-center gap-3">
+          <div className="w-32 text-sm font-medium text-slate-700">Actives</div>
+          <div className="flex-1 bg-slate-100 rounded overflow-hidden h-3">
+            <div style={{ width: `${activePct}%`, background: '#10b981', height: '12px' }} />
+          </div>
+          <div className="w-12 text-right text-sm text-slate-700">{activeCount}</div>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="w-32 text-sm font-medium text-slate-700">Fermées</div>
+          <div className="flex-1 bg-slate-100 rounded overflow-hidden h-3">
+            <div style={{ width: `${inactivePct}%`, background: '#ef4444', height: '12px' }} />
+          </div>
+          <div className="w-12 text-right text-sm text-slate-700">{inactiveCount}</div>
+        </div>
+        <div className="text-xs text-slate-600 mt-2">Total: {total} offre{total !== 1 ? 's' : ''}</div>
+      </div>
+    );
+  };
 
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   const decoded = token ? decodeToken(token) : null;
@@ -365,10 +411,24 @@ export default function AdminEmployersPage() {
 
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-slate-50 border-b"><tr><th className="text-left p-4 font-semibold text-slate-900">Société</th><th className="text-left p-4 font-semibold text-slate-900">Contact</th><th className="text-left p-4 font-semibold text-slate-900">Email</th><th className="text-left p-4 font-semibold text-slate-900">Statut</th><th className="text-left p-4 font-semibold text-slate-900">Bloqué</th><th className="text-right p-4 font-semibold text-slate-900">Actions</th></tr></thead>
-                  <tbody>{employers.map((em) => (
+                  <thead className="bg-slate-50 border-b"><tr><th className="text-left p-4 font-semibold text-slate-900">Photo</th><th className="text-left p-4 font-semibold text-slate-900">Société</th><th className="text-left p-4 font-semibold text-slate-900">Contact</th><th className="text-left p-4 font-semibold text-slate-900">Email</th><th className="text-left p-4 font-semibold text-slate-900">Statut</th><th className="text-left p-4 font-semibold text-slate-900">Bloqué</th><th className="text-right p-4 font-semibold text-slate-900">Actions</th></tr></thead>
+                  <tbody>{employers.map((em) => {
+                    const employerJobs = jobs.filter(j => j.employer_id === em.id);
+                    const totalJobs = employerJobs.length;
+                    const activeJobs = employerJobs.filter(j => j.is_active).length;
+                    return (
                     <tr key={em.id} className={`border-b hover:bg-slate-50 transition-colors ${em.validation_status === 'PENDING' ? 'bg-yellow-50' : ''}`}>
-                      <td className="p-4 font-medium">{em.company_name || '-'}</td>
+                      <td className="p-4">
+                        {em.img ? (
+                          <img src={em.img} alt="Profile" className="w-10 h-10 rounded-full object-cover border border-slate-300" title="Photo de profil" />
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-xs text-slate-600">-</div>
+                        )}
+                      </td>
+                      <td className="p-4 font-medium flex items-center gap-3">
+                        <Donut value={activeJobs} total={Math.max(1, totalJobs)} color="#10b981" />
+                        <div>{em.company_name || '-'}</div>
+                      </td>
                       <td className="p-4">{em.contact_person || '-'}</td>
                       <td className="p-4">{em.email}</td>
                       <td className="p-4"><span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${em.validation_status === 'VALIDATED' ? 'bg-green-100 text-green-800' : em.validation_status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`}>{em.validation_status || 'N/A'}</span></td>
@@ -385,7 +445,8 @@ export default function AdminEmployersPage() {
                         )}
                       </td>
                     </tr>
-                  ))}</tbody>
+                    );
+                  })}</tbody>
                 </table>
               </div>
 
@@ -410,7 +471,25 @@ export default function AdminEmployersPage() {
               <div>
                 <h3 className="text-lg font-semibold text-slate-900 mb-4 border-b-2 pb-2">Profil Employeur</h3>
                 {profileLoading ? <p className="text-slate-600">Chargement...</p> : selectedProfile ? (
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-6">{selectedProfile.company_name && <div><label className="block text-sm font-medium text-slate-700 mb-2">Nom Entreprise</label><p className="text-slate-900">{selectedProfile.company_name}</p></div>}{selectedProfile.contact_person && <div><label className="block text-sm font-medium text-slate-700 mb-2">Personne de Contact</label><p className="text-slate-900">{selectedProfile.contact_person}</p></div>}{selectedProfile.phone && <div><label className="block text-sm font-medium text-slate-700 mb-2">Téléphone</label><p className="text-slate-900">{selectedProfile.phone}</p></div>}{selectedProfile.address && <div className="col-span-2"><label className="block text-sm font-medium text-slate-700 mb-2">Adresse</label><p className="text-slate-900">{selectedProfile.address}</p></div>}{selectedProfile.description && <div className="col-span-3"><label className="block text-sm font-medium text-slate-700 mb-2">Description</label><p className="text-slate-900">{selectedProfile.description}</p></div>}<div><label className="block text-sm font-medium text-slate-700 mb-2">Statut de Validation</label><span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${selectedProfile.validation_status === 'VALIDATED' ? 'bg-green-100 text-green-800' : selectedProfile.validation_status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`}>{selectedProfile.validation_status}</span></div></div>
+                  <div className="space-y-6">
+                    {(selectedProfile.img || selectedProfile.identity) && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {selectedProfile.img && (
+                          <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-3">Photo de profil</label>
+                            <img src={selectedProfile.img} alt="Profile photo" className="w-full h-auto max-h-64 object-cover rounded-lg border border-slate-300" />
+                          </div>
+                        )}
+                        {selectedProfile.identity && (
+                          <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-3">Carte d'identité</label>
+                            <img src={selectedProfile.identity} alt="Identity document" className="w-full h-auto max-h-64 object-cover rounded-lg border border-slate-300" />
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-6">{selectedProfile.company_name && <div><label className="block text-sm font-medium text-slate-700 mb-2">Nom Entreprise</label><p className="text-slate-900">{selectedProfile.company_name}</p></div>}{selectedProfile.contact_person && <div><label className="block text-sm font-medium text-slate-700 mb-2">Personne de Contact</label><p className="text-slate-900">{selectedProfile.contact_person}</p></div>}{selectedProfile.phone && <div><label className="block text-sm font-medium text-slate-700 mb-2">Téléphone</label><p className="text-slate-900">{selectedProfile.phone}</p></div>}{selectedProfile.address && <div className="col-span-2"><label className="block text-sm font-medium text-slate-700 mb-2">Adresse</label><p className="text-slate-900">{selectedProfile.address}</p></div>}{selectedProfile.description && <div className="col-span-3"><label className="block text-sm font-medium text-slate-700 mb-2">Description</label><p className="text-slate-900">{selectedProfile.description}</p></div>}<div><label className="block text-sm font-medium text-slate-700 mb-2">Statut de Validation</label><span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${selectedProfile.validation_status === 'VALIDATED' ? 'bg-green-100 text-green-800' : selectedProfile.validation_status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`}>{selectedProfile.validation_status}</span></div></div>
+                  </div>
                 ) : <p className="text-slate-600">Aucun profil</p>}
               </div>
 
@@ -418,21 +497,24 @@ export default function AdminEmployersPage() {
                 <h3 className="text-lg font-semibold text-slate-900 mb-4 border-b-2 pb-2">Offres publiées</h3>
                 {jobsLoading ? <p className="text-slate-600">Chargement des offres...</p> : (
                   jobs.length > 0 ? (
-                    <div className="space-y-3">
-                      {jobs.map((j) => (
-                        <div key={j.id} className="p-3 border rounded-md flex items-center justify-between">
-                          <div>
-                            <div className="font-medium text-slate-900">{j.title}</div>
-                            <div className="text-sm text-slate-600">{j.company || ''} • {j.location || ''}</div>
-                            <div className="text-xs text-slate-500">Publié: {j.posted_at ? new Date(j.posted_at).toLocaleDateString('fr-FR') : '-'}</div>
+                    <>
+                      <OffersHistogram jobs={jobs} />
+                      <div className="space-y-3 mt-6">
+                        {jobs.map((j) => (
+                          <div key={j.id} className="p-3 border rounded-md flex items-center justify-between">
+                            <div>
+                              <div className="font-medium text-slate-900">{j.title}</div>
+                              <div className="text-sm text-slate-600">{j.company || ''} • {j.location || ''}</div>
+                              <div className="text-xs text-slate-500">Publié: {j.posted_at ? new Date(j.posted_at).toLocaleDateString('fr-FR') : '-'}</div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div className="text-sm text-slate-700">{j.is_active ? 'Active' : 'Fermée'}</div>
+                              <Button size="sm" variant="outline" onClick={() => openJobDetailModal(j.id)}>Détails</Button>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <div className="text-sm text-slate-700">{j.is_active ? 'Active' : 'Fermée'}</div>
-                            <Button size="sm" variant="outline" onClick={() => openJobDetailModal(j.id)}>Détails</Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                        ))}
+                      </div>
+                    </>
                   ) : <p className="text-slate-600">Aucune offre trouvée</p>
                 )}
               </div>

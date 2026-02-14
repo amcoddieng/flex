@@ -48,10 +48,14 @@ export async function GET(request: NextRequest) {
           service_type,
           salary,
           applicants,
-            blocked,
-            is_active,
+          blocked,
+          is_active,
           posted_at,
-          updated_at
+          updated_at,
+          (SELECT COUNT(*) FROM job_application ja WHERE ja.job_id = job_offer.id AND ja.status = 'PENDING') AS pending_count,
+          (SELECT COUNT(*) FROM job_application ja WHERE ja.job_id = job_offer.id AND ja.status = 'ACCEPTED') AS accepted_count,
+          (SELECT COUNT(*) FROM job_application ja WHERE ja.job_id = job_offer.id AND ja.status = 'REJECTED') AS rejected_count,
+          (SELECT COUNT(*) FROM job_application ja WHERE ja.job_id = job_offer.id AND ja.status = 'INTERVIEW') AS interview_count
         FROM job_offer`;
 
       const whereClauses: string[] = [];
