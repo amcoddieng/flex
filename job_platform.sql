@@ -35,6 +35,8 @@ CREATE TABLE employer_profile (
     email VARCHAR(255),
     address TEXT,
     description TEXT,
+    img VARCHAR(255),
+    identity VARCHAR(255),
     validation_status ENUM('PENDING', 'VALIDATED', 'REJECTED') DEFAULT 'PENDING',
     created_by_admin BOOLEAN DEFAULT FALSE,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,

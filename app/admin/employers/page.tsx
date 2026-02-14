@@ -20,6 +20,8 @@ type Employer = {
   phone?: string;
   address?: string;
   description?: string;
+  img?: string;
+  identity?: string;
   validation_status?: string;
 };
 
@@ -409,13 +411,20 @@ export default function AdminEmployersPage() {
 
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-slate-50 border-b"><tr><th className="text-left p-4 font-semibold text-slate-900">Société</th><th className="text-left p-4 font-semibold text-slate-900">Contact</th><th className="text-left p-4 font-semibold text-slate-900">Email</th><th className="text-left p-4 font-semibold text-slate-900">Statut</th><th className="text-left p-4 font-semibold text-slate-900">Bloqué</th><th className="text-right p-4 font-semibold text-slate-900">Actions</th></tr></thead>
+                  <thead className="bg-slate-50 border-b"><tr><th className="text-left p-4 font-semibold text-slate-900">Photo</th><th className="text-left p-4 font-semibold text-slate-900">Société</th><th className="text-left p-4 font-semibold text-slate-900">Contact</th><th className="text-left p-4 font-semibold text-slate-900">Email</th><th className="text-left p-4 font-semibold text-slate-900">Statut</th><th className="text-left p-4 font-semibold text-slate-900">Bloqué</th><th className="text-right p-4 font-semibold text-slate-900">Actions</th></tr></thead>
                   <tbody>{employers.map((em) => {
                     const employerJobs = jobs.filter(j => j.employer_id === em.id);
                     const totalJobs = employerJobs.length;
                     const activeJobs = employerJobs.filter(j => j.is_active).length;
                     return (
                     <tr key={em.id} className={`border-b hover:bg-slate-50 transition-colors ${em.validation_status === 'PENDING' ? 'bg-yellow-50' : ''}`}>
+                      <td className="p-4">
+                        {em.img ? (
+                          <img src={em.img} alt="Profile" className="w-10 h-10 rounded-full object-cover border border-slate-300" title="Photo de profil" />
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-xs text-slate-600">-</div>
+                        )}
+                      </td>
                       <td className="p-4 font-medium flex items-center gap-3">
                         <Donut value={activeJobs} total={Math.max(1, totalJobs)} color="#10b981" />
                         <div>{em.company_name || '-'}</div>
@@ -462,7 +471,25 @@ export default function AdminEmployersPage() {
               <div>
                 <h3 className="text-lg font-semibold text-slate-900 mb-4 border-b-2 pb-2">Profil Employeur</h3>
                 {profileLoading ? <p className="text-slate-600">Chargement...</p> : selectedProfile ? (
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-6">{selectedProfile.company_name && <div><label className="block text-sm font-medium text-slate-700 mb-2">Nom Entreprise</label><p className="text-slate-900">{selectedProfile.company_name}</p></div>}{selectedProfile.contact_person && <div><label className="block text-sm font-medium text-slate-700 mb-2">Personne de Contact</label><p className="text-slate-900">{selectedProfile.contact_person}</p></div>}{selectedProfile.phone && <div><label className="block text-sm font-medium text-slate-700 mb-2">Téléphone</label><p className="text-slate-900">{selectedProfile.phone}</p></div>}{selectedProfile.address && <div className="col-span-2"><label className="block text-sm font-medium text-slate-700 mb-2">Adresse</label><p className="text-slate-900">{selectedProfile.address}</p></div>}{selectedProfile.description && <div className="col-span-3"><label className="block text-sm font-medium text-slate-700 mb-2">Description</label><p className="text-slate-900">{selectedProfile.description}</p></div>}<div><label className="block text-sm font-medium text-slate-700 mb-2">Statut de Validation</label><span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${selectedProfile.validation_status === 'VALIDATED' ? 'bg-green-100 text-green-800' : selectedProfile.validation_status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`}>{selectedProfile.validation_status}</span></div></div>
+                  <div className="space-y-6">
+                    {(selectedProfile.img || selectedProfile.identity) && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {selectedProfile.img && (
+                          <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-3">Photo de profil</label>
+                            <img src={selectedProfile.img} alt="Profile photo" className="w-full h-auto max-h-64 object-cover rounded-lg border border-slate-300" />
+                          </div>
+                        )}
+                        {selectedProfile.identity && (
+                          <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-3">Carte d'identité</label>
+                            <img src={selectedProfile.identity} alt="Identity document" className="w-full h-auto max-h-64 object-cover rounded-lg border border-slate-300" />
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-6">{selectedProfile.company_name && <div><label className="block text-sm font-medium text-slate-700 mb-2">Nom Entreprise</label><p className="text-slate-900">{selectedProfile.company_name}</p></div>}{selectedProfile.contact_person && <div><label className="block text-sm font-medium text-slate-700 mb-2">Personne de Contact</label><p className="text-slate-900">{selectedProfile.contact_person}</p></div>}{selectedProfile.phone && <div><label className="block text-sm font-medium text-slate-700 mb-2">Téléphone</label><p className="text-slate-900">{selectedProfile.phone}</p></div>}{selectedProfile.address && <div className="col-span-2"><label className="block text-sm font-medium text-slate-700 mb-2">Adresse</label><p className="text-slate-900">{selectedProfile.address}</p></div>}{selectedProfile.description && <div className="col-span-3"><label className="block text-sm font-medium text-slate-700 mb-2">Description</label><p className="text-slate-900">{selectedProfile.description}</p></div>}<div><label className="block text-sm font-medium text-slate-700 mb-2">Statut de Validation</label><span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${selectedProfile.validation_status === 'VALIDATED' ? 'bg-green-100 text-green-800' : selectedProfile.validation_status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`}>{selectedProfile.validation_status}</span></div></div>
+                  </div>
                 ) : <p className="text-slate-600">Aucun profil</p>}
               </div>
 
