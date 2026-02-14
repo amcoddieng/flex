@@ -5,8 +5,7 @@ import { useRouter } from "next/navigation";
 import { decodeToken } from "@/lib/jwt";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, X, ArrowLeft } from "lucide-react";
-import Link from "next/link";
+import { Search, X } from "lucide-react";
 
 type Job = {
   id: number;
@@ -17,6 +16,15 @@ type Job = {
   posted_at: string;
   applicants?: number;
   description?: string;
+  company?: string;
+  service_type?: string;
+  salary?: string;
+  availability?: any;
+  type_paiement?: string;
+  requirements?: string;
+  contact_email?: string;
+  contact_phone?: string;
+  updated_at?: string;
 };
 
 export default function EmployerJobsPage() {
@@ -33,10 +41,20 @@ export default function EmployerJobsPage() {
   const [detailLoading, setDetailLoading] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [createLoading, setCreateLoading] = useState(false);
+  const [editingJobId, setEditingJobId] = useState<number | null>(null);
+  const [applications, setApplications] = useState<any[]>([]);
   const [createFormData, setCreateFormData] = useState({
     title: '',
+    company: '',
     location: '',
+    service_type: '',
+    salary: '',
+    requirements: '',
     description: '',
+    contact_email: '',
+    contact_phone: '',
+    availability: '',
+    type_paiement: 'jour',
   });
   const router = useRouter();
   const hasCheckedAuth = useRef(false);
@@ -176,6 +194,7 @@ export default function EmployerJobsPage() {
    */
   const openDetailModal = async (jobId: number) => {
     setSelectedJob(null);
+    setApplications([]);
     setShowDetailModal(true);
     setDetailLoading(true);
 
@@ -216,7 +235,9 @@ export default function EmployerJobsPage() {
       const data = await res.json();
 
       if (data.success && data.data) {
-        setSelectedJob(data.data);
+        // API returns { job, applicants }
+        setSelectedJob(data.data.job || data.data);
+        setApplications(data.data.applicants || []);
       } else {
         throw new Error(data.error || 'Données invalides');
       }
@@ -224,8 +245,166 @@ export default function EmployerJobsPage() {
       const message = err instanceof Error ? err.message : 'Erreur inconnue';
       console.error('openDetailModal error:', message);
       setSelectedJob(null);
+      setApplications([]);
     } finally {
       setDetailLoading(false);
+    }
+  };
+
+  /**
+   * Create new job offer
+   */
+  const createJob = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!createFormData.title.trim() || !createFormData.location.trim()) {
+      alert('Veuillez remplir les champs obligatoires (titre et localisation)');
+      return;
+    }
+
+    setCreateLoading(true);
+    setError(null);
+
+    try {
+      const token = getValidToken();
+      if (!token) {
+        router.push('/login');
+        return;
+      }
+
+      // Validate basic field lengths and formats
+      if (createFormData.title.trim().length > 255) {
+        setError('Le titre ne doit pas dépasser 255 caractères');
+        setCreateLoading(false);
+        return;
+      }
+      if (createFormData.company.trim().length > 255) {
+        setError('Le nom de l\'entreprise ne doit pas dépasser 255 caractères');
+        setCreateLoading(false);
+        return;
+      }
+      if (createFormData.service_type.trim().length > 255) {
+        setError('Le type de service est trop long');
+        setCreateLoading(false);
+        return;
+      }
+      if (createFormData.salary.trim().length > 100) {
+        setError('Le champ salaire est trop long');
+        setCreateLoading(false);
+        return;
+      }
+
+      // contact email basic validation
+      const email = createFormData.contact_email.trim();
+      if (email) {
+        const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRe.test(email)) {
+          setError('Email de contact invalide');
+          setCreateLoading(false);
+          return;
+        }
+      }
+
+      // contact phone basic validation (digits, +, spaces, - , parentheses)
+      const phone = createFormData.contact_phone.trim();
+      if (phone) {
+        const phoneRe = /^[0-9+()\-\s]{6,30}$/;
+        if (!phoneRe.test(phone)) {
+          setError('Téléphone de contact invalide');
+          setCreateLoading(false);
+          return;
+        }
+      }
+
+      // Validate availability: must be one of allowed enum values or empty
+      let parsedAvailability: string | null = null;
+      const availRaw = createFormData.availability?.trim();
+      if (availRaw && availRaw !== '') {
+        const allowed = [
+          'Temps plein',
+          'Temps partiel',
+          'Mi-temps',
+          'Temps flexible',
+          'Horaires flexibles',
+        ];
+        if (!allowed.includes(availRaw)) {
+          setError('Disponibilité invalide');
+          setCreateLoading(false);
+          return;
+        }
+        parsedAvailability = availRaw;
+      }
+
+      const res = await fetch(editingJobId ? `/api/employer/jobs/${editingJobId}` : '/api/employer/jobs', {
+        method: editingJobId ? 'PUT' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          title: createFormData.title.trim(),
+          company: createFormData.company.trim(),
+          location: createFormData.location.trim(),
+          service_type: createFormData.service_type.trim(),
+          salary: createFormData.salary.trim(),
+          requirements: createFormData.requirements.trim(),
+          description: createFormData.description.trim(),
+          contact_email: createFormData.contact_email.trim(),
+          contact_phone: createFormData.contact_phone.trim(),
+          availability: parsedAvailability,
+          type_paiement: createFormData.type_paiement,
+        }),
+      });
+
+      if (!res.ok) {
+        let errorMsg = 'Erreur lors de la création de l\'offre';
+        try {
+          const errorData = await res.json();
+          if (errorData.error) {
+            errorMsg = errorData.error;
+          }
+        } catch {
+          if (res.status === 401 || res.status === 403) {
+            errorMsg = 'Accès refusé';
+            router.push('/login');
+            return;
+          }
+        }
+        throw new Error(errorMsg);
+      }
+
+      const data = await res.json();
+      if (!data.success) {
+        throw new Error(data.error || 'Erreur inconnue');
+      }
+
+      // Reset form and close modal
+      setCreateFormData({ 
+        title: '', 
+        company: '',
+        location: '', 
+        service_type: '',
+        salary: '',
+        requirements: '',
+        description: '',
+        contact_email: '',
+        contact_phone: '',
+        availability: '',
+        type_paiement: 'jour',
+      });
+      setEditingJobId(null);
+      setShowCreateModal(false);
+      
+      // Refresh jobs list
+      await fetchJobs(1);
+      
+      alert(editingJobId ? 'Offre mise à jour avec succès !' : 'Offre créée avec succès !');
+    } catch (err: any) {
+      const message = err instanceof Error ? err.message : 'Erreur inconnue';
+      console.error('createJob error:', message);
+      setError(message);
+    } finally {
+      setCreateLoading(false);
     }
   };
 
@@ -290,9 +469,85 @@ export default function EmployerJobsPage() {
     }
   };
 
-  if (!isAuthed) {
-    return <div className="p-8">Vérification...</div>;
-  }
+  /**
+   * Delete job
+   */
+  const deleteJob = async (jobId: number) => {
+    if (!confirm('Êtes-vous sûr ? Cette action est irréversible.')) {
+      return;
+    }
+
+    try {
+      const token = getValidToken();
+      if (!token) {
+        router.push('/login');
+        return;
+      }
+
+      const res = await fetch(`/api/employer/jobs/${jobId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) {
+        let errorMsg = 'Erreur lors de la suppression';
+
+        try {
+          const errorData = await res.json();
+          if (errorData.error) {
+            errorMsg = errorData.error;
+          }
+        } catch {
+          if (res.status === 401 || res.status === 403) {
+            errorMsg = 'Accès refusé';
+            router.push('/login');
+            return;
+          }
+        }
+
+        throw new Error(errorMsg);
+      }
+
+      const data = await res.json();
+      if (!data.success) {
+        throw new Error(data.error || 'Erreur inconnue');
+      }
+
+      setShowDetailModal(false);
+      setSelectedJob(null);
+      await fetchJobs(page);
+      alert('Offre supprimée avec succès !');
+    } catch (err: any) {
+      const message = err instanceof Error ? err.message : 'Erreur inconnue';
+      console.error('deleteJob error:', message);
+      alert(`Erreur : ${message}`);
+    }
+  };
+
+  /**
+   * Start editing a job (populate form with current values)
+   */
+  const startEditJob = (job: Job) => {
+    setEditingJobId(job.id);
+    setCreateFormData({
+      title: job.title,
+      company: job.company || '',
+      location: job.location,
+      service_type: job.service_type || '',
+      salary: job.salary || '',
+      requirements: job.requirements || '',
+      description: job.description || '',
+      contact_email: job.contact_email || '',
+      contact_phone: job.contact_phone || '',
+      availability: job.availability || '',
+      type_paiement: job.type_paiement || 'jour',
+    });
+    setShowDetailModal(false);
+    setShowCreateModal(true);
+  };
 
   const pages = Math.ceil(total / limit);
 
@@ -303,9 +558,12 @@ export default function EmployerJobsPage() {
           <h1 className="text-3xl font-bold text-slate-900">Mes offres d'emploi</h1>
           <p className="text-slate-600 mt-2">Gérez vos offres et candidatures</p>
         </div>
-        <Link href="/employer/jobs/new">
-          <Button className="bg-blue-600 hover:bg-blue-700">+ Créer une offre</Button>
-        </Link>
+        <Button 
+          onClick={() => setShowCreateModal(true)}
+          className="bg-blue-600 hover:bg-blue-700"
+        >
+          + Créer une offre
+        </Button>
       </div>
 
       {error && (
@@ -393,11 +651,12 @@ export default function EmployerJobsPage() {
         {jobs.length === 0 && !loading && (
           <div className="p-8 text-center">
             <p className="text-slate-600">Aucune offre trouvée</p>
-            <Link href="/employer/jobs/new">
-              <Button className="mt-4 bg-blue-600 hover:bg-blue-700">
-                Créer votre première offre
-              </Button>
-            </Link>
+            <Button 
+              onClick={() => setShowCreateModal(true)}
+              className="mt-4 bg-blue-600 hover:bg-blue-700"
+            >
+              Créer votre première offre
+            </Button>
           </div>
         )}
 
@@ -448,12 +707,69 @@ export default function EmployerJobsPage() {
                     {selectedJob.title}
                   </h3>
                   <div className="text-sm text-slate-600">{selectedJob.location}</div>
+                  <div className="mt-2 text-sm text-slate-600">Entreprise: {selectedJob.company || '-'}</div>
+                  <div className="mt-2 text-sm text-slate-600">Type: {selectedJob.service_type || '-'}</div>
+                  <div className="mt-2 text-sm text-slate-600">Salaire: {selectedJob.salary || '-'}</div>
+                  <div className="mt-2 text-sm text-slate-600">Disponibilité: {selectedJob.availability || '-'}</div>
+                  <div className="mt-2 text-sm text-slate-600">Mode de paiement: {selectedJob.type_paiement || '-'}</div>
+                  {selectedJob.requirements && (
+                    <div className="mt-4">
+                      <div className="text-sm font-medium text-slate-700">Compétences requises:</div>
+                      <div className="mt-1 text-slate-800 whitespace-pre-wrap">{selectedJob.requirements}</div>
+                    </div>
+                  )}
                   {selectedJob.description && (
-                    <div className="mt-4 text-slate-800">{selectedJob.description}</div>
+                    <div className="mt-4">
+                      <div className="text-sm font-medium text-slate-700">Description:</div>
+                      <div className="mt-1 text-slate-800 whitespace-pre-wrap">{selectedJob.description}</div>
+                    </div>
+                  )}
+                  <div className="mt-4 text-sm text-slate-600">Contact: {selectedJob.contact_email || '-'} {selectedJob.contact_phone ? `• ${selectedJob.contact_phone}` : ''}</div>
+                  <div className="mt-2 text-sm text-slate-600">Posté le: {selectedJob.posted_at}</div>
+                </div>
+
+                {/* Applications Section */}
+                <div className="border-t pt-6">
+                  <h4 className="text-lg font-semibold text-slate-900 mb-4">Candidatures ({applications.length})</h4>
+                  {applications.length === 0 ? (
+                    <p className="text-sm text-slate-600">Aucune candidature pour cette offre.</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {applications.map((app: any) => (
+                        <div key={app.id} className="border border-slate-200 rounded p-3 bg-slate-50">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <div className="font-medium text-slate-900">
+                                {app.first_name} {app.last_name}
+                              </div>
+                              <div className="text-sm text-slate-600">{app.user_email}</div>
+                              <div className="text-xs text-slate-500 mt-1">
+                                Postuée le: {new Date(app.applied_at).toLocaleDateString('fr-FR')}
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <span
+                                className={`inline-block px-2 py-1 rounded text-xs font-medium ${
+                                  app.status === 'ACCEPTED'
+                                    ? 'bg-green-100 text-green-800'
+                                    : app.status === 'REJECTED'
+                                    ? 'bg-red-100 text-red-800'
+                                    : app.status === 'INTERVIEW'
+                                    ? 'bg-blue-100 text-blue-800'
+                                    : 'bg-yellow-100 text-yellow-800'
+                                }`}
+                              >
+                                {app.status}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   )}
                 </div>
 
-                <div className="flex gap-3">
+                <div className="flex gap-3 pt-6 border-t">
                   <Button
                     variant="outline"
                     onClick={() => {
@@ -473,9 +789,288 @@ export default function EmployerJobsPage() {
                   >
                     {selectedJob.is_active ? 'Désactiver' : 'Activer'}
                   </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => selectedJob && startEditJob(selectedJob)}
+                    className="flex-1"
+                  >
+                    Modifier
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => selectedJob && deleteJob(selectedJob.id)}
+                    className="flex-1 text-red-600 hover:bg-red-50"
+                  >
+                    Supprimer
+                  </Button>
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Create Job Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full p-8 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-slate-900">
+                {editingJobId ? 'Modifier l\'offre' : 'Créer une nouvelle offre'}
+              </h2>
+              <button
+                onClick={() => {
+                  setShowCreateModal(false);
+                  setEditingJobId(null);
+                  setCreateFormData({ 
+                    title: '', 
+                    company: '',
+                    location: '', 
+                    service_type: '',
+                    salary: '',
+                    requirements: '',
+                    description: '',
+                    contact_email: '',
+                    contact_phone: '',
+                    availability: '',
+                    type_paiement: 'jour',
+                  });
+                  setError(null);
+                }}
+                className="text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-6">
+                {error}
+              </div>
+            )}
+
+            <form onSubmit={createJob} className="space-y-6">
+              {/* Row 1: Title & Company */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-900 mb-2">
+                    Titre de l'offre *
+                  </label>
+                  <Input
+                    type="text"
+                    placeholder="Ex: Développeur React Senior"
+                    value={createFormData.title}
+                    onChange={(e) =>
+                      setCreateFormData({ ...createFormData, title: e.target.value })
+                    }
+                    required
+                    className="w-full"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-900 mb-2">
+                    Nom de l'entreprise
+                  </label>
+                  <Input
+                    type="text"
+                    placeholder="Ex: TechCorp Inc"
+                    value={createFormData.company}
+                    onChange={(e) =>
+                      setCreateFormData({ ...createFormData, company: e.target.value })
+                    }
+                    className="w-full"
+                  />
+                </div>
+              </div>
+
+              {/* Row 2: Location & Service Type */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-900 mb-2">
+                    Localisation *
+                  </label>
+                  <Input
+                    type="text"
+                    placeholder="Ex: Paris, France"
+                    value={createFormData.location}
+                    onChange={(e) =>
+                      setCreateFormData({ ...createFormData, location: e.target.value })
+                    }
+                    required
+                    className="w-full"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-900 mb-2">
+                    Type de service
+                  </label>
+                  <Input
+                    type="text"
+                    placeholder="Ex: Stage, CDI, Mission"
+                    value={createFormData.service_type}
+                    onChange={(e) =>
+                      setCreateFormData({ ...createFormData, service_type: e.target.value })
+                    }
+                    className="w-full"
+                  />
+                </div>
+              </div>
+
+              {/* Row 3: Salary & Availability */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-900 mb-2">
+                    Salaire
+                  </label>
+                  <Input
+                    type="text"
+                    placeholder="Ex: 2000-3000€/mois"
+                    value={createFormData.salary}
+                    onChange={(e) =>
+                      setCreateFormData({ ...createFormData, salary: e.target.value })
+                    }
+                    className="w-full"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-900 mb-2">
+                    Disponibilité
+                  </label>
+                  <select
+                    value={createFormData.availability}
+                    onChange={(e) =>
+                      setCreateFormData({ ...createFormData, availability: e.target.value })
+                    }
+                    className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">-- Sélectionner --</option>
+                    <option value="Temps plein">Temps plein</option>
+                    <option value="Temps partiel">Temps partiel</option>
+                    <option value="Mi-temps">Mi-temps</option>
+                    <option value="Temps flexible">Temps flexible</option>
+                    <option value="Horaires flexibles">Horaires flexibles</option>
+                  </select>
+                  <p className="text-xs text-slate-500 mt-1">Choisissez la disponibilité.</p>
+                </div>
+              </div>
+
+              {/* Row 3b: Type Paiement */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-900 mb-2">Type de paiement</label>
+                  <select
+                    value={createFormData.type_paiement}
+                    onChange={(e) => setCreateFormData({ ...createFormData, type_paiement: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-md"
+                  >
+                    <option value="heure">heure</option>
+                    <option value="jour">jour</option>
+                    <option value="semaine">semaine</option>
+                    <option value="mois">mois</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Row 4: Contact Email & Phone */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-900 mb-2">
+                    Email de contact
+                  </label>
+                  <Input
+                    type="email"
+                    placeholder="contact@entreprise.fr"
+                    value={createFormData.contact_email}
+                    onChange={(e) =>
+                      setCreateFormData({ ...createFormData, contact_email: e.target.value })
+                    }
+                    className="w-full"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-900 mb-2">
+                    Téléphone de contact
+                  </label>
+                  <Input
+                    type="tel"
+                    placeholder="+33 1 23 45 67 89"
+                    value={createFormData.contact_phone}
+                    onChange={(e) =>
+                      setCreateFormData({ ...createFormData, contact_phone: e.target.value })
+                    }
+                    className="w-full"
+                  />
+                </div>
+              </div>
+
+              {/* Requirements */}
+              <div>
+                <label className="block text-sm font-medium text-slate-900 mb-2">
+                  Compétences requises
+                </label>
+                <textarea
+                  placeholder="Listez les compétences requises pour le poste..."
+                  value={createFormData.requirements}
+                  onChange={(e) =>
+                    setCreateFormData({ ...createFormData, requirements: e.target.value })
+                  }
+                  rows={3}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              {/* Description */}
+              <div>
+                <label className="block text-sm font-medium text-slate-900 mb-2">
+                  Description complète
+                </label>
+                <textarea
+                  placeholder="Décrivez l'offre, les responsabilités, l'environnement de travail..."
+                  value={createFormData.description}
+                  onChange={(e) =>
+                    setCreateFormData({ ...createFormData, description: e.target.value })
+                  }
+                  rows={6}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setShowCreateModal(false);
+                    setEditingJobId(null);
+                    setCreateFormData({ 
+                      title: '', 
+                      company: '',
+                      location: '', 
+                      service_type: '',
+                      salary: '',
+                      requirements: '',
+                      description: '',
+                      contact_email: '',
+                      contact_phone: '',
+                      availability: '',
+                      type_paiement: 'jour',
+                    });
+                    setError(null);
+                  }}
+                  className="flex-1"
+                  disabled={createLoading}
+                >
+                  Annuler
+                </Button>
+                <Button
+                  type="submit"
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                  disabled={createLoading}
+                >
+                  {createLoading ? (editingJobId ? 'Mise à jour...' : 'Création...') : (editingJobId ? 'Mettre à jour' : 'Créer l\'offre')}
+                </Button>
+              </div>
+            </form>
           </div>
         </div>
       )}

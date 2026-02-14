@@ -130,3 +130,180 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
+// POST - Create new job offer
+export async function POST(request: NextRequest) {
+  try {
+    const user = verifyEmployer(request);
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Accès refusé' },
+        { status: 403 }
+      );
+    }
+
+    const userId = Number(user.userId);
+
+    if (!userId || Number.isNaN(userId)) {
+      return NextResponse.json(
+        { error: 'Utilisateur invalide' },
+        { status: 401 }
+      );
+    }
+
+    const body = await request.json();
+    const { 
+      title, 
+      location, 
+      description,
+      company,
+      service_type,
+      salary,
+      requirements,
+      contact_email,
+      contact_phone,
+      availability,
+      type_paiement
+    } = body;
+
+    // Validate required fields
+    if (!title || !title.trim()) {
+      return NextResponse.json(
+        { error: 'Le titre de l\'offre est requis' },
+        { status: 400 }
+      );
+    }
+
+    if (!location || !location.trim()) {
+      return NextResponse.json(
+        { error: 'La localisation est requise' },
+        { status: 400 }
+      );
+    }
+
+    // Basic server-side validation
+    if (title.trim().length > 255) {
+      return NextResponse.json({ error: 'Le titre est trop long' }, { status: 400 });
+    }
+    if (company && company.trim().length > 255) {
+      return NextResponse.json({ error: 'Le nom de l\'entreprise est trop long' }, { status: 400 });
+    }
+    if (service_type && service_type.trim().length > 255) {
+      return NextResponse.json({ error: 'Le type de service est trop long' }, { status: 400 });
+    }
+    if (salary && salary.trim().length > 100) {
+      return NextResponse.json({ error: 'Le champ salaire est trop long' }, { status: 400 });
+    }
+    if (contact_email && contact_email.trim()) {
+      const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRe.test(contact_email.trim())) {
+        return NextResponse.json({ error: 'Email de contact invalide' }, { status: 400 });
+      }
+    }
+    if (contact_phone && contact_phone.trim()) {
+      const phoneRe = /^[0-9+()\-\s]{6,30}$/;
+      if (!phoneRe.test(contact_phone.trim())) {
+        return NextResponse.json({ error: 'Téléphone de contact invalide' }, { status: 400 });
+      }
+    }
+
+    const connection = await pool.getConnection();
+
+    try {
+      // Get employer profile ID
+      const [employerProfile] = await connection.execute(
+        `SELECT id FROM employer_profile WHERE user_id = ?`,
+        [userId]
+      );
+
+      const employerId = (employerProfile as any)[0]?.id;
+      if (!employerId) {
+        return NextResponse.json(
+          { error: 'Profil employeur non trouvé' },
+          { status: 404 }
+        );
+      }
+
+      // Validate availability: must be one of allowed ENUM values or NULL
+      let availabilityValue: string | null = null;
+      if (availability !== undefined && availability !== null && String(availability).trim() !== '') {
+        const a = String(availability).trim();
+        const allowedAvail = [
+          'Temps plein',
+          'Temps partiel',
+          'Mi-temps',
+          'Temps flexible',
+          'Horaires flexibles',
+        ];
+        if (!allowedAvail.includes(a)) {
+          return NextResponse.json({ error: 'Disponibilité invalide' }, { status: 400 });
+        }
+        availabilityValue = a;
+      }
+
+      // Validate type_paiement if provided
+      const allowedTypes = ['heure','jour','semaine','mois'];
+      let typePaiValue: string | null = null;
+      if (type_paiement !== undefined && type_paiement !== null && String(type_paiement).trim() !== '') {
+        const t = String(type_paiement).trim();
+        if (!allowedTypes.includes(t)) {
+          return NextResponse.json({ error: 'Type de paiement invalide' }, { status: 400 });
+        }
+        typePaiValue = t;
+      }
+
+      // Create job offer with all fields
+      const [result] = await connection.execute(
+        `INSERT INTO job_offer (
+          employer_id, 
+          title, 
+          location, 
+          description, 
+          company, 
+          service_type, 
+          salary, 
+          type_paiement,
+          availability,
+          requirements, 
+          contact_email, 
+          contact_phone, 
+          is_active, 
+          posted_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW())`,
+        [
+          employerId, 
+          title.trim(), 
+          location.trim(), 
+          description?.trim() || null,
+          company?.trim() || null,
+          service_type?.trim() || null,
+          salary?.trim() || null,
+          typePaiValue,
+          availabilityValue,
+          requirements?.trim() || null,
+          contact_email?.trim() || null,
+          contact_phone?.trim() || null,
+        ]
+      );
+
+      const jobId = (result as any).insertId;
+
+      return NextResponse.json(
+        {
+          success: true,
+          message: 'Offre créée avec succès',
+          data: { id: jobId },
+        },
+        { status: 201 }
+      );
+    } finally {
+      connection.release();
+    }
+  } catch (err: any) {
+    console.error('POST /api/employer/jobs error:', err);
+    return NextResponse.json(
+      { error: 'Erreur serveur' },
+      { status: 500 }
+    );
+  }
+}
