@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
+import { decodeToken } from "@/lib/jwt";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { JobCard, type Job } from "@/components/job-card";
@@ -16,7 +18,48 @@ import {
 import { Search, SlidersHorizontal, X, Briefcase, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// Sample jobs data
+// Type definition for API jobs
+type APIJob = {
+  id: number;
+  title: string;
+  location: string;
+  is_active: boolean;
+  blocked: boolean;
+  posted_at: string;
+  applicants?: number;
+  description?: string;
+  company?: string;
+  service_type?: string;
+  salary?: string;
+  availability?: any;
+  type_paiement?: string;
+  requirements?: string;
+  contact_email?: string;
+  contact_phone?: string;
+  updated_at?: string;
+};
+
+// Transform API job to UI Job format
+const transformAPIJobToUI = (apiJob: APIJob): Job => {
+  return {
+    id: String(apiJob.id),
+    title: apiJob.title,
+    company: apiJob.company || "Entreprise",
+    location: apiJob.location,
+    salary: apiJob.salary || "À discuter",
+    type: apiJob.type_paiement === "heure" ? "part-time" : "full-time",
+    category: apiJob.service_type || "Général",
+    postedAt: new Date(apiJob.posted_at).toLocaleDateString("fr-FR", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    }),
+    description: apiJob.description || "",
+    urgent: apiJob.is_active && !apiJob.blocked,
+  };
+};
+
+// Sample jobs data - keeping for reference
 const jobsData: Job[] = [
   {
     id: "1",
@@ -118,33 +161,6 @@ const jobsData: Job[] = [
   },
 ];
 
-const categories = [
-  "Tous",
-  "Informatique",
-  "Marketing",
-  "Restauration",
-  "RH",
-  "Livraison",
-  "Education",
-  "Design",
-];
-
-const types = [
-  { value: "all", label: "Tous les types" },
-  { value: "full-time", label: "Temps plein" },
-  { value: "part-time", label: "Temps partiel" },
-  { value: "freelance", label: "Freelance" },
-  { value: "internship", label: "Stage" },
-];
-
-const locations = [
-  { value: "all", label: "Toutes les villes" },
-  { value: "dakar", label: "Dakar" },
-  { value: "saint-louis", label: "Saint-Louis" },
-  { value: "thies", label: "Thies" },
-  { value: "remote", label: "Remote" },
-];
-
 export default function JobsPage() {
   const [isPageLoaded, setIsPageLoaded] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -154,14 +170,137 @@ export default function JobsPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [visibleJobs, setVisibleJobs] = useState<Set<number>>(new Set());
   const [searchFocused, setSearchFocused] = useState(false);
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [limit] = useState(20);
   const jobsRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+  const hasCheckedAuth = useRef(false);
 
+  /**
+   * Helper: Get the current valid token from localStorage (if exists)
+   * Returns null if no token
+   */
+  const getValidToken = (): string | null => {
+    if (typeof window === "undefined") return null;
+
+    const token = localStorage.getItem("token");
+    if (!token) return null;
+
+    // Decode to verify it's valid
+    const decoded = decodeToken(token);
+    if (!decoded) {
+      localStorage.removeItem("token");
+      return null;
+    }
+
+    return token;
+  };
+
+  /**
+   * Initialize and fetch jobs on mount
+   */
   useEffect(() => {
     setIsPageLoaded(true);
+    fetchJobs(1);
   }, []);
 
+  /**
+   * Fetch jobs from API
+   */
+  const fetchJobs = async (pageNum: number) => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const token = getValidToken();
+
+      // Build query URL with pagination and search
+      let url = `/api/job?page=${pageNum}&limit=${limit}`;
+      if (searchQuery) {
+        url += `&search=${encodeURIComponent(searchQuery)}`;
+      }
+
+      // Make request - optional Authorization header
+      const headers: HeadersInit = {
+        "Content-Type": "application/json",
+      };
+
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+
+      const res = await fetch(url, {
+        method: "GET",
+        headers,
+      });
+
+      if (!res.ok) {
+        let errorMsg = "Erreur lors de la récupération des offres";
+
+        try {
+          const errorData = await res.json();
+          if (errorData.error) {
+            errorMsg = errorData.error;
+          }
+        } catch {
+          if (res.status === 500) {
+            errorMsg = "Erreur serveur. Veuillez réessayer.";
+          }
+        }
+
+        throw new Error(errorMsg);
+      }
+
+      const data = await res.json();
+
+      // Transform API jobs to UI format
+      const transformedJobs = (data.data || []).map(transformAPIJobToUI);
+      setJobs(transformedJobs);
+      setTotal(data.pagination?.total || 0);
+      setPage(pageNum);
+    } catch (err: any) {
+      setError(err.message || "Erreur inconnue");
+      // Fallback to sample data if API fails
+      setJobs(jobsData);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch when search query changes
+  useEffect(() => {
+    setPage(1);
+    fetchJobs(1);
+  }, [searchQuery]);
+
+  // Extract unique categories from jobs
+  const categories = [
+    "Tous",
+    ...Array.from(new Set(jobs.map((job) => job.category))).sort(),
+  ];
+
+  const types = [
+    { value: "all", label: "Tous les types" },
+    { value: "full-time", label: "Temps plein" },
+    { value: "part-time", label: "Temps partiel" },
+    { value: "freelance", label: "Freelance" },
+    { value: "internship", label: "Stage" },
+  ];
+
+  const locations = [
+    { value: "all", label: "Toutes les villes" },
+    { value: "dakar", label: "Dakar" },
+    { value: "saint-louis", label: "Saint-Louis" },
+    { value: "thies", label: "Thies" },
+    { value: "remote", label: "Remote" },
+  ];
+
   // Filter jobs
-  const filteredJobs = jobsData.filter((job) => {
+  const filteredJobs = jobs.filter((job) => {
     const matchesSearch =
       job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       job.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -247,7 +386,7 @@ export default function JobsPage() {
           >
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6">
               <Sparkles className="h-4 w-4 animate-pulse" />
-              {filteredJobs.length} offres disponibles
+              {loading ? "Chargement..." : `${filteredJobs.length} offres disponibles`}
             </div>
             <h1 className="text-4xl md:text-6xl font-bold mb-4 text-balance">
               Trouvez votre prochain{" "}
@@ -389,7 +528,22 @@ export default function JobsPage() {
       {/* Jobs Grid */}
       <section className="py-12">
         <div className="container mx-auto px-4">
-          {filteredJobs.length > 0 ? (
+          {error && (
+            <div className="mb-6 p-4 bg-destructive/10 border border-destructive/50 rounded-lg text-destructive">
+              <p className="font-medium">{error}</p>
+              <p className="text-sm mt-1">Affichage des données en cache...</p>
+            </div>
+          )}
+
+          {loading ? (
+            <div className="text-center py-20">
+              <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center mx-auto mb-6 animate-pulse">
+                <Briefcase className="h-12 w-12 text-muted-foreground" />
+              </div>
+              <h3 className="text-2xl font-bold mb-2">Chargement des offres...</h3>
+              <p className="text-muted-foreground">Veuillez patienter</p>
+            </div>
+          ) : filteredJobs.length > 0 ? (
             <div
               ref={jobsRef}
               className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
@@ -413,16 +567,17 @@ export default function JobsPage() {
               <p className="text-muted-foreground mb-8 max-w-md mx-auto">
                 Essayez de modifier vos criteres de recherche pour trouver plus d'opportunites
               </p>
-              <Button onClick={clearFilters} size="lg" className="shadow-xl shadow-primary/25">
+              <Button onClick={() => { setSelectedCategory("Tous"); setSelectedType("all"); setSelectedLocation("all"); setSearchQuery(""); }} size="lg" className="shadow-xl shadow-primary/25">
                 Reinitialiser les filtres
               </Button>
             </div>
           )}
 
           {/* Load More */}
-          {filteredJobs.length > 0 && (
+          {filteredJobs.length > 0 && total > limit * page && (
             <div className="text-center mt-12">
               <Button 
+                onClick={() => fetchJobs(page + 1)}
                 variant="outline" 
                 size="lg" 
                 className="px-8 bg-transparent hover:bg-primary/5 hover:border-primary hover:scale-105 transition-all duration-300"
