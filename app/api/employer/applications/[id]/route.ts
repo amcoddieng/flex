@@ -48,10 +48,17 @@ export async function GET(
     const connection = await pool.getConnection();
 
     try {
-      // Get application and verify it belongs to this employer's job
+      // Get detailed application and student profile
       const [appRows] = await connection.execute(
         `SELECT ja.id, ja.job_id, ja.student_id, ja.status, ja.applied_at,
-                sp.first_name, sp.last_name, u.email, j.title as job_title
+                ja.message, ja.availability, ja.experience, ja.start_date,
+                ja.interview_date, ja.interview_time, ja.interview_location,
+                sp.id as student_profile_id,
+                sp.first_name, sp.last_name, sp.phone, sp.email as student_email,
+                sp.university, sp.department, sp.year_of_study, sp.bio,
+                sp.skills, sp.hourly_rate, sp.profile_photo,
+                u.email as user_email,
+                j.title as job_title
          FROM job_application ja
          JOIN job_offer j ON ja.job_id = j.id
          JOIN student_profile sp ON ja.student_id = sp.id
@@ -68,12 +75,42 @@ export async function GET(
         );
       }
 
+      const appData = (appRows as any)[0];
+
       connection.release();
 
       return NextResponse.json(
         {
           success: true,
-          data: (appRows as any)[0],
+          data: {
+            id: appData.id,
+            job_id: appData.job_id,
+            student_id: appData.student_id,
+            status: appData.status,
+            applied_at: appData.applied_at,
+            message: appData.message,
+            availability: appData.availability,
+            experience: appData.experience,
+            start_date: appData.start_date,
+            interview_date: appData.interview_date,
+            interview_time: appData.interview_time,
+            interview_location: appData.interview_location,
+            job_title: appData.job_title,
+            student: {
+              id: appData.student_profile_id,
+              first_name: appData.first_name,
+              last_name: appData.last_name,
+              phone: appData.phone,
+              email: appData.student_email,
+              university: appData.university,
+              department: appData.department,
+              year_of_study: appData.year_of_study,
+              bio: appData.bio,
+              skills: appData.skills ? JSON.parse(appData.skills) : [],
+              hourly_rate: appData.hourly_rate,
+              profile_photo: appData.profile_photo,
+            },
+          },
         },
         { status: 200 }
       );

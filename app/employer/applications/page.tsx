@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { decodeToken } from "@/lib/jwt";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ApplicationDetailModal } from "@/components/application-detail-modal";
 import { Search, X } from "lucide-react";
 
 type Application = {
@@ -383,95 +384,16 @@ export default function EmployerApplicationsPage() {
       </div>
 
       {/* Detail Modal */}
-      {showDetailModal && (
-        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full p-8 max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-slate-900">Détails de la candidature</h2>
-              <button
-                onClick={() => {
-                  setShowDetailModal(false);
-                  setSelectedApp(null);
-                }}
-                className="text-slate-400 hover:text-slate-600 transition-colors"
-              >
-                <X className="h-6 w-6" />
-              </button>
-            </div>
-
-            {detailLoading ? (
-              <p className="text-slate-600">Chargement...</p>
-            ) : !selectedApp ? (
-              <p className="text-slate-600">Aucune donnée</p>
-            ) : (
-              <div className="space-y-6">
-                <div>
-                  <h3 className="text-lg font-semibold text-slate-900 mb-2">Candidat</h3>
-                  <p className="font-medium">{selectedApp.first_name} {selectedApp.last_name}</p>
-                  <p className="text-slate-600">{selectedApp.email}</p>
-                </div>
-
-                <div>
-                  <h3 className="text-lg font-semibold text-slate-900 mb-2">Offre</h3>
-                  <p className="font-medium">{selectedApp.job_title}</p>
-                </div>
-
-                <div>
-                  <h3 className="text-lg font-semibold text-slate-900 mb-2">Statut actuel</h3>
-                  <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(selectedApp.status)}`}>
-                    {selectedApp.status}
-                  </span>
-                </div>
-
-                <div>
-                  <h3 className="text-lg font-semibold text-slate-900 mb-3">Changer le statut</h3>
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => updateApplicationStatus(selectedApp.id, 'PENDING')}
-                      className={selectedApp.status === 'PENDING' ? 'border-blue-500 bg-blue-50' : ''}
-                    >
-                      En attente
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => updateApplicationStatus(selectedApp.id, 'INTERVIEW')}
-                      className={selectedApp.status === 'INTERVIEW' ? 'border-blue-500 bg-blue-50' : ''}
-                    >
-                      Entretien
-                    </Button>
-                    <Button
-                      className="bg-green-600 hover:bg-green-700"
-                      onClick={() => updateApplicationStatus(selectedApp.id, 'ACCEPTED')}
-                    >
-                      Accepter
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      onClick={() => updateApplicationStatus(selectedApp.id, 'REJECTED')}
-                    >
-                      Refuser
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="flex gap-3">
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setShowDetailModal(false);
-                      setSelectedApp(null);
-                    }}
-                    className="flex-1"
-                  >
-                    Fermer
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      <ApplicationDetailModal
+        open={showDetailModal}
+        loading={detailLoading}
+        application={selectedApp}
+        onClose={() => {
+          setShowDetailModal(false);
+          setSelectedApp(null);
+        }}
+        onUpdateStatus={updateApplicationStatus}
+      />
     </div>
   );
 }
