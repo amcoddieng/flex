@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
         );
       }
 
-      const employerId = empRows[0].id;
+      const employerId = parseInt(empRows[0].id.toString(), 10);
 
       let query = `
         SELECT ja.id, ja.job_id, ja.student_id, ja.status, ja.applied_at,
@@ -90,8 +90,7 @@ export async function GET(request: NextRequest) {
         params.push(status);
       }
 
-      query += ` ORDER BY ja.applied_at DESC LIMIT ? OFFSET ?`;
-      params.push(safeLimit, safeOffset);
+      query += ` ORDER BY ja.applied_at DESC LIMIT ${safeLimit} OFFSET ${safeOffset}`;
 
       const [apps] = await connection.execute(query, params);
 

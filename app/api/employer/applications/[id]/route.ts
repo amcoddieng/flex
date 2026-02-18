@@ -164,12 +164,35 @@ export async function PUT(
         );
       }
 
-      // Update status
+      // Update status and optional interview details
       if (body.status) {
-        await connection.execute(
-          'UPDATE job_application SET status = ? WHERE id = ?',
-          [body.status, appId]
-        );
+        const updates: string[] = [];
+        const updateParams: any[] = [];
+
+        updates.push('status = ?');
+        updateParams.push(body.status);
+
+        if (body.status === 'INTERVIEW') {
+          // Expect optional fields: interview_date (DATETIME string), interview_time, interview_location
+          if (body.interview_date !== undefined) {
+            updates.push('interview_date = ?');
+            updateParams.push(body.interview_date || null);
+          }
+          if (body.interview_time !== undefined) {
+            updates.push('interview_time = ?');
+            updateParams.push(body.interview_time || null);
+          }
+          if (body.interview_location !== undefined) {
+            updates.push('interview_location = ?');
+            updateParams.push(body.interview_location || null);
+          }
+        }
+
+        // Build query
+        const updateQuery = `UPDATE job_application SET ${updates.join(', ')} WHERE id = ?`;
+        updateParams.push(appId);
+
+        await connection.execute(updateQuery, updateParams);
       }
 
       connection.release();

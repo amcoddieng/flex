@@ -177,12 +177,23 @@ export default function EmployerApplicationsPage() {
     }
   };
 
-  const updateApplicationStatus = async (appId: number, newStatus: string) => {
+  const updateApplicationStatus = async (
+    appId: number,
+    newStatus: string,
+    interview?: { date: string; time: string; location: string }
+  ) => {
     try {
       const token = getValidToken();
       if (!token) {
         router.push('/login');
         return;
+      }
+
+      const payload: any = { status: newStatus };
+      if (interview) {
+        payload.interview_date = interview.date;
+        payload.interview_time = interview.time;
+        payload.interview_location = interview.location;
       }
 
       const res = await fetch(`/api/employer/applications/${appId}`, {
@@ -191,7 +202,7 @@ export default function EmployerApplicationsPage() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify(payload),
       });
 
       if (!res.ok) {

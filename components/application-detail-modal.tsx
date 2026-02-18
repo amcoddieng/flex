@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -25,7 +25,11 @@ type ApplicationDetailModalProps = {
   loading: boolean;
   application: any;
   onClose: () => void;
-  onUpdateStatus: (appId: number, status: string) => Promise<void>;
+  onUpdateStatus: (
+    appId: number,
+    status: string,
+    interview?: { date: string; time: string; location: string }
+  ) => Promise<void>;
 };
 
 const statusConfig = {
@@ -214,31 +218,10 @@ export function ApplicationDetailModal({
             {/* Action buttons */}
             <div className="border-t pt-4 flex gap-3">
               {application.status === "PENDING" && (
-                <>
-                  <Button
-                    className="flex-1"
-                    onClick={() => onUpdateStatus(application.id, "ACCEPTED")}
-                  >
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    Accepter
-                  </Button>
-                  <Button
-                    className="flex-1"
-                    variant="destructive"
-                    onClick={() => onUpdateStatus(application.id, "REJECTED")}
-                  >
-                    <XCircle className="h-4 w-4 mr-2" />
-                    Rejeter
-                  </Button>
-                  <Button
-                    className="flex-1"
-                    variant="outline"
-                    onClick={() => onUpdateStatus(application.id, "INTERVIEW")}
-                  >
-                    <Briefcase className="h-4 w-4 mr-2" />
-                    Entretien
-                  </Button>
-                </>
+                <ActionButtonsPending
+                  application={application}
+                  onUpdateStatus={onUpdateStatus}
+                />
               )}
               {application.status === "ACCEPTED" && (
                 <Button variant="outline" className="w-full">
@@ -255,5 +238,91 @@ export function ApplicationDetailModal({
         )}
       </DialogContent>
     </Dialog>
+  );
+}
+
+function ActionButtonsPending({
+  application,
+  onUpdateStatus,
+}: {
+  application: any;
+  onUpdateStatus: (
+    appId: number,
+    status: string,
+    interview?: { date: string; time: string; location: string }
+  ) => Promise<void>;
+}) {
+  const [showInterviewForm, setShowInterviewForm] = useState(false);
+  const [date, setDate] = useState<string>(
+    application.interview_date ? application.interview_date.split("T")[0] : ""
+  );
+  const [time, setTime] = useState<string>(application.interview_time || "");
+  const [location, setLocation] = useState<string>(application.interview_location || "");
+  const [loading, setLoading] = useState(false);
+
+  const handleInterviewConfirm = async () => {
+    setLoading(true);
+    try {
+      // Build interview_date as MySQL DATETIME string if date provided
+      let interviewDate = null;
+      if (date) {
+        if (time) {
+          interviewDate = `${date} ${time}:00`;
+        } else {
+          interviewDate = `${date} 00:00:00`;
+        }
+      }
+
+      await onUpdateStatus(application.id, "INTERVIEW", {
+        date: interviewDate || "",
+        time: time || "",
+        location: location || "",
+      });
+      setShowInterviewForm(false);
+    } catch (err) {
+      // parent handles errors
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <>
+      {!showInterviewForm ? (
+        <>
+          <Button className="flex-1" onClick={() => onUpdateStatus(application.id, "ACCEPTED")}>
+            <CheckCircle className="h-4 w-4 mr-2" />
+            Accepter
+          </Button>
+          <Button className="flex-1" variant="destructive" onClick={() => onUpdateStatus(application.id, "REJECTED")}>
+            <XCircle className="h-4 w-4 mr-2" />
+            Rejeter
+          </Button>
+          <Button className="flex-1" variant="outline" onClick={() => setShowInterviewForm(true)}>
+            <Briefcase className="h-4 w-4 mr-2" />
+            Entretien
+          </Button>
+        </>
+      ) : (
+        <div className="flex-1 bg-muted/30 rounded p-3">
+          <div className="grid grid-cols-1 gap-2">
+            <label className="text-sm">Date</label>
+            <input type="date" className="input w-full" value={date} onChange={(e) => setDate(e.target.value)} />
+            <label className="text-sm">Heure</label>
+            <input type="time" className="input w-full" value={time} onChange={(e) => setTime(e.target.value)} />
+            <label className="text-sm">Lieu</label>
+            <input type="text" className="input w-full" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Ex: Bureau, Zoom, Téléphone..." />
+            <div className="flex gap-2 mt-2">
+              <Button className="flex-1" onClick={handleInterviewConfirm} disabled={loading}>
+                Confirmer
+              </Button>
+              <Button variant="ghost" className="flex-1" onClick={() => setShowInterviewForm(false)}>
+                Annuler
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
