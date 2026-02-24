@@ -52,6 +52,22 @@ export async function GET(request: NextRequest) {
     const connection = await pool.getConnection();
 
     try {
+      // First get employer_id
+      const [empRows]: any = await connection.execute(
+        `SELECT id FROM employer_profile WHERE user_id = ?`,
+        [userId]
+      );
+
+      if (!Array.isArray(empRows) || empRows.length === 0) {
+        connection.release();
+        return NextResponse.json(
+          { success: true, data: [], pagination: { page, limit, total: 0, pages: 0 } },
+          { status: 200 }
+        );
+      }
+
+      const employerId = parseInt(empRows[0].id.toString(), 10);
+
       let query = `
         SELECT ja.id, ja.job_id, ja.student_id, ja.status, ja.applied_at,
                sp.first_name, sp.last_name, u.email, j.title as job_title
@@ -59,9 +75,9 @@ export async function GET(request: NextRequest) {
         JOIN job_offer j ON ja.job_id = j.id
         JOIN student_profile sp ON ja.student_id = sp.id
         JOIN user u ON sp.user_id = u.id
-        WHERE j.employer_id = (SELECT id FROM employer_profile WHERE user_id = ?)
+        WHERE j.employer_id = ?
       `;
-      const params: any[] = [userId];
+      const params: any[] = [employerId];
 
       if (search) {
         query += ` AND (sp.first_name LIKE ? OR sp.last_name LIKE ? OR u.email LIKE ?)`;
@@ -74,8 +90,7 @@ export async function GET(request: NextRequest) {
         params.push(status);
       }
 
-      query += ` ORDER BY ja.applied_at DESC LIMIT ? OFFSET ?`;
-      params.push(safeLimit, safeOffset);
+      query += ` ORDER BY ja.applied_at DESC LIMIT ${safeLimit} OFFSET ${safeOffset}`;
 
       const [apps] = await connection.execute(query, params);
 
@@ -83,9 +98,11 @@ export async function GET(request: NextRequest) {
       let countQuery = `
         SELECT COUNT(*) as total FROM job_application ja
         JOIN job_offer j ON ja.job_id = j.id
-        WHERE j.employer_id = (SELECT id FROM employer_profile WHERE user_id = ?)
+        JOIN student_profile sp ON ja.student_id = sp.id
+        JOIN user u ON sp.user_id = u.id
+        WHERE j.employer_id = ?
       `;
-      const countParams: any[] = [userId];
+      const countParams: any[] = [employerId];
 
       if (search) {
         countQuery += ` AND (sp.first_name LIKE ? OR sp.last_name LIKE ? OR u.email LIKE ?)`;

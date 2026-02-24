@@ -13,6 +13,7 @@ import {
   Zap,
 } from "lucide-react";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 export interface Job {
@@ -51,6 +52,7 @@ const typeLabels = {
 export function JobCard({ job, index = 0, isVisible = true }: JobCardProps) {
   const [isFavorite, setIsFavorite] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const router = useRouter();
 
   return (
     <Card
@@ -194,6 +196,7 @@ export function JobCard({ job, index = 0, isVisible = true }: JobCardProps) {
 
         {/* CTA with glow effect */}
         <Button
+          onClick={() => router.push(`/jobs/${job.id}`)}
           className={cn(
             "w-full group/btn transition-all duration-500",
             isHovered 
