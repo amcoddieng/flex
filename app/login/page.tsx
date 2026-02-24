@@ -60,7 +60,16 @@ export default function LoginPage() {
         // ignore if window unavailable
       }
 
-      router.push('/jobs');
+      // router.push('/jobs');
+      // verifier si role admin pour rediriger vers admin ou employer vers employer ou etudiant vers jobs
+      const userRole = data.role || 'student'; // default to student if role not provided
+      if (userRole === 'admin') {
+        router.push('/admin');
+      } else if (userRole === 'employer') {
+        router.push('/employer');
+      } else {
+        router.push('/jobs');
+      }
     } catch (err: any) {
       console.error('Login error:', err);
       alert(err?.message || 'Erreur réseau');
