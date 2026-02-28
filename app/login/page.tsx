@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Briefcase, Eye, EyeOff, ArrowRight, Loader2, CheckCircle, Sparkles } from "lucide-react";
+import { decodeToken } from "@/lib/jwt";
 
 const benefits = [
   "Acces a 200+ offres exclusives",
@@ -60,12 +61,15 @@ export default function LoginPage() {
         // ignore if window unavailable
       }
 
-      // router.push('/jobs');
-      // verifier si role admin pour rediriger vers admin ou employer vers employer ou etudiant vers jobs
-      const userRole = data.role || 'student'; // default to student if role not provided
-      if (userRole === 'admin') {
+      // Decode token to get user role and redirect accordingly
+      const decodedToken = decodeToken(data.token);
+      const userRole = data.role || decodedToken?.role || 'STUDENT'; // use API role first, then token role
+      
+      console.log('User role:', userRole);
+      
+      if (userRole === 'ADMIN') {
         router.push('/admin');
-      } else if (userRole === 'employer') {
+      } else if (userRole === 'EMPLOYER') {
         router.push('/employer');
       } else {
         router.push('/jobs');

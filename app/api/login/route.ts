@@ -90,14 +90,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: true,
-          // userId: user.id,
-          // email: user.email,
-          // role: user.role,
           token,
-          // name: profileData.name,
-          // avatar: profileData.avatar,
-          // firstName: profileData.firstName,
-          // lastName: profileData.lastName,
+          role: user.role,
+          userId: user.id,
+          email: user.email,
+          name: profileData.name,
+          avatar: profileData.avatar,
         },
         { status: 200 }
       );

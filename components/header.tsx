@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Briefcase, Menu, X, ArrowRight, FileText } from "lucide-react";
+import { Briefcase, Menu, X, ArrowRight, FileText, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { decodeToken } from "@/lib/jwt";
 const navItems = [
@@ -149,21 +149,37 @@ export function Header() {
                   
                   {/* Menu spécifique selon le rôle */}
                   {user.role === 'STUDENT' && (
-                    <Button variant="ghost" asChild className="ml-2">
-                      <Link href="/student/applications" className="flex items-center gap-2">
-                        <FileText className="h-4 w-4" />
-                        Mes Candidatures
-                      </Link>
-                    </Button>
+                    <>
+                      <Button variant="ghost" asChild className="ml-2">
+                        <Link href="/student/applications" className="flex items-center gap-2">
+                          <FileText className="h-4 w-4" />
+                          Mes Candidatures
+                        </Link>
+                      </Button>
+                      <Button variant="ghost" asChild className="ml-2">
+                        <Link href="/forum" className="flex items-center gap-2">
+                          <MessageSquare className="h-4 w-4" />
+                          Forum
+                        </Link>
+                      </Button>
+                    </>
                   )}
                   
                   {user.role === 'EMPLOYER' && (
-                    <Button variant="ghost" asChild className="ml-2">
-                      <Link href="/employer" className="flex items-center gap-2">
-                        <Briefcase className="h-4 w-4" />
-                        Dashboard
-                      </Link>
-                    </Button>
+                    <>
+                      <Button variant="ghost" asChild className="ml-2">
+                        <Link href="/employer" className="flex items-center gap-2">
+                          <Briefcase className="h-4 w-4" />
+                          Dashboard
+                        </Link>
+                      </Button>
+                      <Button variant="ghost" asChild className="ml-2">
+                        <Link href="/forum" className="flex items-center gap-2">
+                          <MessageSquare className="h-4 w-4" />
+                          Forum
+                        </Link>
+                      </Button>
+                    </>
                   )}
                   
                   <Button variant="ghost" onClick={() => {
@@ -280,21 +296,37 @@ export function Header() {
                 
                 {/* Menu spécifique selon le rôle - Mobile */}
                 {user.role === 'STUDENT' && (
-                  <Button variant="outline" size="lg" className="w-full" asChild>
-                    <Link href="/student/applications" onClick={() => setIsMobileMenuOpen(false)}>
-                      <FileText className="h-5 w-5 mr-2" />
-                      Mes Candidatures
-                    </Link>
-                  </Button>
+                  <>
+                    <Button variant="outline" size="lg" className="w-full" asChild>
+                      <Link href="/student/applications" onClick={() => setIsMobileMenuOpen(false)}>
+                        <FileText className="h-5 w-5 mr-2" />
+                        Mes Candidatures
+                      </Link>
+                    </Button>
+                    <Button variant="outline" size="lg" className="w-full" asChild>
+                      <Link href="/forum" onClick={() => setIsMobileMenuOpen(false)}>
+                        <MessageSquare className="h-5 w-5 mr-2" />
+                        Forum
+                      </Link>
+                    </Button>
+                  </>
                 )}
                 
                 {user.role === 'EMPLOYER' && (
-                  <Button variant="outline" size="lg" className="w-full" asChild>
-                    <Link href="/employer" onClick={() => setIsMobileMenuOpen(false)}>
-                      <Briefcase className="h-5 w-5 mr-2" />
-                      Dashboard
-                    </Link>
-                  </Button>
+                  <>
+                    <Button variant="outline" size="lg" className="w-full" asChild>
+                      <Link href="/employer" onClick={() => setIsMobileMenuOpen(false)}>
+                        <Briefcase className="h-5 w-5 mr-2" />
+                        Dashboard
+                      </Link>
+                    </Button>
+                    <Button variant="outline" size="lg" className="w-full" asChild>
+                      <Link href="/forum" onClick={() => setIsMobileMenuOpen(false)}>
+                        <MessageSquare className="h-5 w-5 mr-2" />
+                        Forum
+                      </Link>
+                    </Button>
+                  </>
                 )}
                 
                 <Button variant="outline" size="lg" className="w-full" onClick={() => { localStorage.removeItem('token'); try { window.dispatchEvent(new Event('user:logout')); } catch (e) {} router.push('/login'); setIsMobileMenuOpen(false); }}>
