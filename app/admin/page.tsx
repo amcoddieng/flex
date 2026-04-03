@@ -192,7 +192,7 @@ export default function AdminPage() {
                 <div>
                   <div className="text-sm text-slate-600">Date</div>
                   <div className="text-xl font-bold">{new Date().toLocaleDateString('fr-FR')}</div>
-                  <div className="text-sm text-slate-500">DB: {process.env.DB_NAME || 'job_platform'}</div>
+                  <div className="text-sm text-slate-500">DB: {process.env.DB_NAME }</div>
                 </div>
               </div>
             </div>

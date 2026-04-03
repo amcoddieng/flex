@@ -3,10 +3,10 @@ import mysql from 'mysql2/promise';
 import { verifyToken } from '@/lib/jwt';
 
 const pool = mysql.createPool({
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'dieng',
-  password: process.env.DB_PASSWORD || 'Papa1997',
-  database: process.env.DB_NAME || 'job_platform',
+  host: process.env.DB_HOST ,
+  user: process.env.DB_USER ,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME ,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,

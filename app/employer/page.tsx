@@ -4,7 +4,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { decodeToken } from "@/lib/jwt";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Briefcase, Users, TrendingUp } from "lucide-react";
+import { ArrowRight, Briefcase, Users, TrendingUp, Calendar, Clock, Star, BarChart3, Activity, UserPlus, FileText, ChevronUp, ChevronDown, MoreVertical } from "lucide-react";
 import Link from "next/link";
 
 export default function EmployerDashboard() {
@@ -94,11 +94,26 @@ export default function EmployerDashboard() {
   }
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div>
-        <h1 className="text-4xl font-bold text-slate-900 mb-2">Tableau de bord</h1>
-        <p className="text-slate-600">Gérez vos offres d'emploi et suivez vos candidatures</p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50/30">
+      {/* Modern Header */}
+      <div className="bg-white/80 backdrop-blur-md border-b border-slate-200/50 sticky top-0 z-40">
+        <div className="container mx-auto px-6 py-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-slate-900 to-blue-600 bg-clip-text text-transparent">Tableau de bord</h1>
+              <p className="text-slate-600 mt-1">Gérez vos offres d'emploi et suivez vos candidatures</p>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="text-right">
+                <p className="text-sm text-slate-500">Bienvenue</p>
+                <p className="font-semibold text-slate-900">Employeur</p>
+              </div>
+              <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold">
+                E
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {error && (
@@ -108,121 +123,301 @@ export default function EmployerDashboard() {
       )}
 
       {loading ? (
-        <div className="text-center py-12">
-          <p className="text-slate-600">Chargement...</p>
+        <div className="flex items-center justify-center py-20">
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+            <p className="text-slate-600">Chargement...</p>
+          </div>
         </div>
       ) : stats ? (
-        <>
-          {/* Stats Cards */}
+        <div className="container mx-auto px-6 py-8 space-y-8">
+          {/* Modern Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {/* Total Offers */}
-            <div className="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-slate-600 text-sm font-medium">Offres publiées</p>
-                  <p className="text-3xl font-bold text-slate-900 mt-2">{stats.total_jobs || 0}</p>
+            <div className="group relative bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 border border-slate-200/50 overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              <div className="relative p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center shadow-lg">
+                    <Briefcase className="h-6 w-6 text-white" />
+                  </div>
+                  <div className="flex items-center gap-1 text-green-600 text-sm font-medium">
+                    <ChevronUp className="h-4 w-4" />
+                    <span>12%</span>
+                  </div>
                 </div>
-                <Briefcase className="h-10 w-10 text-blue-500 opacity-20" />
+                <div>
+                  <p className="text-slate-600 text-sm font-medium mb-1">Offres publiées</p>
+                  <p className="text-3xl font-bold text-slate-900">{stats.total_jobs || 0}</p>
+                </div>
+                <div className="mt-4 pt-4 border-t border-slate-100">
+                  <Link href="/employer/jobs" className="text-blue-600 text-sm font-medium inline-flex items-center gap-1 hover:gap-2 transition-all">
+                    Voir les offres <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </div>
               </div>
-              <Link href="/employer/jobs" className="text-blue-600 text-sm font-medium mt-4 inline-flex items-center gap-1 hover:gap-2 transition-all">
-                Voir les offres <ArrowRight className="h-4 w-4" />
-              </Link>
             </div>
 
             {/* Active Offers */}
-            <div className="bg-white rounded-lg shadow p-6 border-l-4 border-green-500">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-slate-600 text-sm font-medium">Offres actives</p>
-                  <p className="text-3xl font-bold text-slate-900 mt-2">{stats.active_jobs || 0}</p>
+            <div className="group relative bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 border border-slate-200/50 overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              <div className="relative p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-green-500 to-green-600 flex items-center justify-center shadow-lg">
+                    <TrendingUp className="h-6 w-6 text-white" />
+                  </div>
+                  <div className="flex items-center gap-1 text-green-600 text-sm font-medium">
+                    <ChevronUp className="h-4 w-4" />
+                    <span>8%</span>
+                  </div>
                 </div>
-                <TrendingUp className="h-10 w-10 text-green-500 opacity-20" />
+                <div>
+                  <p className="text-slate-600 text-sm font-medium mb-1">Offres actives</p>
+                  <p className="text-3xl font-bold text-slate-900">{stats.active_jobs || 0}</p>
+                </div>
+                <div className="mt-4 pt-4 border-t border-slate-100">
+                  <p className="text-slate-600 text-xs">
+                    {stats.total_jobs > 0 ? Math.round(((stats.active_jobs || 0) / (stats.total_jobs || 1)) * 100) : 0}% du total
+                  </p>
+                </div>
               </div>
-              <p className="text-slate-600 text-xs mt-4">
-                {stats.total_jobs > 0 ? Math.round(((stats.active_jobs || 0) / (stats.total_jobs || 1)) * 100) : 0}% du total
-              </p>
             </div>
 
             {/* Total Applications */}
-            <div className="bg-white rounded-lg shadow p-6 border-l-4 border-amber-500">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-slate-600 text-sm font-medium">Candidatures reçues</p>
-                  <p className="text-3xl font-bold text-slate-900 mt-2">{stats.total_applications || 0}</p>
+            <div className="group relative bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 border border-slate-200/50 overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              <div className="relative p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 flex items-center justify-center shadow-lg">
+                    <Users className="h-6 w-6 text-white" />
+                  </div>
+                  <div className="flex items-center gap-1 text-amber-600 text-sm font-medium">
+                    <ChevronUp className="h-4 w-4" />
+                    <span>24%</span>
+                  </div>
                 </div>
-                <Users className="h-10 w-10 text-amber-500 opacity-20" />
+                <div>
+                  <p className="text-slate-600 text-sm font-medium mb-1">Candidatures reçues</p>
+                  <p className="text-3xl font-bold text-slate-900">{stats.total_applications || 0}</p>
+                </div>
+                <div className="mt-4 pt-4 border-t border-slate-100">
+                  <Link href="/employer/applications" className="text-blue-600 text-sm font-medium inline-flex items-center gap-1 hover:gap-2 transition-all">
+                    Voir candidatures <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </div>
               </div>
-              <Link href="/employer/applications" className="text-blue-600 text-sm font-medium mt-4 inline-flex items-center gap-1 hover:gap-2 transition-all">
-                Voir candidatures <ArrowRight className="h-4 w-4" />
-              </Link>
             </div>
 
             {/* Pending Applications */}
-            <div className="bg-white rounded-lg shadow p-6 border-l-4 border-red-500">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-slate-600 text-sm font-medium">Candidatures en attente</p>
-                  <p className="text-3xl font-bold text-slate-900 mt-2">{stats.pending_applications || 0}</p>
+            <div className="group relative bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 border border-slate-200/50 overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-red-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              <div className="relative p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-red-500 to-red-600 flex items-center justify-center shadow-lg">
+                    <Clock className="h-6 w-6 text-white" />
+                  </div>
+                  <div className="flex items-center gap-1 text-red-600 text-sm font-medium">
+                    <ChevronDown className="h-4 w-4" />
+                    <span>5%</span>
+                  </div>
                 </div>
-                <Users className="h-10 w-10 text-red-500 opacity-20" />
+                <div>
+                  <p className="text-slate-600 text-sm font-medium mb-1">En attente</p>
+                  <p className="text-3xl font-bold text-slate-900">{stats.pending_applications || 0}</p>
+                </div>
+                <div className="mt-4 pt-4 border-t border-slate-100">
+                  <p className="text-slate-600 text-xs">À traiter rapidement</p>
+                </div>
               </div>
-              <p className="text-slate-600 text-xs mt-4">À traiter rapidement</p>
             </div>
           </div>
 
-          {/* Quick Actions */}
-          <div className="bg-white rounded-lg shadow p-8">
-            <h2 className="text-xl font-bold text-slate-900 mb-6">Actions rapides</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Link href="/employer/jobs/new" className="block">
-                <Button className="w-full bg-blue-600 hover:bg-blue-700">
-                  + Créer une offre
-                </Button>
-              </Link>
-              <Link href="/employer/applications" className="block">
-                <Button variant="outline" className="w-full">
-                  Gérer les candidatures
-                </Button>
-              </Link>
-              <Link href="/employer/profile" className="block">
-                <Button variant="outline" className="w-full">
-                  Modifier mon profil
-                </Button>
-              </Link>
+          {/* Charts Section */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Activity Chart */}
+            <div className="bg-white rounded-2xl shadow-lg border border-slate-200/50 p-6">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-900">Activité récente</h3>
+                  <p className="text-sm text-slate-600 mt-1">Candidatures par semaine</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                  <span className="text-sm text-slate-600">Cette semaine</span>
+                </div>
+              </div>
+              <div className="h-64 flex items-end justify-between gap-2">
+                {[65, 80, 45, 90, 70, 85, 60].map((height, i) => (
+                  <div key={i} className="flex-1 flex flex-col items-center gap-2">
+                    <div 
+                      className="w-full bg-gradient-to-t from-blue-500 to-blue-400 rounded-t-lg transition-all duration-500 hover:from-blue-600 hover:to-blue-500"
+                      style={{ height: `${height}%` }}
+                    ></div>
+                    <span className="text-xs text-slate-500">L{8-i}</span>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
 
-          {/* Recent Offers */}
-          {stats.recent_jobs && stats.recent_jobs.length > 0 && (
-            <div className="bg-white rounded-lg shadow p-8">
-              <h2 className="text-xl font-bold text-slate-900 mb-6">Offres récentes</h2>
+            {/* Performance Metrics */}
+            <div className="bg-white rounded-2xl shadow-lg border border-slate-200/50 p-6">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-900">Performance</h3>
+                  <p className="text-sm text-slate-600 mt-1">Métriques clés</p>
+                </div>
+                <Button variant="outline" size="sm" className="gap-2">
+                  <BarChart3 className="h-4 w-4" />
+                  Exporter
+                </Button>
+              </div>
               <div className="space-y-4">
-                {stats.recent_jobs.map((job: any) => (
-                  <div key={job.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-slate-50 transition-colors">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                      <UserPlus className="h-5 w-5 text-blue-600" />
+                    </div>
                     <div>
-                      <h3 className="font-semibold text-slate-900">{job.title}</h3>
-                      <p className="text-sm text-slate-600">{job.location} • {job.applicants || 0} candidature{(job.applicants || 0) !== 1 ? 's' : ''}</p>
+                      <p className="font-medium text-slate-900">Taux de conversion</p>
+                      <p className="text-sm text-slate-600">Candidatures → Entretiens</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-2xl font-bold text-slate-900">24%</p>
+                    <p className="text-sm text-green-600">+3.2%</p>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
+                      <Activity className="h-5 w-5 text-green-600" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-slate-900">Temps moyen</p>
+                      <p className="text-sm text-slate-600">Réponse aux candidats</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-2xl font-bold text-slate-900">2.5j</p>
+                    <p className="text-sm text-green-600">-0.8j</p>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center">
+                      <Star className="h-5 w-5 text-amber-600" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-slate-900">Satisfaction</p>
+                      <p className="text-sm text-slate-600">Note des candidats</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-2xl font-bold text-slate-900">4.8</p>
+                    <p className="text-sm text-amber-600">+0.2</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Recent Activity */}
+          <div className="bg-white rounded-2xl shadow-lg border border-slate-200/50 p-6">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-lg font-semibold text-slate-900">Activité récente</h3>
+                <p className="text-sm text-slate-600 mt-1">Vos dernières offres et candidatures</p>
+              </div>
+              <Button variant="outline" size="sm" className="gap-2">
+                <Calendar className="h-4 w-4" />
+                Cette semaine
+              </Button>
+            </div>
+            <div className="space-y-4">
+              {stats.recent_jobs && stats.recent_jobs.length > 0 ? (
+                stats.recent_jobs.map((job: any) => (
+                  <div key={job.id} className="group flex items-center justify-between p-4 rounded-xl border border-slate-200/50 hover:border-blue-200 hover:bg-blue-50/30 transition-all duration-200">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+                        <Briefcase className="h-6 w-6 text-white" />
+                      </div>
+                      <div>
+                        <h4 className="font-semibold text-slate-900 group-hover:text-blue-600 transition-colors">{job.title}</h4>
+                        <div className="flex items-center gap-3 mt-1">
+                          <span className="text-sm text-slate-600">{job.location}</span>
+                          <span className="text-slate-400">•</span>
+                          <span className="text-sm text-slate-600">{job.applicants || 0} candidature{(job.applicants || 0) !== 1 ? 's' : ''}</span>
+                        </div>
+                      </div>
                     </div>
                     <div className="flex items-center gap-3">
                       <span className={`px-3 py-1 rounded-full text-sm font-medium ${
                         job.is_active 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-slate-100 text-slate-800'
+                          ? 'bg-green-100 text-green-700 border border-green-200' 
+                          : 'bg-slate-100 text-slate-700 border border-slate-200'
                       }`}>
                         {job.is_active ? 'Active' : 'Fermée'}
                       </span>
                       <Link href={`/employer/jobs/${job.id}`}>
-                        <Button size="sm" variant="outline">
+                        <Button size="sm" variant="outline" className="gap-2">
+                          <FileText className="h-4 w-4" />
                           Voir
                         </Button>
                       </Link>
                     </div>
                   </div>
-                ))}
+                ))
+              ) : (
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
+                    <Briefcase className="h-8 w-8 text-slate-400" />
+                  </div>
+                  <h4 className="text-lg font-medium text-slate-900 mb-2">Aucune offre récente</h4>
+                  <p className="text-sm text-slate-600 mb-4">Commencez par créer votre première offre d'emploi</p>
+                  <Link href="/employer/jobs/new">
+                    <Button className="gap-2">
+                      <Briefcase className="h-4 w-4" />
+                      Créer une offre
+                    </Button>
+                  </Link>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl shadow-xl p-8 text-white">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-xl font-bold mb-2">Actions rapides</h3>
+                <p className="text-blue-100">Gérez votre activité efficacement</p>
+              </div>
+              <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center">
+                <Activity className="h-6 w-6" />
               </div>
             </div>
-          )}
-        </>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Link href="/employer/jobs/new" className="group">
+                <Button variant="secondary" className="w-full bg-white/10 hover:bg-white/20 border border-white/20 text-white backdrop-blur-sm transition-all duration-200">
+                  <Briefcase className="h-4 w-4 mr-2" />
+                  Créer une offre
+                </Button>
+              </Link>
+              <Link href="/employer/applications" className="group">
+                <Button variant="secondary" className="w-full bg-white/10 hover:bg-white/20 border border-white/20 text-white backdrop-blur-sm transition-all duration-200">
+                  <Users className="h-4 w-4 mr-2" />
+                  Candidatures
+                </Button>
+              </Link>
+              <Link href="/employer/profile" className="group">
+                <Button variant="secondary" className="w-full bg-white/10 hover:bg-white/20 border border-white/20 text-white backdrop-blur-sm transition-all duration-200">
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Profil
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
       ) : null}
     </div>
   );
