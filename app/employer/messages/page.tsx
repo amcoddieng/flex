@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { decodeToken } from "@/lib/jwt";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -53,6 +53,7 @@ export default function EmployerMessagesPage() {
   const [sending, setSending] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const router = useRouter();
+  const searchParams = useSearchParams();
   const hasCheckedAuth = useRef(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
@@ -100,6 +101,53 @@ export default function EmployerMessagesPage() {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Effet pour gérer l'ouverture automatique depuis l'URL - version simplifiée
+  useEffect(() => {
+    const conversationId = searchParams.get('conversation');
+    if (!conversationId || selectedConversation) return;
+    
+    const targetId = parseInt(conversationId);
+    
+    // Valider que l'ID est un nombre valide
+    if (isNaN(targetId)) {
+      console.log('❌ ID de conversation invalide:', conversationId);
+      router.replace('/employer/messages');
+      return;
+    }
+    
+    console.log('🔍 Recherche conversation ID:', targetId);
+    console.log('📋 Conversations disponibles:', conversations.map(c => c.id));
+    
+    // Chercher directement dans les conversations actuelles
+    const conversation = conversations.find(conv => conv.id === targetId);
+    
+    if (conversation) {
+      console.log('✅ Conversation trouvée, ouverture...');
+      selectConversation(conversation);
+      router.replace('/employer/messages');
+    } else if (conversations.length > 0) {
+      // Si on a des conversations mais pas la bonne, attendre un peu et réessayer une fois
+      console.log('❌ Conversation pas encore disponible, attente...');
+      const timeoutId = setTimeout(() => {
+        // Recharger les conversations une seule fois
+        fetchConversations().then(() => {
+          // Après rechargement, chercher à nouveau
+          const refreshedConversation = conversations.find(conv => conv.id === targetId);
+          if (refreshedConversation) {
+            console.log('✅ Conversation trouvée après rechargement');
+            selectConversation(refreshedConversation);
+            router.replace('/employer/messages');
+          } else {
+            console.log('❌ Conversation toujours pas trouvée, abandon');
+            router.replace('/employer/messages');
+          }
+        });
+      }, 1000);
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [searchParams.get('conversation'), selectedConversation, conversations.length]);
 
   // Helper pour formater la date
   const formatMessageDate = (dateString: string) => {

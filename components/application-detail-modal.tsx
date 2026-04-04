@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import {
   Mail,
   Phone,
@@ -21,6 +22,11 @@ import {
   RotateCcw,
   AlertTriangle,
   MessageCircle,
+  User,
+  Building,
+  Award,
+  FileText,
+  Star,
 } from "lucide-react";
 
 type ApplicationDetailModalProps = {
@@ -37,14 +43,52 @@ type ApplicationDetailModalProps = {
     studentId: number,
     offerId: number
   ) => Promise<void>;
+  conversationLoading?: boolean;
 };
 
 const statusConfig = {
-  PENDING: { color: "bg-yellow-100", textColor: "text-yellow-800", icon: Clock, label: "En attente" },
-  ACCEPTED: { color: "bg-green-100", textColor: "text-green-800", icon: CheckCircle, label: "Acceptée" },
-  REJECTED: { color: "bg-red-100", textColor: "text-red-800", icon: XCircle, label: "Rejetée" },
-  INTERVIEW: { color: "bg-blue-100", textColor: "text-blue-800", icon: Briefcase, label: "Entretien" },
+  PENDING: { 
+    color: "bg-amber-50 border-amber-200", 
+    textColor: "text-amber-800", 
+    icon: Clock, 
+    label: "En attente",
+    description: "Candidature en cours d'examen"
+  },
+  ACCEPTED: { 
+    color: "bg-emerald-50 border-emerald-200", 
+    textColor: "text-emerald-800", 
+    icon: CheckCircle, 
+    label: "Acceptée",
+    description: "Candidature acceptée"
+  },
+  REJECTED: { 
+    color: "bg-rose-50 border-rose-200", 
+    textColor: "text-rose-800", 
+    icon: XCircle, 
+    label: "Rejetée",
+    description: "Candidature rejetée"
+  },
+  INTERVIEW: { 
+    color: "bg-blue-50 border-blue-200", 
+    textColor: "text-blue-800", 
+    icon: Briefcase, 
+    label: "Entretien",
+    description: "Entretien programmé"
+  },
 };
+
+// Composant helper pour les items d'information
+function InfoItem({ icon: Icon, label, value }: { icon: any; label: string; value: string }) {
+  return (
+    <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-100">
+      <Icon className="h-4 w-4 text-gray-400" />
+      <div>
+        <p className="text-xs text-gray-500">{label}</p>
+        <p className="text-sm font-medium text-gray-900">{value}</p>
+      </div>
+    </div>
+  );
+}
 
 export function ApplicationDetailModal({
   open,
@@ -53,6 +97,7 @@ export function ApplicationDetailModal({
   onClose,
   onUpdateStatus,
   onStartConversation,
+  conversationLoading = false,
 }: ApplicationDetailModalProps) {
   if (!application) return null;
 
@@ -62,207 +107,295 @@ export function ApplicationDetailModal({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Détail de la candidature</DialogTitle>
-        </DialogHeader>
-
-        {loading ? (
-          <div className="py-8 text-center">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {/* Status and job title */}
-            <div className="border-b pb-4">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold">{application.job_title}</h2>
-                <Badge className={`${config.color} ${config.textColor} border-0`}>
-                  <StatusIcon className="h-3 w-3 mr-1" />
+      <DialogContent className="max-w-5xl w-[95vw] max-h-[95vh] overflow-hidden flex flex-col">
+        <div className="h-full flex flex-col overflow-hidden">
+          {/* Header avec statut */}
+          <DialogHeader className="pb-4 border-b flex-shrink-0">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1 min-w-0">
+                <DialogTitle className="text-2xl font-bold text-gray-900 mb-2 truncate">
+                  {application.job_title}
+                </DialogTitle>
+                <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600">
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <Calendar className="h-4 w-4 flex-shrink-0" />
+                    <span className="truncate">Candidature du {new Date(application.applied_at).toLocaleDateString("fr-FR")}</span>
+                  </div>
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <User className="h-4 w-4 flex-shrink-0" />
+                    <span className="truncate font-medium">{student.first_name} {student.last_name}</span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                <Badge className={`${config.color} ${config.textColor} border px-3 py-1.5 text-sm font-medium whitespace-nowrap`}>
+                  <StatusIcon className="h-4 w-4 mr-2 flex-shrink-0" />
                   {config.label}
                 </Badge>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Candidature du {new Date(application.applied_at).toLocaleDateString("fr-FR")}
-              </p>
-            </div>
-
-            {/* Student info */}
-            <div className="bg-muted/50 rounded-lg p-4">
-              <h3 className="font-bold mb-4">Profil du candidat</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-muted-foreground">Nom complet</p>
-                  <p className="font-medium">
-                    {student.first_name} {student.last_name}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Année d'études</p>
-                  <p className="font-medium">
-                    {student.year_of_study ? `Année ${student.year_of_study}` : "Non spécifié"}
-                  </p>
-                </div>
-                <div className="col-span-2">
-                  <p className="text-sm text-muted-foreground mb-1">Université</p>
-                  <p className="font-medium">{student.university || "Non spécifié"}</p>
-                </div>
-                <div className="col-span-2">
-                  <p className="text-sm text-muted-foreground mb-1">Département</p>
-                  <p className="font-medium">{student.department || "Non spécifié"}</p>
-                </div>
+                <p className="text-xs text-gray-500 text-right">{config.description}</p>
               </div>
             </div>
+          </DialogHeader>
 
-            {/* Contact info */}
-            <div className="space-y-3">
-              <h3 className="font-bold">Coordonnées</h3>
-              <div className="space-y-2">
-                <div className="flex items-center gap-3">
-                  <Mail className="h-4 w-4 text-primary" />
-                  <span className="text-sm">{student.email}</span>
-                </div>
-                {student.phone && (
-                  <div className="flex items-center gap-3">
-                    <Phone className="h-4 w-4 text-primary" />
-                    <span className="text-sm">{student.phone}</span>
+          {/* Content scrollable */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-6 min-h-0">
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+              </div>
+            ) : (
+              <>
+                {/* Section Profil Candidat */}
+                <section className="bg-gradient-to-br from-gray-50 to-white rounded-xl border border-gray-200 overflow-hidden flex-shrink-0">
+                  <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-4 py-3 flex-shrink-0">
+                    <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                      <User className="h-5 w-5 flex-shrink-0" />
+                      <span className="truncate">Profil du Candidat</span>
+                    </h3>
                   </div>
-                )}
-              </div>
-            </div>
+                  <div className="p-4 space-y-4">
+                    {/* Informations principales */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-100">
+                          <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
+                            {student.first_name?.charAt(0).toUpperCase()}{student.last_name?.charAt(0).toUpperCase()}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="font-semibold text-gray-900 truncate">
+                              {student.first_name} {student.last_name}
+                            </p>
+                            <p className="text-sm text-gray-600 truncate">{student.email}</p>
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <InfoItem 
+                            icon={GraduationCap} 
+                            label="Année d'études" 
+                            value={student.year_of_study ? `Année ${student.year_of_study}` : "Non spécifié"} 
+                          />
+                          <InfoItem 
+                            icon={Building} 
+                            label="Université" 
+                            value={student.university || "Non spécifié"} 
+                          />
+                          <InfoItem 
+                            icon={Award} 
+                            label="Département" 
+                            value={student.department || "Non spécifié"} 
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-3">
+                        <div className="bg-white rounded-lg border border-gray-100 p-4">
+                          <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+                            <Phone className="h-4 w-4 flex-shrink-0" />
+                            <span>Contact</span>
+                          </h4>
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2 text-sm">
+                              <Mail className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                              <span className="text-gray-700 truncate">{student.email}</span>
+                            </div>
+                            {student.phone && (
+                              <div className="flex items-center gap-2 text-sm">
+                                <Phone className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                                <span className="text-gray-700 truncate">{student.phone}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
 
-            {/* Bio and skills */}
-            {student.bio && (
-              <div>
-                <h3 className="font-bold mb-2">À propos</h3>
-                <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                  {student.bio}
-                </p>
-              </div>
-            )}
+                    {/* Bio */}
+                    {student.bio && (
+                      <div className="bg-white rounded-lg border border-gray-100 p-4">
+                        <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+                          <FileText className="h-4 w-4 flex-shrink-0" />
+                          <span>À propos</span>
+                        </h4>
+                        <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap break-words max-h-32 overflow-y-auto">
+                          {student.bio}
+                        </p>
+                      </div>
+                    )}
 
-            {student.skills && student.skills.length > 0 && (
-              <div>
-                <h3 className="font-bold mb-2">Compétences</h3>
-                <div className="flex flex-wrap gap-2">
-                  {student.skills.map((skill: string, idx: number) => (
-                    <Badge key={idx} variant="outline">
-                      {skill}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            )}
+                    {/* Compétences */}
+                    {student.skills && student.skills.length > 0 && (
+                      <div className="bg-white rounded-lg border border-gray-100 p-4">
+                        <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+                          <Star className="h-4 w-4 flex-shrink-0" />
+                          <span>Compétences</span>
+                        </h4>
+                        <div className="flex flex-wrap gap-2">
+                          {student.skills.map((skill: string, idx: number) => (
+                            <Badge key={idx} variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                              <span className="truncate max-w-32">{skill}</span>
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </section>
 
-            {/* Application details */}
-            <div className="bg-muted/50 rounded-lg p-4">
-              <h3 className="font-bold mb-3">Détails de la candidature</h3>
-              <div className="space-y-3 text-sm">
-                {application.message && (
-                  <div>
-                    <div className="flex items-start gap-2">
-                      <MessageSquare className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                      <div>
-                        <p className="font-medium mb-1">Message du candidat</p>
-                        <p className="text-muted-foreground whitespace-pre-wrap">
+                {/* Section Détails de la candidature */}
+                <section className="bg-gradient-to-br from-gray-50 to-white rounded-xl border border-gray-200 overflow-hidden flex-shrink-0">
+                  <div className="bg-gradient-to-r from-green-600 to-teal-600 px-4 py-3 flex-shrink-0">
+                    <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                      <Briefcase className="h-5 w-5 flex-shrink-0" />
+                      <span className="truncate">Détails de la Candidature</span>
+                    </h3>
+                  </div>
+                  <div className="p-4 space-y-4">
+                    {application.message && (
+                      <div className="bg-white rounded-lg border border-gray-100 p-4">
+                        <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+                          <MessageSquare className="h-4 w-4 flex-shrink-0" />
+                          <span>Message du candidat</span>
+                        </h4>
+                        <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap bg-gray-50 p-3 rounded-md break-words max-h-40 overflow-y-auto">
                           {application.message}
                         </p>
                       </div>
+                    )}
+
+                    {application.experience && (
+                      <div className="bg-white rounded-lg border border-gray-100 p-4">
+                        <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+                          <Award className="h-4 w-4 flex-shrink-0" />
+                          <span>Expérience</span>
+                        </h4>
+                        <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap break-words max-h-32 overflow-y-auto">
+                          {application.experience}
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {application.start_date && (
+                        <div className="bg-white rounded-lg border border-gray-100 p-4">
+                          <div className="flex items-center gap-3">
+                            <Calendar className="h-5 w-5 text-green-600 flex-shrink-0" />
+                            <div className="min-w-0 flex-1">
+                              <p className="font-medium text-gray-900 truncate">Date de début souhaitée</p>
+                              <p className="text-sm text-gray-600">
+                                {new Date(application.start_date).toLocaleDateString("fr-FR")}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {application.availability && (
+                        <div className="bg-white rounded-lg border border-gray-100 p-4">
+                          <div className="flex items-center gap-3">
+                            <Clock className="h-5 w-5 text-green-600 flex-shrink-0" />
+                            <div className="min-w-0 flex-1">
+                              <p className="font-medium text-gray-900 truncate">Disponibilité</p>
+                              <p className="text-sm text-gray-600 break-words">{application.availability}</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
-                )}
+                </section>
 
-                {application.experience && (
-                  <div>
-                    <p className="font-medium mb-1">Expérience</p>
-                    <p className="text-muted-foreground whitespace-pre-wrap">
-                      {application.experience}
-                    </p>
-                  </div>
-                )}
-
-                {application.start_date && (
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-primary" />
-                    <div>
-                      <span className="font-medium">Date de début souhaitée:</span>{" "}
-                      {new Date(application.start_date).toLocaleDateString("fr-FR")}
+                {/* Section Entretien si programmé */}
+                {application.status === "INTERVIEW" && (
+                  <section className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-200 overflow-hidden flex-shrink-0">
+                    <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-3 flex-shrink-0">
+                      <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                        <Calendar className="h-5 w-5 flex-shrink-0" />
+                        <span className="truncate">Entretien Programmé</span>
+                      </h3>
                     </div>
-                  </div>
-                )}
-
-                {application.availability && (
-                  <div>
-                    <span className="font-medium">Disponibilité:</span> {application.availability}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Interview info if scheduled */}
-            {application.status === "INTERVIEW" && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h3 className="font-bold mb-3">Entretien programmé</h3>
-                <div className="space-y-2 text-sm">
-                  {application.interview_date && (
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-blue-600" />
-                      <span>
-                        {new Date(application.interview_date).toLocaleDateString("fr-FR")}
-                        {application.interview_time && ` à ${application.interview_time}`}
-                      </span>
+                    <div className="p-4 space-y-3">
+                      {application.interview_date && (
+                        <div className="flex items-center gap-3 bg-white rounded-lg p-4 border border-blue-100">
+                          <Calendar className="h-5 w-5 text-blue-600 flex-shrink-0" />
+                          <div className="min-w-0 flex-1">
+                            <p className="font-medium text-gray-900 truncate">Date et heure</p>
+                            <p className="text-sm text-gray-600">
+                              {new Date(application.interview_date).toLocaleDateString("fr-FR")}
+                              {application.interview_time && ` à ${application.interview_time}`}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                      {application.interview_location && (
+                        <div className="flex items-center gap-3 bg-white rounded-lg p-4 border border-blue-100">
+                          <MapPin className="h-5 w-5 text-blue-600 flex-shrink-0" />
+                          <div className="min-w-0 flex-1">
+                            <p className="font-medium text-gray-900 truncate">Lieu</p>
+                            <p className="text-sm text-gray-600 break-words">{application.interview_location}</p>
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  )}
-                  {application.interview_location && (
-                    <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-blue-600" />
-                      <span>{application.interview_location}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
+                  </section>
+                )}
+              </>
             )}
+          </div>
 
-            {/* Action buttons */}
-            <div className="border-t pt-4 flex gap-3">
-              {application.status === "PENDING" && (
-                <ActionButtonsPending
-                  application={application}
-                  onUpdateStatus={onUpdateStatus}
-                />
-              )}
-              {application.status === "ACCEPTED" && (
-                <ActionButtonsAccepted
-                  application={application}
-                  onUpdateStatus={onUpdateStatus}
-                />
-              )}
-              {application.status === "REJECTED" && (
-                <ActionButtonsRejected
-                  application={application}
-                  onUpdateStatus={onUpdateStatus}
-                />
-              )}
-              {application.status === "INTERVIEW" && (
-                <ActionButtonsInterview
-                  application={application}
-                  onUpdateStatus={onUpdateStatus}
-                />
-              )}
+          {/* Footer avec actions */}
+          <div className="border-t bg-gray-50 px-4 py-3 flex-shrink-0">
+            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3">
+              <div className="flex flex-wrap gap-2 w-full lg:w-auto">
+                {application.status === "PENDING" && (
+                  <ActionButtonsPending
+                    application={application}
+                    onUpdateStatus={onUpdateStatus}
+                  />
+                )}
+                {application.status === "ACCEPTED" && (
+                  <ActionButtonsAccepted
+                    application={application}
+                    onUpdateStatus={onUpdateStatus}
+                  />
+                )}
+                {application.status === "REJECTED" && (
+                  <ActionButtonsRejected
+                    application={application}
+                    onUpdateStatus={onUpdateStatus}
+                  />
+                )}
+                {application.status === "INTERVIEW" && (
+                  <ActionButtonsInterview
+                    application={application}
+                    onUpdateStatus={onUpdateStatus}
+                  />
+                )}
+              </div>
               
-              {/* Bouton de conversation - disponible pour tous les statuts */}
-              <Button
-                variant="outline"
-                className="gap-2 text-sm border-blue-200 text-blue-700 hover:bg-blue-50"
-                onClick={() => onStartConversation?.(application.student_id, application.job_id)}
-                disabled={!onStartConversation}
-              >
-                <MessageCircle className="h-4 w-4" />
-                Contacter le candidat
-              </Button>
+              {onStartConversation && (
+                <Button
+                  onClick={() => onStartConversation(application.student_id, application.job_id)}
+                  variant="outline"
+                  className="gap-2 w-full lg:w-auto flex-shrink-0"
+                  disabled={conversationLoading}
+                >
+                  {conversationLoading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-gray-600 border-t-transparent rounded-full animate-spin"></div>
+                      <span>Ouverture...</span>
+                    </>
+                  ) : (
+                    <>
+                      <MessageCircle className="h-4 w-4 flex-shrink-0" />
+                      <span>Contacter</span>
+                    </>
+                  )}
+                </Button>
+              )}
             </div>
           </div>
-        )}
+        </div>
       </DialogContent>
     </Dialog>
   );

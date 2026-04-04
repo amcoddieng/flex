@@ -33,6 +33,7 @@ export default function EmployerApplicationsPage() {
   const [selectedApp, setSelectedApp] = useState<Application | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [conversationLoading, setConversationLoading] = useState(false);
   const router = useRouter();
   const hasCheckedAuth = useRef(false);
 
@@ -249,6 +250,7 @@ export default function EmployerApplicationsPage() {
   };
 
   const startConversation = async (studentId: number, offerId: number) => {
+    setConversationLoading(true);
     try {
       const token = getValidToken();
       if (!token) {
@@ -264,18 +266,32 @@ export default function EmployerApplicationsPage() {
         },
         body: JSON.stringify({ student_id: studentId, offer_id: offerId }),
       });
-      console.log("ssss", res);
+      
       if (!res.ok) throw new Error("Erreur lors de la création de la conversation");
 
       const data = await res.json();
       if (data.success) {
-        // Rediriger vers la page de messagerie
-        router.push('/employer/messages');
+        // L'API retourne conversation_id, pas id
+        const conversationId = data.data.conversation_id;
+        console.log('📝 Conversation créée avec ID:', conversationId);
+        console.log('📝 Réponse API complète:', data);
+        
+        if (conversationId) {
+          // Rediriger immédiatement vers la page de messagerie
+          router.push(`/employer/messages?conversation=${conversationId}`);
+        } else {
+          console.error('❌ ID de conversation manquant dans la réponse');
+          alert('Erreur: ID de conversation non reçu');
+        }
+      } else {
+        throw new Error(data.error || 'Erreur lors de la création');
       }
     } catch (err: any) {
       const message = err instanceof Error ? err.message : 'Erreur inconnue';
       console.error('startConversation error:', message);
       alert(`Erreur : ${message}`);
+    } finally {
+      setConversationLoading(false);
     }
   };
 
@@ -446,6 +462,7 @@ export default function EmployerApplicationsPage() {
         }}
         onUpdateStatus={updateApplicationStatus}
         onStartConversation={startConversation}
+        conversationLoading={conversationLoading}
       />
     </div>
   );
