@@ -40,15 +40,20 @@ export default function EmployerApplicationsPage() {
    * Helper: Get the current valid token from localStorage
    */
   const getValidToken = (): string | null => {
-    if (typeof window === 'undefined') return null;
-    const token = localStorage.getItem('token');
-    if (!token) return null;
-    const decoded = decodeToken(token);
-    if (!decoded || decoded.role !== 'EMPLOYER') {
-      localStorage.removeItem('token');
-      return null;
-    }
-    return token;
+      if (typeof window === 'undefined') return null;
+      
+      const token = localStorage.getItem('token');
+      if (!token) return null;
+      
+      // Decode to verify it's valid and has role EMPLOYER
+      const decoded = decodeToken(token);
+      if (!decoded || decoded.role !== 'EMPLOYER') {
+        // Invalid token, clear it
+        localStorage.removeItem('token');
+        return null;
+      }
+      
+      return token;
   };
 
   useEffect(() => {
@@ -182,6 +187,9 @@ export default function EmployerApplicationsPage() {
     newStatus: string,
     interview?: { date: string; time: string; location: string }
   ) => {
+    setLoading(true);
+    setError(null);
+
     try {
       const token = getValidToken();
       if (!token) {
@@ -234,6 +242,39 @@ export default function EmployerApplicationsPage() {
     } catch (err: any) {
       const message = err instanceof Error ? err.message : 'Erreur inconnue';
       console.error('updateApplicationStatus error:', message);
+      alert(`Erreur : ${message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const startConversation = async (studentId: number, offerId: number) => {
+    try {
+      const token = getValidToken();
+      if (!token) {
+        router.push('/login');
+        return;
+      }
+
+      const res = await fetch('/api/employer/conversations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ student_id: studentId, offer_id: offerId }),
+      });
+      console.log("ssss", res);
+      if (!res.ok) throw new Error("Erreur lors de la création de la conversation");
+
+      const data = await res.json();
+      if (data.success) {
+        // Rediriger vers la page de messagerie
+        router.push('/employer/messages');
+      }
+    } catch (err: any) {
+      const message = err instanceof Error ? err.message : 'Erreur inconnue';
+      console.error('startConversation error:', message);
       alert(`Erreur : ${message}`);
     }
   };
@@ -404,6 +445,7 @@ export default function EmployerApplicationsPage() {
           setSelectedApp(null);
         }}
         onUpdateStatus={updateApplicationStatus}
+        onStartConversation={startConversation}
       />
     </div>
   );

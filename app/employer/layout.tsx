@@ -44,6 +44,7 @@ export default function EmployerLayout({
     { label: "Tableau de bord", href: "/employer" },
     { label: "Mes offres", href: "/employer/jobs" },
     { label: "Candidatures", href: "/employer/applications" },
+    { label: "Messages", href: "/employer/messages" },
     { label: "Profil", href: "/employer/profile" },
   ];
 

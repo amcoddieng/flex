@@ -63,7 +63,7 @@ export default function EmployerJobsPage() {
    * Helper: Get the current valid token from localStorage
    * Returns null if token doesn't exist or is invalid
    */
-  const getValidToken = (): string | null => {
+  const getValidToken = (): string | null => { 
     if (typeof window === 'undefined') return null;
     
     const token = localStorage.getItem('token');

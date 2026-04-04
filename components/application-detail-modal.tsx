@@ -20,6 +20,7 @@ import {
   Clock,
   RotateCcw,
   AlertTriangle,
+  MessageCircle,
 } from "lucide-react";
 
 type ApplicationDetailModalProps = {
@@ -31,6 +32,10 @@ type ApplicationDetailModalProps = {
     appId: number,
     status: string,
     interview?: { date: string; time: string; location: string }
+  ) => Promise<void>;
+  onStartConversation?: (
+    studentId: number,
+    offerId: number
   ) => Promise<void>;
 };
 
@@ -47,6 +52,7 @@ export function ApplicationDetailModal({
   application,
   onClose,
   onUpdateStatus,
+  onStartConversation,
 }: ApplicationDetailModalProps) {
   if (!application) return null;
 
@@ -243,6 +249,17 @@ export function ApplicationDetailModal({
                   onUpdateStatus={onUpdateStatus}
                 />
               )}
+              
+              {/* Bouton de conversation - disponible pour tous les statuts */}
+              <Button
+                variant="outline"
+                className="gap-2 text-sm border-blue-200 text-blue-700 hover:bg-blue-50"
+                onClick={() => onStartConversation?.(application.student_id, application.job_id)}
+                disabled={!onStartConversation}
+              >
+                <MessageCircle className="h-4 w-4" />
+                Contacter le candidat
+              </Button>
             </div>
           </div>
         )}
