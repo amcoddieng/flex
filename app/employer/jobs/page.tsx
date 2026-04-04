@@ -552,7 +552,7 @@ export default function EmployerJobsPage() {
   const pages = Math.ceil(total / limit);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 pl-12 pr-12 pt-8">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Mes offres d'emploi</h1>
