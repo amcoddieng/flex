@@ -1,11 +1,23 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { decodeToken } from "@/lib/jwt";
-import Link from "next/link";
-import { LogOut, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useUnreadMessages } from "@/hooks/useUnreadMessages";
+import { usePendingApplications } from "@/hooks/usePendingApplications";
+import { 
+  Menu, 
+  X, 
+  LogOut, 
+  Briefcase, 
+  Home, 
+  Users, 
+  MessageCircle, 
+  User,
+  Bell
+} from "lucide-react";
+import Link from "next/link";
 
 export default function EmployerLayout({
   children,
@@ -19,6 +31,8 @@ export default function EmployerLayout({
 
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   const decoded = token ? decodeToken(token) : null;
+  const { unreadCount, refreshUnreadCount } = useUnreadMessages(token);
+  const { pendingCount } = usePendingApplications(token);
 
   useEffect(() => {
     if (hasCheckedAuth.current) return;
@@ -43,8 +57,8 @@ export default function EmployerLayout({
   const EMPLOYER_MENU = [
     { label: "Tableau de bord", href: "/employer" },
     { label: "Mes offres", href: "/employer/jobs" },
-    { label: "Candidatures", href: "/employer/applications" },
-    { label: "Messages", href: "/employer/messages" },
+    { label: "Candidatures", href: "/employer/applications", hasBadge: true },
+    { label: "Messages", href: "/employer/messages", hasBadge: true },
     { label: "Profil", href: "/employer/profile" },
   ];
 
@@ -74,6 +88,16 @@ export default function EmployerLayout({
                 >
                   {item.label}
                   <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-blue-600 to-purple-600 group-hover:w-full transition-all duration-200"></span>
+                  {item.hasBadge && (
+                    <>
+                      {item.href === "/employer/messages" && unreadCount > 0 && (
+                        <span className="absolute -top-1 -right-2 w-2 h-2 bg-blue-600 rounded-full animate-pulse"></span>
+                      )}
+                      {item.href === "/employer/applications" && pendingCount > 0 && (
+                        <span className="absolute -top-1 -right-2 w-2 h-2 bg-orange-500 rounded-full animate-pulse"></span>
+                      )}
+                    </>
+                  )}
                 </Link>
               ))}
               <div className="flex items-center gap-2 ml-4 pl-4 border-l border-slate-200">
@@ -116,10 +140,30 @@ export default function EmployerLayout({
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="block px-4 py-3 rounded-xl text-slate-700 hover:bg-slate-100 hover:text-blue-600 transition-all duration-200 font-medium"
+                  className="flex items-center justify-between px-4 py-3 rounded-xl text-slate-700 hover:bg-slate-100 hover:text-blue-600 transition-all duration-200 font-medium"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  {item.label}
+                  <span>{item.label}</span>
+                  {item.hasBadge && (
+                    <span className="flex items-center gap-1">
+                      {item.href === "/employer/messages" && unreadCount > 0 && (
+                        <>
+                          <span className="w-2 h-2 bg-blue-600 rounded-full animate-pulse"></span>
+                          <span className="text-xs bg-blue-600 text-white rounded-full px-2 py-0.5 min-w-[20px] text-center">
+                            {unreadCount > 99 ? '99+' : unreadCount}
+                          </span>
+                        </>
+                      )}
+                      {item.href === "/employer/applications" && pendingCount > 0 && (
+                        <>
+                          <span className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></span>
+                          <span className="text-xs bg-orange-500 text-white rounded-full px-2 py-0.5 min-w-[20px] text-center">
+                            {pendingCount > 99 ? '99+' : pendingCount}
+                          </span>
+                        </>
+                      )}
+                    </span>
+                  )}
                 </Link>
               ))}
               <div className="flex items-center gap-3 mt-4 pt-4 border-t border-slate-200">

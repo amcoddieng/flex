@@ -1,22 +1,22 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { decodeToken } from "@/lib/jwt";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import { 
   MessageCircle, 
-  Send, 
   Search, 
-  User, 
-  Briefcase, 
-  Clock,
-  Check,
-  CheckCheck,
-  X,
-  Plus
+  Send, 
+  Clock, 
+  Check, 
+  CheckCheck, 
+  X, 
+  Briefcase 
 } from "lucide-react";
+import Link from "next/link";
 
 type Conversation = {
   id: number;
@@ -46,15 +46,19 @@ export default function EmployerMessagesPage() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [messagesLoading, setMessagesLoading] = useState(false);
-  const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [newMessage, setNewMessage] = useState("");
+  const [sending, setSending] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const router = useRouter();
   const hasCheckedAuth = useRef(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  // Importer le hook depuis le layout parent via contexte ou le recréer ici
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  const { unreadCount: messageUnreadCount, refreshUnreadCount } = useUnreadMessages(token);
 
   const getValidToken = (): string | null => {
     if (typeof window === 'undefined') return null;
@@ -83,8 +87,52 @@ export default function EmployerMessagesPage() {
   }, [router]);
 
   useEffect(() => {
+    if (!selectedConversation) return;
+    
+    // Rafraîchir les messages toutes les 10 secondes
+    const interval = setInterval(() => {
+      fetchMessages(selectedConversation.id);
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, [selectedConversation]);
+
+  useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Helper pour formater la date
+  const formatMessageDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const messageDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    
+    if (messageDate.getTime() === today.getTime()) {
+      return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    } else if (messageDate.getTime() === today.getTime() - 86400000) {
+      return 'Hier';
+    } else {
+      return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+    }
+  };
+
+  // Grouper les messages par date
+  const groupMessagesByDate = (messages: Message[]) => {
+    const groups: { [date: string]: Message[] } = {};
+    
+    messages.forEach(message => {
+      const date = new Date(message.created_at);
+      const dateKey = new Date(date.getFullYear(), date.getMonth(), date.getDate()).toDateString();
+      
+      if (!groups[dateKey]) {
+        groups[dateKey] = [];
+      }
+      groups[dateKey].push(message);
+    });
+    
+    return groups;
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -175,7 +223,7 @@ export default function EmployerMessagesPage() {
   const selectConversation = (conversation: Conversation) => {
     setSelectedConversation(conversation);
     fetchMessages(conversation.id);
-    
+    refreshUnreadCount();
     // Marquer comme lu (mettre à jour le compteur non lu)
     setConversations(prev => prev.map(conv => 
       conv.id === conversation.id ? { ...conv, unread_count: 0 } : conv
@@ -188,30 +236,38 @@ export default function EmployerMessagesPage() {
     conv.student_email.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const totalUnreadCount = conversations.reduce((acc, conv) => acc + conv.unread_count, 0);
+
   if (!isAuthed) return <div className="p-8">Vérification...</div>;
 
   return (
-    <div className="h-screen bg-slate-50 flex">
-      {/* Sidebar - Conversations */}
-      <div className="w-80 bg-white border-r border-slate-200 flex flex-col">
-        {/* Header */}
-        <div className="p-4 border-b border-slate-200">
-          <div className="flex items-center gap-3 mb-4">
-            <MessageCircle className="h-5 w-5 text-blue-600" />
-            <h2 className="text-lg font-semibold text-slate-900">Messages</h2>
+    <div className="min-h-screen bg-slate-50 flex flex-col">
+      <div className="flex-1 flex">
+        {/* Sidebar - Conversations */}
+        <div className="w-80 bg-white border-r border-slate-200 flex flex-col">
+          {/* Header */}
+          <div className="p-4 border-b border-slate-200 bg-white sticky top-0 z-10">
+            <div className="flex items-center gap-3 mb-4">
+              <MessageCircle className="h-5 w-5 text-blue-600" />
+              <h2 className="text-lg font-semibold text-slate-900">Messages</h2>
+              {totalUnreadCount > 0 && (
+                <span className="bg-blue-600 text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center">
+                  {totalUnreadCount > 99 ? '99+' : totalUnreadCount}
+                </span>
+              )}
+            </div>
+            
+            {/* Search */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Input
+                placeholder="Rechercher une conversation..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
           </div>
-          
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-            <Input
-              placeholder="Rechercher une conversation..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-        </div>
 
         {/* Conversations List */}
         <div className="flex-1 overflow-y-auto">
@@ -280,8 +336,8 @@ export default function EmployerMessagesPage() {
       <div className="flex-1 flex flex-col">
         {selectedConversation ? (
           <>
-            {/* Chat Header */}
-            <div className="bg-white border-b border-slate-200 p-4">
+            {/* Chat Header - Fixed */}
+            <div className="bg-white border-b border-slate-200 p-4 sticky top-0 z-10 shadow-sm">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm">
@@ -313,31 +369,50 @@ export default function EmployerMessagesPage() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {messages.map((message) => (
-                    <div
-                      key={message.id}
-                      className={`flex ${message.sender_type === 'employer' ? 'justify-end' : 'justify-start'}`}
-                    >
-                      <div
-                        className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                          message.sender_type === 'employer'
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-white text-slate-900 border border-slate-200'
-                        }`}
-                      >
-                        <p className="text-sm">{message.message}</p>
-                        <div className={`flex items-center gap-1 mt-1 text-xs ${
-                          message.sender_type === 'employer' ? 'text-blue-100' : 'text-slate-500'
-                        }`}>
-                          <Clock className="h-3 w-3" />
-                          {new Date(message.created_at).toLocaleTimeString('fr-FR', { 
-                            hour: '2-digit', 
-                            minute: '2-digit' 
-                          })}
-                          {message.sender_type === 'employer' && (
-                            message.is_read ? <CheckCheck className="h-3 w-3" /> : <Check className="h-3 w-3" />
-                          )}
+                  {Object.entries(groupMessagesByDate(messages)).map(([dateKey, dayMessages], dateIndex) => (
+                    <div key={dateKey}>
+                      {/* Séparateur de date */}
+                      {dateIndex > 0 && (
+                        <div className="flex items-center justify-center my-4">
+                          <div className="bg-slate-200 h-px flex-1"></div>
+                          <span className="px-3 text-xs text-slate-500 bg-slate-50">
+                            {new Date(dateKey).toLocaleDateString('fr-FR', { 
+                              weekday: 'long', 
+                              day: 'numeric', 
+                              month: 'long' 
+                            })}
+                          </span>
+                          <div className="bg-slate-200 h-px flex-1"></div>
                         </div>
+                      )}
+                      
+                      {/* Messages du jour */}
+                      <div className="space-y-3">
+                        {dayMessages.map((message) => (
+                          <div
+                            key={message.id}
+                            className={`flex ${message.sender_type === 'employer' ? 'justify-end' : 'justify-start'}`}
+                          >
+                            <div
+                              className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                                message.sender_type === 'employer'
+                                  ? 'bg-blue-600 text-white'
+                                  : 'bg-white text-slate-900 border border-slate-200'
+                              }`}
+                            >
+                              <p className="text-sm">{message.message}</p>
+                              <div className={`flex items-center gap-1 mt-1 text-xs ${
+                                message.sender_type === 'employer' ? 'text-blue-100' : 'text-slate-500'
+                              }`}>
+                                <Clock className="h-3 w-3" />
+                                {formatMessageDate(message.created_at)}
+                                {message.sender_type === 'employer' && (
+                                  message.is_read ? <CheckCheck className="h-3 w-3" /> : <Check className="h-3 w-3" />
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   ))}
@@ -346,8 +421,8 @@ export default function EmployerMessagesPage() {
               )}
             </div>
 
-            {/* Message Input */}
-            <div className="bg-white border-t border-slate-200 p-4">
+            {/* Message Input - Fixed */}
+            <div className="bg-white border-t border-slate-200 p-4 sticky bottom-0 z-10 shadow-lg">
               <div className="flex gap-2">
                 <Input
                   placeholder="Tapez votre message..."
@@ -360,7 +435,7 @@ export default function EmployerMessagesPage() {
                 <Button 
                   onClick={sendMessage} 
                   disabled={sending || !newMessage.trim()}
-                  className="gap-2"
+                  className="gap-2 bg-blue-600 hover:bg-blue-700"
                 >
                   {sending ? (
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -371,20 +446,21 @@ export default function EmployerMessagesPage() {
               </div>
             </div>
           </>
-        ) : (
-          /* Empty State */
-          <div className="flex-1 flex items-center justify-center bg-slate-50">
-            <div className="text-center">
-              <MessageCircle className="h-16 w-16 text-slate-300 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-slate-900 mb-2">
-                Sélectionnez une conversation
-              </h3>
-              <p className="text-slate-600">
-                Choisissez une conversation dans la liste pour commencer à discuter
-              </p>
+          ) : (
+            /* Empty State */
+            <div className="flex-1 flex items-center justify-center bg-slate-50">
+              <div className="text-center">
+                <MessageCircle className="h-16 w-16 text-slate-300 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-slate-900 mb-2">
+                  Sélectionnez une conversation
+                </h3>
+                <p className="text-slate-600">
+                  Choisissez une conversation dans la liste pour commencer à discuter
+                </p>
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
