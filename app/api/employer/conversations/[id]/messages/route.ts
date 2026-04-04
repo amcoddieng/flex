@@ -3,10 +3,10 @@ import mysql from 'mysql2/promise';
 import { verifyToken } from '@/lib/jwt';
 
 const pool = mysql.createPool({
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'job_platform',
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
@@ -39,7 +39,10 @@ async function getEmployerIdFromProfile(employerUserId: number): Promise<number 
 }
 
 // GET - Récupérer les messages d'une conversation
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(
+  request: NextRequest, 
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     const token = request.headers.get('authorization')?.replace('Bearer ', '');
     
@@ -58,10 +61,18 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       return NextResponse.json({ error: 'Profil employeur non trouvé' }, { status: 401 });
     }
 
-    const conversationId = params.id;
+    // Récupérer les params de manière asynchrone
+    const resolvedParams = await params;
+    const conversationId = resolvedParams.id;
+    
     const connection = await pool.getConnection();
     
     try {
+      // Debug pour voir les params
+      console.log('🔍 Debug params:', resolvedParams);
+      console.log('🔍 Debug conversationId:', conversationId);
+      console.log('🔍 Debug employerProfileId:', employerProfileId);
+      
       // Vérifier que la conversation appartient à l'employeur
       const [conversationCheck] = await connection.execute(`
         SELECT id FROM conversation 
@@ -122,7 +133,10 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 }
 
 // POST - Envoyer un nouveau message
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(
+  request: NextRequest, 
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     const token = request.headers.get('authorization')?.replace('Bearer ', '');
     
@@ -141,7 +155,9 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
       return NextResponse.json({ error: 'Profil employeur non trouvé' }, { status: 401 });
     }
 
-    const conversationId = params.id;
+    // Récupérer les params de manière asynchrone
+    const resolvedParams = await params;
+    const conversationId = resolvedParams.id;
     const body = await request.json();
     const { message } = body;
 
