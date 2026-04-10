@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
       // Get employer profile with user data
       const [profileRows] = await connection.execute(
         `SELECT u.id, u.email, ep.id as employer_id, ep.company_name, ep.contact_person, ep.phone, 
-                ep.address, ep.description, ep.img, ep.identity, ep.validation_status, u.blocked
+                ep.address, ep.description, ep.img, ep.identity, ep.validation_status, ep.rejection_reason, u.blocked
          FROM user u
          LEFT JOIN employer_profile ep ON u.id = ep.user_id
          WHERE u.id = ? AND u.role = 'EMPLOYER'`,

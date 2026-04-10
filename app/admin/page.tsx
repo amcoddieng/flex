@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { decodeToken } from "@/lib/jwt";
 import { Button } from "@/components/ui/button";
-import { Users, Users2, Briefcase, FileText, BarChart3 } from "lucide-react";
+import { Users, Users2, Briefcase, FileText, BarChart3, CheckCircle } from "lucide-react";
 import bcrypt from 'bcrypt';
 
 const menuItems = [
@@ -14,6 +14,7 @@ const menuItems = [
   { icon: Briefcase, label: "Employeurs", href: "/admin/employers" },
   { icon: Users, label: "Modérateurs", href: "/admin/moderators" },
   { icon: FileText, label: "Offres d'emploi", href: "/admin/jobs" },
+  { icon: CheckCircle, label: "Validation Employeurs", href: "/admin/employer-validation" },
 ];
 
 

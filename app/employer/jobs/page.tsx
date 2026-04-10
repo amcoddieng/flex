@@ -5,7 +5,10 @@ import { useRouter } from "next/navigation";
 import { decodeToken } from "@/lib/jwt";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, X } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { useEmployerValidation } from "@/hooks/useEmployerValidation";
+import { ValidationStatusModal } from "@/components/validation-status-modal";
+import { Search, X, AlertTriangle, CheckCircle, Clock, Info } from "lucide-react";
 
 type Job = {
   id: number;
@@ -43,6 +46,7 @@ export default function EmployerJobsPage() {
   const [createLoading, setCreateLoading] = useState(false);
   const [editingJobId, setEditingJobId] = useState<number | null>(null);
   const [applications, setApplications] = useState<any[]>([]);
+  const [showValidationModal, setShowValidationModal] = useState(false);
   const [createFormData, setCreateFormData] = useState({
     title: '',
     company: '',
@@ -59,8 +63,12 @@ export default function EmployerJobsPage() {
   const router = useRouter();
   const hasCheckedAuth = useRef(false);
 
+  // Hook pour vérifier la validation du profil employeur
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  const { validationStatus, rejectionReason, loading: validationLoading, isValidated, isPending, isRejected } = useEmployerValidation(token);
+
   /**
-   * Helper: Get the current valid token from localStorage
+   * Helper: Get current valid token from localStorage
    * Returns null if token doesn't exist or is invalid
    */
   const getValidToken = (): string | null => { 
@@ -551,16 +559,131 @@ export default function EmployerJobsPage() {
 
   const pages = Math.ceil(total / limit);
 
+  // Afficher un message si le profil n'est pas validé
+  if (validationLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (isPending) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="max-w-md mx-auto p-6">
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
+            <Clock className="h-16 w-16 text-yellow-600 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              Profil en attente de validation
+            </h2>
+            <p className="text-gray-600 mb-4">
+              Votre profil employeur est actuellement en cours de validation par notre équipe.
+              Vous ne pouvez pas publier d'offres d'emploi tant que votre profil n'aura pas été validé.
+            </p>
+            <p className="text-sm text-gray-500">
+              Vous serez notifié par email dès que votre profil sera validé.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (isRejected) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="max-w-md mx-auto p-6">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+            <AlertTriangle className="h-16 w-16 text-red-600 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              Profil rejeté
+            </h2>
+            <p className="text-gray-600 mb-4">
+              Votre profil employeur a été rejeté par notre équipe.
+              Vous ne pouvez pas publier d'offres d'emploi avec ce profil.
+            </p>
+            
+            {/* Afficher le motif de rejet si disponible */}
+            {rejectionReason && (
+              <div className="mb-4 p-4 bg-white border border-red-200 rounded-lg text-left">
+                <h3 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-red-600" />
+                  Motif du rejet :
+                </h3>
+                <p className="text-gray-700 whitespace-pre-wrap">
+                  {rejectionReason}
+                </p>
+                <p className="text-sm text-gray-600 mt-3">
+                  Veuillez prendre en compte ces remarques pour améliorer votre profil et soumettre une nouvelle demande.
+                </p>
+              </div>
+            )}
+            
+            <p className="text-sm text-gray-500 mb-4">
+              Vous pouvez modifier votre profil et le soumettre à nouveau pour validation.
+            </p>
+            <div className="flex gap-3 justify-center">
+              <Button
+                onClick={() => router.push('/employer/profile')}
+                variant="outline"
+              >
+                Modifier mon profil
+              </Button>
+              <Button
+                onClick={() => router.push('/logout')}
+              >
+                Déconnexion
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8 pl-12 pr-12 pt-8">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Mes offres d'emploi</h1>
           <p className="text-slate-600 mt-2">Gérez vos offres et candidatures</p>
+          {validationStatus && (
+            <div className="mt-2 flex items-center gap-2">
+              {isValidated && (
+                <Badge className="bg-green-100 text-green-800 border-green-200">
+                  <CheckCircle className="h-3 w-3 mr-1" />
+                  Profil validé
+                </Badge>
+              )}
+              {isPending && (
+                <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">
+                  <Clock className="h-3 w-3 mr-1" />
+                  En attente de validation
+                </Badge>
+              )}
+              {isRejected && (
+                <Badge className="bg-red-100 text-red-800 border-red-200">
+                  <AlertTriangle className="h-3 w-3 mr-1" />
+                  Profil rejeté
+                </Badge>
+              )}
+              <Button
+                onClick={() => setShowValidationModal(true)}
+                variant="outline"
+                size="sm"
+                className="ml-2"
+              >
+                <Info className="h-3 w-3 mr-1" />
+                Détails
+              </Button>
+            </div>
+          )}
         </div>
         <Button 
           onClick={() => setShowCreateModal(true)}
           className="bg-blue-600 hover:bg-blue-700"
+          disabled={!isValidated}
         >
           + Créer une offre
         </Button>
@@ -1074,6 +1197,15 @@ export default function EmployerJobsPage() {
           </div>
         </div>
       )}
+
+      {/* Modal de statut de validation */}
+      <ValidationStatusModal
+        open={showValidationModal}
+        onClose={() => setShowValidationModal(false)}
+        validationStatus={validationStatus}
+        rejectionReason={rejectionReason}
+        loading={validationLoading}
+      />
     </div>
   );
 }
