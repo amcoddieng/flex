@@ -140,18 +140,6 @@ export function AdminLayout({ children }: AdminLayoutProps) {
             );
           })}
         </nav>
-
-        {/* Logout Button */}
-        <div className="p-4 border-t border-gray-200">
-          <Button
-            variant="outline"
-            className={`w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50 ${!sidebarOpen ? 'px-2' : ''}`}
-            onClick={handleLogout}
-          >
-            <LogOut className="h-4 w-4" />
-            {sidebarOpen && <span className="ml-3">Déconnexion</span>}
-          </Button>
-        </div>
       </div>
 
       {/* Main Content */}
@@ -177,6 +165,15 @@ export function AdminLayout({ children }: AdminLayoutProps) {
               <div className="text-sm text-gray-600">
                 Administrateur
               </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                onClick={handleLogout}
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Déconnexion
+              </Button>
             </div>
           </div>
         </div>
