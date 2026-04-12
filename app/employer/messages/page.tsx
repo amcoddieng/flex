@@ -1,10 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { decodeToken } from "@/lib/jwt";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { EmployerProtection } from "@/components/employer-protection";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import { 
   MessageCircle, 
@@ -289,12 +291,13 @@ export default function EmployerMessagesPage() {
   if (!isAuthed) return <div className="p-8">Vérification...</div>;
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
-      <div className="flex-1 flex">
-        {/* Sidebar - Conversations */}
-        <div className="w-80 bg-white border-r border-slate-200 flex flex-col">
-          {/* Header */}
-          <div className="p-4 border-b border-slate-200 bg-white sticky top-0 z-10">
+    <EmployerProtection>
+      <div className="min-h-screen bg-slate-50 flex flex-col">
+        <div className="flex-1 flex">
+          {/* Sidebar - Conversations */}
+          <div className="w-80 bg-white border-r border-slate-200 flex flex-col">
+            {/* Header */}
+            <div className="p-4 border-b border-slate-200 bg-white sticky top-0 z-10">
             <div className="flex items-center gap-3 mb-4">
               <MessageCircle className="h-5 w-5 text-blue-600" />
               <h2 className="text-lg font-semibold text-slate-900">Messages</h2>
@@ -377,6 +380,7 @@ export default function EmployerMessagesPage() {
               ))}
             </div>
           )}
+          </div>
         </div>
       </div>
 
@@ -510,6 +514,6 @@ export default function EmployerMessagesPage() {
           )}
         </div>
       </div>
-    </div>
+    </EmployerProtection>
   );
 }

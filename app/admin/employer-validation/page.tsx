@@ -7,15 +7,18 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
+  Users,
+  Briefcase,
   CheckCircle,
-  XCircle,
   Clock,
+  AlertTriangle,
   Building,
-  Mail,
-  Phone,
-  Calendar,
-  User,
   FileText,
+  XCircle,
+  User,
+  Mail,
+  Calendar,
+  Phone,
 } from "lucide-react";
 
 type EmployerProfile = {
@@ -31,6 +34,7 @@ type EmployerProfile = {
   validation_status: string;
   rejection_reason?: string;
   created_at: string;
+  updated_at?: string;
   user_email: string;
 };
 
@@ -87,6 +91,13 @@ export default function EmployerValidationPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Fonction pour déterminer si un profil rejeté a été modifié
+  const isModifiedRejected = (employer: EmployerProfile) => {
+    return employer.validation_status === 'REJECTED' && 
+           employer.updated_at && 
+           new Date(employer.updated_at) > new Date(employer.created_at);
   };
 
   const handleValidation = async (employerId: number, status: 'VALIDATED' | 'REJECTED') => {
@@ -177,12 +188,22 @@ export default function EmployerValidationPage() {
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">
             Validation des Profils Employeurs
           </h1>
-          <p className="text-gray-600">
-            Validez ou rejetez les demandes de création de profils employeurs
+          <p className="text-xl text-gray-600">
+            Validez ou rejetez les demandes de création de profils employeurs en attente
           </p>
+          <div className="mt-4 flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+              <span className="text-sm text-gray-600">Nouvelles demandes</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
+              <span className="text-sm text-gray-600">Modifications après rejet</span>
+            </div>
+          </div>
         </div>
 
         {employers.length === 0 ? (
@@ -199,164 +220,191 @@ export default function EmployerValidationPage() {
           </Card>
         ) : (
           <div className="space-y-6">
-            {employers.map((employer) => (
-              <Card key={employer.id} className="overflow-hidden">
-                <CardHeader className="bg-white border-b">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <CardTitle className="text-xl font-semibold text-gray-900 mb-2">
-                        {employer.company_name}
-                      </CardTitle>
-                      <div className="flex items-center gap-4 text-sm text-gray-600">
-                        <div className="flex items-center gap-1">
-                          <User className="h-4 w-4" />
-                          <span>{employer.contact_person}</span>
+            {employers.map((employer) => {
+              const isModified = isModifiedRejected(employer);
+              return (
+                <Card key={employer.id} className="overflow-hidden">
+                  <CardHeader className="bg-white border-b">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <CardTitle className="text-xl font-semibold text-gray-900 mb-2">
+                          {employer.company_name}
+                        </CardTitle>
+                        <div className="flex items-center gap-4 text-sm text-gray-600">
+                          <div className="flex items-center gap-1">
+                            <User className="h-4 w-4" />
+                            <span>{employer.contact_person}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Mail className="h-4 w-4" />
+                            <span>{employer.user_email}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Calendar className="h-4 w-4" />
+                            <span>
+                              {new Date(employer.created_at).toLocaleDateString('fr-FR')}
+                            </span>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <Mail className="h-4 w-4" />
-                          <span>{employer.user_email}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {employer.validation_status === 'PENDING' && (
+                          <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">
+                            <Clock className="h-3 w-3 mr-1" />
+                            En attente
+                          </Badge>
+                        )}
+                        {isModified && (
+                          <Badge className="bg-orange-100 text-orange-800 border-orange-200">
+                            <AlertTriangle className="h-3 w-3 mr-1" />
+                            Modifié après rejet
+                          </Badge>
+                        )}
+                        {employer.validation_status === 'REJECTED' && !isModified && (
+                          <Badge className="bg-red-100 text-red-800 border-red-200">
+                            <XCircle className="h-3 w-3 mr-1" />
+                            Rejeté
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      {/* Informations de l'entreprise */}
+                      <div className="space-y-4">
+                        <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                          <Building className="h-5 w-5" />
+                          Informations de l'entreprise
+                        </h3>
+                        
+                        <div className="space-y-3">
+                          {employer.phone && (
+                            <div className="flex items-center gap-2 text-sm">
+                              <Phone className="h-4 w-4 text-gray-400" />
+                              <span>{employer.phone}</span>
+                            </div>
+                          )}
+                          
+                          {employer.address && (
+                            <div className="text-sm">
+                              <p className="font-medium text-gray-700 mb-1">Adresse</p>
+                              <p className="text-gray-600">{employer.address}</p>
+                            </div>
+                          )}
+                          
+                          {employer.description && (
+                            <div className="text-sm">
+                              <p className="font-medium text-gray-700 mb-1">Description</p>
+                              <p className="text-gray-600 whitespace-pre-wrap">
+                                {employer.description}
+                              </p>
+                            </div>
+                          )}
                         </div>
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-4 w-4" />
-                          <span>
-                            {new Date(employer.created_at).toLocaleDateString('fr-FR')}
-                          </span>
+                      </div>
+
+                      {/* Documents */}
+                      <div className="space-y-4">
+                        <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                          <FileText className="h-5 w-5" />
+                          Documents
+                        </h3>
+                        
+                        <div className="space-y-3">
+                          {employer.img && (
+                            <div className="text-sm">
+                              <p className="font-medium text-gray-700 mb-2">Logo de l'entreprise</p>
+                              <img
+                                src={employer.img}
+                                alt="Logo de l'entreprise"
+                                className="h-20 w-20 object-cover rounded-lg border border-gray-200"
+                              />
+                            </div>
+                          )}
+                          
+                          {employer.identity && (
+                            <div className="text-sm">
+                              <p className="font-medium text-gray-700 mb-2">Document d'identité</p>
+                              <a
+                                href={employer.identity}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 hover:text-blue-800 underline"
+                              >
+                                Voir le document
+                              </a>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
-                    <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">
-                      <Clock className="h-3 w-3 mr-1" />
-                      En attente
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent className="p-6">
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Informations de l'entreprise */}
-                    <div className="space-y-4">
-                      <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-                        <Building className="h-5 w-5" />
-                        Informations de l'entreprise
-                      </h3>
-                      
-                      <div className="space-y-3">
-                        {employer.phone && (
-                          <div className="flex items-center gap-2 text-sm">
-                            <Phone className="h-4 w-4 text-gray-400" />
-                            <span>{employer.phone}</span>
-                          </div>
-                        )}
-                        
-                        {employer.address && (
-                          <div className="text-sm">
-                            <p className="font-medium text-gray-700 mb-1">Adresse</p>
-                            <p className="text-gray-600">{employer.address}</p>
-                          </div>
-                        )}
-                        
-                        {employer.description && (
-                          <div className="text-sm">
-                            <p className="font-medium text-gray-700 mb-1">Description</p>
-                            <p className="text-gray-600 whitespace-pre-wrap">
-                              {employer.description}
+
+                    {/* Actions */}
+                    <div className="mt-6 pt-6 border-t border-gray-200">
+                      <div className="space-y-4">
+                        {isModified && (
+                          <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                            <p className="text-sm text-orange-800">
+                              <strong>Modification détectée :</strong> L'employeur a modifié son profil après un rejet précédent.
                             </p>
                           </div>
                         )}
-                      </div>
-                    </div>
-
-                    {/* Documents */}
-                    <div className="space-y-4">
-                      <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-                        <FileText className="h-5 w-5" />
-                        Documents
-                      </h3>
-                      
-                      <div className="space-y-3">
-                        {employer.img && (
-                          <div className="text-sm">
-                            <p className="font-medium text-gray-700 mb-2">Logo de l'entreprise</p>
-                            <img
-                              src={employer.img}
-                              alt="Logo de l'entreprise"
-                              className="h-20 w-20 object-cover rounded-lg border border-gray-200"
-                            />
-                          </div>
-                        )}
                         
-                        {employer.identity && (
-                          <div className="text-sm">
-                            <p className="font-medium text-gray-700 mb-2">Document d'identité</p>
-                            <a
-                              href={employer.identity}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-blue-600 hover:text-blue-800 underline"
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Motif de rejet (si applicable)
+                          </label>
+                          <textarea
+                            value={rejectionReasons[employer.id] || ''}
+                            onChange={(e) => setRejectionReasons(prev => ({
+                              ...prev,
+                              [employer.id]: e.target.value
+                            }))}
+                            placeholder="Expliquez pourquoi ce profil est rejeté. L'employeur pourra voir ce motif pour améliorer sa demande."
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                            rows={3}
+                          />
+                        </div>
+                        
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm text-gray-600">
+                            Que souhaitez-vous faire avec cette demande ?
+                          </p>
+                          <div className="flex items-center gap-3">
+                            <Button
+                              onClick={() => handleValidation(employer.id, 'REJECTED')}
+                              variant="outline"
+                              className="border-red-200 text-red-700 hover:bg-red-50"
+                              disabled={processing === employer.id}
                             >
-                              Voir le document
-                            </a>
+                              {processing === employer.id ? (
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
+                              ) : (
+                                <XCircle className="h-4 w-4 mr-2" />
+                              )}
+                              Rejeter
+                            </Button>
+                            <Button
+                              onClick={() => handleValidation(employer.id, 'VALIDATED')}
+                              className="bg-green-600 hover:bg-green-700"
+                              disabled={processing === employer.id}
+                            >
+                              {processing === employer.id ? (
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                              ) : (
+                                <CheckCircle className="h-4 w-4 mr-2" />
+                              )}
+                              Valider
+                            </Button>
                           </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="mt-6 pt-6 border-t border-gray-200">
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Motif de rejet (si applicable)
-                        </label>
-                        <textarea
-                          value={rejectionReasons[employer.id] || ''}
-                          onChange={(e) => setRejectionReasons(prev => ({
-                            ...prev,
-                            [employer.id]: e.target.value
-                          }))}
-                          placeholder="Expliquez pourquoi ce profil est rejeté. L'employeur pourra voir ce motif pour améliorer sa demande."
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                          rows={3}
-                        />
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm text-gray-600">
-                          Que souhaitez-vous faire avec cette demande ?
-                        </p>
-                        <div className="flex items-center gap-3">
-                          <Button
-                            onClick={() => handleValidation(employer.id, 'REJECTED')}
-                            variant="outline"
-                            className="border-red-200 text-red-700 hover:bg-red-50"
-                            disabled={processing === employer.id}
-                          >
-                            {processing === employer.id ? (
-                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
-                            ) : (
-                              <XCircle className="h-4 w-4 mr-2" />
-                            )}
-                            Rejeter
-                          </Button>
-                          <Button
-                            onClick={() => handleValidation(employer.id, 'VALIDATED')}
-                            className="bg-green-600 hover:bg-green-700"
-                            disabled={processing === employer.id}
-                          >
-                            {processing === employer.id ? (
-                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                            ) : (
-                              <CheckCircle className="h-4 w-4 mr-2" />
-                            )}
-                            Valider
-                          </Button>
                         </div>
                       </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         )}
       </div>

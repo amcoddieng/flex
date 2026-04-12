@@ -6,6 +6,7 @@ import { decodeToken } from "@/lib/jwt";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ApplicationDetailModal } from "@/components/application-detail-modal";
+import { EmployerProtection } from "@/components/employer-protection";
 import { Search, X } from "lucide-react";
 
 type Application = {
@@ -317,9 +318,10 @@ export default function EmployerApplicationsPage() {
   };
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold text-slate-900">Candidatures reçues</h1>
+    <EmployerProtection>
+      <div className="space-y-8">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900">Candidatures reçues</h1>
         <p className="text-slate-600 mt-2">Gérez les candidatures pour vos offres</p>
       </div>
 
@@ -464,6 +466,7 @@ export default function EmployerApplicationsPage() {
         onStartConversation={startConversation}
         conversationLoading={conversationLoading}
       />
-    </div>
+      </div>
+    </EmployerProtection>
   );
 }

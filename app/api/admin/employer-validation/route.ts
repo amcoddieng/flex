@@ -41,6 +41,8 @@ export async function GET(request: NextRequest) {
     const connection = await pool.getConnection();
 
     try {
+      // Récupérer les profils en attente ET les profils rejetés qui ont été modifiés récemment
+      // Note: updated_at sera ajouté via migration, en attendant on utilise created_at
       const [employers] = await connection.execute(`
         SELECT 
           ep.id,
@@ -55,11 +57,13 @@ export async function GET(request: NextRequest) {
           ep.validation_status,
           ep.rejection_reason,
           ep.created_at,
+          ep.updated_at,
           u.email as user_email
         FROM employer_profile ep
         JOIN user u ON ep.user_id = u.id
-        WHERE ep.validation_status = 'PENDING'
-        ORDER BY ep.created_at DESC
+        WHERE (ep.validation_status = 'PENDING' 
+               OR (ep.validation_status = 'REJECTED' AND ep.updated_at IS NOT NULL AND ep.updated_at > ep.created_at))
+        ORDER BY COALESCE(ep.updated_at, ep.created_at) DESC
       `);
 
       connection.release();

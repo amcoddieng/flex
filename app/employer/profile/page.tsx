@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { decodeToken } from "@/lib/jwt";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { EmployerProtection } from "@/components/employer-protection";
 import { Camera, Upload, User, Building2, Phone, Mail, MapPin, FileText, Shield, Settings, Bell, Lock, Save, X, Edit3, Check, AlertCircle, TrendingUp, Award, Clock } from "lucide-react";
 
 export default function EmployerProfilePage() {
@@ -190,9 +191,10 @@ export default function EmployerProfilePage() {
   if (!profile) return <div className="p-8">Chargement...</div>;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50/30">
-      {/* Modern Header */}
-      <div className="bg-white/80 backdrop-blur-md border-b border-slate-200/50 sticky top-0 z-40">
+    <EmployerProtection requireValidation={false}>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50/30">
+        {/* Modern Header */}
+        <div className="bg-white/80 backdrop-blur-md border-b border-slate-200/50 sticky top-0 z-40">
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
             <div>
@@ -763,5 +765,6 @@ export default function EmployerProfilePage() {
         </div>
       )}
     </div>
+    </EmployerProtection>
   );
 }
