@@ -38,9 +38,25 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const searchParams = request.nextUrl.searchParams;
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '10');
+
     const connection = await pool.getConnection();
 
     try {
+      // Compter le total des profils en attente
+      const [countResult] = await connection.execute(`
+        SELECT COUNT(*) as total
+        FROM employer_profile 
+        WHERE validation_status = 'PENDING' 
+        OR (validation_status = 'REJECTED' AND updated_at > created_at)
+      `) as any[];
+
+      const total = countResult[0]?.total || 0;
+      const totalPages = Math.ceil(total / limit);
+      const offset = (page - 1) * limit;
+
       // Récupérer les profils en attente ET les profils rejetés qui ont été modifiés récemment
       // Note: updated_at sera ajouté via migration, en attendant on utilise created_at
       const [employers] = await connection.execute(`
@@ -64,12 +80,16 @@ export async function GET(request: NextRequest) {
         WHERE (ep.validation_status = 'PENDING' 
                OR (ep.validation_status = 'REJECTED' AND ep.updated_at IS NOT NULL AND ep.updated_at > ep.created_at))
         ORDER BY COALESCE(ep.updated_at, ep.created_at) DESC
-      `);
+        LIMIT ? OFFSET ?
+      `, [limit, offset]);
 
       connection.release();
       return NextResponse.json({
         success: true,
-        data: employers
+        data: employers,
+        total,
+        page,
+        totalPages
       });
 
     } catch (dbError) {

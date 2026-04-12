@@ -3,8 +3,9 @@
 import { useState, useEffect } from "react";
 import { X, Mail, Phone, Calendar, User, Building, BookOpen, Award, Shield, Ban, CheckCircle, Trash2, Lock, Unlock } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AdminModal } from "@/components/ui/admin-modal";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 type UserDetailsModalProps = {
   user: any;
@@ -92,17 +93,13 @@ export function UserDetailsModal({ user, isOpen, onClose, onStatusChange }: User
   if (!user) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg w-full max-w-6xl max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-gray-900">Détails de l'utilisateur</h2>
-          <Button variant="ghost" size="sm" onClick={onClose}>
-            <X className="h-5 w-5" />
-          </Button>
-        </div>
-
-        <div className="p-6">
+    <AdminModal 
+      open={isOpen} 
+      onOpenChange={onClose}
+      title="Détails de l'utilisateur"
+      description="Informations complètes sur l'utilisateur et actions administratives"
+      maxWidth="6xl"
+    >
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Informations principales */}
             <div className="lg:col-span-2 space-y-6">
@@ -449,8 +446,6 @@ export function UserDetailsModal({ user, isOpen, onClose, onStatusChange }: User
               </Card>
             </div>
           </div>
-        </div>
-      </div>
-    </div>
+    </AdminModal>
   );
 }

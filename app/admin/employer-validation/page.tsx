@@ -45,6 +45,12 @@ export default function EmployerValidationPage() {
   const [error, setError] = useState<string | null>(null);
   const [processing, setProcessing] = useState<number | null>(null);
   const [rejectionReasons, setRejectionReasons] = useState<{ [key: number]: string }>({});
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 0
+  });
   const router = useRouter();
 
   const getValidToken = (): string | null => {
@@ -69,9 +75,21 @@ export default function EmployerValidationPage() {
     fetchPendingEmployers(token);
   }, [router]);
 
+  useEffect(() => {
+    const token = getValidToken();
+    if (token) {
+      fetchPendingEmployers(token);
+    }
+  }, [pagination.page]);
+
   const fetchPendingEmployers = async (token: string) => {
     try {
-      const res = await fetch('/api/admin/employer-validation', {
+      const params = new URLSearchParams({
+        page: pagination.page.toString(),
+        limit: pagination.limit.toString()
+      });
+
+      const res = await fetch(`/api/admin/employer-validation?${params}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -81,7 +99,12 @@ export default function EmployerValidationPage() {
 
       const data = await res.json();
       if (data.success) {
-        setEmployers(data.data);
+        setEmployers(data.data || []);
+        setPagination(prev => ({
+          ...prev,
+          total: data.total || 0,
+          totalPages: data.totalPages || 0
+        }));
       } else {
         throw new Error(data.error || 'Données invalides');
       }
@@ -409,6 +432,31 @@ export default function EmployerValidationPage() {
           </div>
         )}
       </div>
+
+      {/* Pagination */}
+      {pagination.totalPages > 1 && (
+        <div className="flex justify-center items-center gap-2 mt-6">
+          <Button
+            variant="outline"
+            onClick={() => setPagination(prev => ({ ...prev, page: Math.max(1, prev.page - 1) }))}
+            disabled={pagination.page === 1}
+          >
+            Précédent
+          </Button>
+          
+          <span className="text-sm text-gray-600">
+            Page {pagination.page} sur {pagination.totalPages}
+          </span>
+          
+          <Button
+            variant="outline"
+            onClick={() => setPagination(prev => ({ ...prev, page: Math.min(prev.totalPages, prev.page + 1) }))}
+            disabled={pagination.page === pagination.totalPages}
+          >
+            Suivant
+          </Button>
+        </div>
+      )}
     </AdminLayout>
   );
 }

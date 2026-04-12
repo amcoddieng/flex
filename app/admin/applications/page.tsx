@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AdminLayout } from "@/components/admin-layout";
+import { ApplicationDetailsModal } from "@/components/admin/application-details-modal";
 import { Search, Filter, Calendar, User, Building, Mail, Phone, FileText, Eye, CheckCircle, XCircle, Clock } from "lucide-react";
 
 type Application = {
@@ -42,6 +43,8 @@ type Filters = {
 export default function AdminApplicationsPage() {
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [filters, setFilters] = useState<Filters>({
     search: '',
     status: '',
@@ -161,6 +164,16 @@ export default function AdminApplicationsPage() {
     } catch (error) {
       console.error('Error updating application status:', error);
     }
+  };
+
+  const handleViewDetails = (application: Application) => {
+    setSelectedApplication(application);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setSelectedApplication(null);
+    setIsModalOpen(false);
   };
 
   return (
@@ -423,7 +436,7 @@ export default function AdminApplicationsPage() {
                           </>
                         )}
                         
-                        <Button size="sm" variant="outline">
+                        <Button size="sm" variant="outline" onClick={() => handleViewDetails(application)}>
                           <Eye className="h-4 w-4 mr-1" />
                           Voir détails
                         </Button>
@@ -461,6 +474,14 @@ export default function AdminApplicationsPage() {
           </div>
         )}
       </div>
+
+      {/* Modal des détails de la candidature */}
+      <ApplicationDetailsModal
+        application={selectedApplication}
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        onStatusUpdate={handleStatusUpdate}
+      />
     </AdminLayout>
   );
 }

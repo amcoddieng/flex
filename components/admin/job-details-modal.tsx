@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { AdminModal } from "@/components/ui/admin-modal";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
   X, 
@@ -125,18 +126,13 @@ export function JobDetailsModal({ job, isOpen, onClose, onStatusChange }: JobDet
   if (!job || !isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-2xl font-bold text-gray-900">Détails de l'offre d'emploi</h2>
-          <Button variant="ghost" size="sm" onClick={onClose}>
-            <X className="h-5 w-5" />
-          </Button>
-        </div>
-
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
+    <AdminModal 
+      open={isOpen} 
+      onOpenChange={onClose}
+      title="Détails de l'offre d'emploi"
+      description="Informations complètes sur l'offre d'emploi et les candidatures associées"
+      maxWidth="7xl"
+    >
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Job Details - 2 columns */}
             <div className="lg:col-span-2 space-y-6">
@@ -401,8 +397,6 @@ export function JobDetailsModal({ job, isOpen, onClose, onStatusChange }: JobDet
               </Card>
             </div>
           </div>
-        </div>
-      </div>
-    </div>
+    </AdminModal>
   );
 }

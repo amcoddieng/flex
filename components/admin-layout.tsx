@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { decodeToken } from "@/lib/jwt";
 import { Button } from "@/components/ui/button";
+import { ScrollToTop } from "@/components/ui/scroll-to-top";
 import { 
   LayoutDashboard, 
   Users, 
@@ -101,7 +102,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar */}
+      {/* Sidebar gauche */}
       <div className={`${sidebarOpen ? 'w-64' : 'w-20'} bg-white border-r border-gray-200 transition-all duration-300 ease-in-out flex flex-col`}>
         {/* Header */}
         <div className="p-4 border-b border-gray-200">
@@ -185,6 +186,9 @@ export function AdminLayout({ children }: AdminLayoutProps) {
           {children}
         </div>
       </div>
+      
+      {/* Scroll to Top Button */}
+      <ScrollToTop />
     </div>
   );
 }
