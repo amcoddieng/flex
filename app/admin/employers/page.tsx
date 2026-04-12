@@ -1,12 +1,14 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { decodeToken } from "@/lib/jwt";
+import { AdminLayout } from "@/components/admin-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import Link from "next/link";
-import { ArrowLeft, Search, X, Eye } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Search, Building, User, Mail, Calendar, Phone, CheckCircle, Clock, AlertTriangle, Eye, Briefcase } from "lucide-react";
 
 type Employer = {
   id: number;
@@ -25,14 +27,6 @@ type Employer = {
   validation_status?: string;
 };
 
-const ADMIN_MENU = [
-  { label: "Utilisateurs", href: "/admin/users" },
-  { label: "Étudiants", href: "/admin/students" },
-  { label: "Employeurs", href: "/admin/employers" },
-  { label: "Modérateurs", href: "/admin/moderators" },
-  { label: "Offres d'emploi", href: "/admin/jobs" },
-];
-
 export default function AdminEmployersPage() {
   const [employers, setEmployers] = useState<Employer[]>([]);
   const [loading, setLoading] = useState(false);
@@ -40,575 +34,344 @@ export default function AdminEmployersPage() {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [limit] = useState(20);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [isAuthed, setIsAuthed] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
-  const [selectedEmployer, setSelectedEmployer] = useState<Employer | null>(null);
-  const [selectedProfile, setSelectedProfile] = useState<any>(null);
-  const [jobs, setJobs] = useState<any[]>([]);
-  const [jobsLoading, setJobsLoading] = useState(false);
-  const [selectedJob, setSelectedJob] = useState<any>(null);
-  const [showJobModal, setShowJobModal] = useState(false);
-  const [showDetailModal, setShowDetailModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [profileLoading, setProfileLoading] = useState(false);
-  const [editLoading, setEditLoading] = useState(false);
-  const [editData, setEditData] = useState<any>({});
-  const [showMsgModal, setShowMsgModal] = useState(false);
-  const [msgAction, setMsgAction] = useState<any>(null);
-  const [msgText, setMsgText] = useState('');
   const router = useRouter();
-  const hasCheckedAuth = useRef(false);
 
-  // small donut chart component
-  const Donut = ({ value = 0, total = 1, size = 48, color = '#3b82f6' }: { value?: number; total?: number; size?: number; color?: string }) => {
-    const radius = (size - 8) / 2;
-    const circumference = 2 * Math.PI * radius;
-    const percent = total > 0 ? Math.max(0, Math.min(1, value / total)) : 0;
-    const dash = percent * circumference;
-    return (
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-        <g transform={`translate(${size / 2}, ${size / 2})`}>
-          <circle r={radius} fill="transparent" stroke="#e6eefc" strokeWidth={8} />
-          <circle r={radius} fill="transparent" stroke={color} strokeWidth={8} strokeLinecap="round" strokeDasharray={`${dash} ${circumference - dash}`} transform={`rotate(-90)`} />
-        </g>
-      </svg>
-    );
+  const getValidToken = (): string | null => {
+    if (typeof window === 'undefined') return null;
+    const token = localStorage.getItem('token');
+    if (!token) return null;
+    const decoded = decodeToken(token);
+    if (!decoded || decoded.role !== 'ADMIN') {
+      localStorage.removeItem('token');
+      return null;
+    }
+    return token;
   };
-
-  // histogram for offers summary
-  const OffersHistogram = ({ jobs }: { jobs: any[] }) => {
-    const activeCount = jobs.filter(j => j.is_active).length;
-    const inactiveCount = jobs.filter(j => !j.is_active).length;
-    const total = jobs.length;
-    const activePct = total > 0 ? Math.round((activeCount / total) * 100) : 0;
-    const inactivePct = total > 0 ? Math.round((inactiveCount / total) * 100) : 0;
-    return (
-      <div className="space-y-3 mt-4">
-        <div className="flex items-center gap-3">
-          <div className="w-32 text-sm font-medium text-slate-700">Actives</div>
-          <div className="flex-1 bg-slate-100 rounded overflow-hidden h-3">
-            <div style={{ width: `${activePct}%`, background: '#10b981', height: '12px' }} />
-          </div>
-          <div className="w-12 text-right text-sm text-slate-700">{activeCount}</div>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="w-32 text-sm font-medium text-slate-700">Fermées</div>
-          <div className="flex-1 bg-slate-100 rounded overflow-hidden h-3">
-            <div style={{ width: `${inactivePct}%`, background: '#ef4444', height: '12px' }} />
-          </div>
-          <div className="w-12 text-right text-sm text-slate-700">{inactiveCount}</div>
-        </div>
-        <div className="text-xs text-slate-600 mt-2">Total: {total} offre{total !== 1 ? 's' : ''}</div>
-      </div>
-    );
-  };
-
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-  const decoded = token ? decodeToken(token) : null;
 
   useEffect(() => {
-    if (hasCheckedAuth.current) return;
-    hasCheckedAuth.current = true;
-
-    if (!decoded || decoded.role !== 'ADMIN') {
+    const token = getValidToken();
+    if (!token) {
       router.push('/login');
       return;
     }
-    setIsAdmin(true);
-  }, [decoded, router]);
+    setIsAuthed(true);
+    fetchEmployers(token);
+  }, [router]);
 
-  useEffect(() => {
-    if (isAdmin) fetchEmployers(1);
-  }, [isAdmin]);
-
-  const fetchEmployers = async (pageNum: number) => {
+  const fetchEmployers = async (token: string) => {
     setLoading(true);
     setError(null);
+    
     try {
-      let url = `/api/admin/employers?page=${pageNum}&limit=${limit}`;
-      if (searchQuery) url += `&search=${encodeURIComponent(searchQuery)}`;
-      if (filterStatus) url += `&validation_status=${encodeURIComponent(filterStatus)}`;
+      let url = `/api/admin/employers?page=${page}&limit=${limit}`;
+      if (searchQuery) {
+        url += `&search=${encodeURIComponent(searchQuery)}`;
+      }
+      if (filterStatus) {
+        url += `&status=${filterStatus}`;
+      }
 
-      const res = await fetch(url, { headers: token ? { Authorization: `Bearer ${token}` } : undefined });
-      if (!res.ok) throw new Error('Erreur');
-      const data = await res.json();
-      // Trier les employeurs: PENDING en premier
-      const sortedEmployers = (data.data || []).sort((a: Employer, b: Employer) => {
-        if (a.validation_status === 'PENDING' && b.validation_status !== 'PENDING') return -1;
-        if (a.validation_status !== 'PENDING' && b.validation_status === 'PENDING') return 1;
-        return 0;
+      const res = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}` },
       });
-      setEmployers(sortedEmployers);
-      setTotal(data.pagination?.total || 0);
-      setPage(pageNum);
+
+      if (!res.ok) {
+        throw new Error('Erreur lors de la récupération des employeurs');
+      }
+
+      const data = await res.json();
+      if (data.success) {
+        // Trier les employeurs: PENDING en premier
+        const sortedEmployers = (data.data || []).sort((a: Employer, b: Employer) => {
+          if (a.validation_status === 'PENDING' && b.validation_status !== 'PENDING') return -1;
+          if (a.validation_status !== 'PENDING' && b.validation_status === 'PENDING') return 1;
+          return 0;
+        });
+        
+        setEmployers(sortedEmployers);
+        setTotal(data.pagination?.total || 0);
+      } else {
+        throw new Error(data.error || 'Données invalides');
+      }
     } catch (err: any) {
-      console.error('fetchEmployers error', err);
-      setError(err?.message || 'Erreur lors de la récupération');
+      const message = err instanceof Error ? err.message : 'Erreur inconnue';
+      console.error('fetchEmployers error:', message);
+      setError(message);
+      setEmployers([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => { setSearchQuery(e.target.value); setPage(1); };
-  const handleStatusFilter = (e: React.ChangeEvent<HTMLSelectElement>) => { setFilterStatus(e.target.value); setPage(1); };
-
-  useEffect(() => { if (isAdmin) fetchEmployers(1); }, [searchQuery, filterStatus, isAdmin]);
-
-  const openDetailModal = (employer: Employer) => {
-    setSelectedEmployer(employer);
-    setProfileLoading(true);
-    setShowDetailModal(true);
-
-    fetch(`/api/admin/employers/${employer.id}`, { headers: token ? { Authorization: `Bearer ${token}` } : undefined })
-      .then(res => { if (!res.ok) throw new Error('Erreur'); return res.json(); })
-      .then(data => { if (data.success) setSelectedProfile(data.data.profile); })
-      .catch(err => { console.error('Erreur chargement profil employeur:', err); setSelectedProfile(null); })
-      .finally(() => setProfileLoading(false));
-
-    // Charger l'historique des offres de l'employeur
-    setJobsLoading(true);
-    fetch(`/api/admin/jobs?employer_id=${employer.id}&limit=50`, { headers: token ? { Authorization: `Bearer ${token}` } : undefined })
-      .then(res => { if (!res.ok) throw new Error('Erreur jobs'); return res.json(); })
-      .then(data => { if (data.success) setJobs(data.data || []); else setJobs([]); })
-      .catch(err => { console.error('Erreur chargement jobs employeur:', err); setJobs([]); })
-      .finally(() => setJobsLoading(false));
-  };
-
-  const quickValidate = async (employerId: number, status: 'VALIDATED' | 'REJECTED') => {
-    try {
-      if (status === 'REJECTED') {
-        setMsgAction({ type: 'reject-employer-quick', id: employerId });
-        setMsgText('');
-        setShowMsgModal(true);
-        return;
+  useEffect(() => {
+    if (isAuthed) {
+      const token = getValidToken();
+      if (token) {
+        fetchEmployers(token);
       }
-
-      const res = await fetch(`/api/admin/employers/${employerId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-        body: JSON.stringify({ validation_status: status }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Erreur');
-
-      // Refresh list and profile
-      fetchEmployers(page);
-      if (selectedEmployer) openDetailModal(selectedEmployer);
-    } catch (err: any) {
-      console.error('quickValidate error', err);
-      alert(err?.message || 'Erreur lors de la validation');
     }
-  };
+  }, [page, searchQuery, filterStatus, isAuthed]);
 
-  const openJobDetailModal = async (jobId: number) => {
-    setSelectedJob(null);
-    setShowJobModal(true);
-    try {
-      const res = await fetch(`/api/admin/jobs/${jobId}`, { headers: token ? { Authorization: `Bearer ${token}` } : undefined });
-      if (!res.ok) throw new Error('Erreur job detail');
-      const data = await res.json();
-      if (data.success) setSelectedJob(data.data);
-      else setSelectedJob(null);
-    } catch (err) {
-      console.error('openJobDetailModal error', err);
-      setSelectedJob(null);
-    }
-  };
-
-  const openEditModal = () => {
-    if (selectedEmployer && selectedProfile) {
-      setEditData({
-        company_name: selectedProfile.company_name || '',
-        contact_person: selectedProfile.contact_person || '',
-        phone: selectedProfile.phone || '',
-        address: selectedProfile.address || '',
-        description: selectedProfile.description || '',
-        validation_status: selectedProfile.validation_status || 'PENDING'
-      });
-      setShowDetailModal(false);
-      setShowEditModal(true);
-    }
-  };
-
-  // Perform message modal actions for employers
-  const performMsgAction = async () => {
-    if (!msgAction) return;
-    if (!msgText || msgText.trim() === '') { alert('Le message est requis.'); return; }
-
-    try {
-      if (msgAction.type === 'block-employer') {
-        const res = await fetch(`/api/admin/employers/${msgAction.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-          body: JSON.stringify({ blocked: true, notification_message: msgText })
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Erreur');
-        alert('Employeur bloqué');
-        setShowDetailModal(false);
-        setSelectedEmployer(null);
-        setSelectedProfile(null);
-        fetchEmployers(page);
-      } else if (msgAction.type === 'reject-employer-quick') {
-        const res = await fetch(`/api/admin/employers/${msgAction.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-          body: JSON.stringify({ validation_status: 'REJECTED', notification_message: msgText })
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Erreur');
-        fetchEmployers(page);
-      } else if (msgAction.type === 'reject-employer-edit') {
-        const newEdit = { ...msgAction.editData, notification_message: msgText };
-        const res = await fetch(`/api/admin/employers/${msgAction.id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-          body: JSON.stringify(newEdit),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Erreur');
-        alert('Employeur modifié');
-        setShowEditModal(false);
-        setSelectedEmployer(null);
-        setSelectedProfile(null);
-        fetchEmployers(page);
-      }
-    } catch (err: any) {
-      console.error('performMsgAction (employers) error', err);
-      alert(err?.message || 'Erreur');
-    } finally {
-      setShowMsgModal(false);
-      setMsgAction(null);
-      setMsgText('');
-      setEditLoading(false);
-    }
-  };
-
-  const toggleBlockStatus = async () => {
-    if (!selectedEmployer) return;
-    setEditLoading(true);
-    try {
-      if (!selectedEmployer.blocked) {
-        setMsgAction({ type: 'block-employer', id: selectedEmployer.id });
-        setMsgText('');
-        setShowMsgModal(true);
-        setEditLoading(false);
-        return;
-      }
-
-      const res = await fetch(`/api/admin/employers/${selectedEmployer.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-        body: JSON.stringify({ blocked: !selectedEmployer.blocked })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Erreur');
-      alert(selectedEmployer.blocked ? 'Employeur débloqué' : 'Employeur bloqué');
-      setShowDetailModal(false);
-      setSelectedEmployer(null);
-      setSelectedProfile(null);
-      fetchEmployers(page);
-    } catch (err: any) { console.error('toggleBlockStatus error', err); alert(err?.message || 'Erreur'); }
-    finally { setEditLoading(false); }
-  };
-
-  const saveEmployerChanges = async () => {
-    if (!selectedEmployer) return;
-    setEditLoading(true);
-    try {
-      // If admin set validation to REJECTED and no message, open modal to get it
-      if (editData.validation_status === 'REJECTED' && !editData.notification_message) {
-        setMsgAction({ type: 'reject-employer-edit', id: selectedEmployer.id, editData });
-        setMsgText('');
-        setShowMsgModal(true);
-        setEditLoading(false);
-        return;
-      }
-
-      const res = await fetch(`/api/admin/employers/${selectedEmployer.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-        body: JSON.stringify(editData),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Erreur');
-      alert('Employeur modifié');
-      setShowEditModal(false);
-      setSelectedEmployer(null);
-      setSelectedProfile(null);
-      fetchEmployers(page);
-    } catch (err: any) { console.error('saveEmployerChanges error', err); alert(err?.message || 'Erreur'); }
-    finally { setEditLoading(false); }
-  };
-
-  if (!isAdmin) return <div className="p-8">Vérification...</div>;
+  if (!isAuthed) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
 
   const pages = Math.ceil(total / limit);
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <div className="bg-white border-b">
-        <div className="container mx-auto px-4 py-4">
-          <Link href="/admin" className="flex items-center gap-2 text-blue-600 hover:text-blue-800 mb-4">
-            <ArrowLeft className="h-4 w-4" />
-            Retour au panneau
-          </Link>
-          <h1 className="text-3xl font-bold text-slate-900">Gestion des employeurs</h1>
+    <AdminLayout>
+      <div className="space-y-6">
+        {/* Header */}
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Gestion des Employeurs
+          </h1>
+          <p className="text-gray-600">
+            Consultez et gérez tous les comptes employeurs de la plateforme
+          </p>
         </div>
-      </div>
 
-      <div className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow p-4 sticky top-4">
-              <h3 className="font-bold mb-4 text-slate-900">Menu</h3>
-              <nav className="space-y-2">
-                {ADMIN_MENU.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`block px-3 py-2 rounded transition-colors ${
-                      item.href === '/admin/employers'
-                        ? 'bg-blue-100 text-blue-900 font-semibold'
-                        : 'text-slate-700 hover:bg-slate-100'
-                    }`}
-                  >
-                    {item.label}
-                  </Link>
-                ))}
-              </nav>
-            </div>
-          </div>
-
-          <div className="lg:col-span-3">
-            <div className="bg-white rounded-lg shadow">
-              {error && <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">{error}</div>}
-
-              <div className="p-6 border-b space-y-4">
-                <div className="flex items-center gap-2 mb-4"><Search className="h-5 w-5 text-slate-400" /><h3 className="font-semibold text-slate-900">Recherche et Filtres</h3></div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Rechercher (Email, Société)</label>
-                    <Input type="text" placeholder="Entrez email ou société..." value={searchQuery} onChange={handleSearch} className="w-full" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Filtrer par Statut</label>
-                    <select value={filterStatus} onChange={handleStatusFilter} className="w-full px-3 py-2 border border-slate-300 rounded-md text-slate-900 bg-white hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                      <option value="">Tous les statuts</option>
-                      <option value="PENDING">En attente</option>
-                      <option value="VALIDATED">Validé</option>
-                      <option value="REJECTED">Rejeté</option>
-                    </select>
-                  </div>
+        {/* Section Recherche et Filtres */}
+        <Card>
+          <CardContent className="p-6 space-y-4">
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex-1">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Input
+                    placeholder="Rechercher par nom, email, entreprise..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10"
+                  />
                 </div>
               </div>
-
-              <div className="p-6 border-b flex items-center justify-between">
-                <div><p className="text-sm text-slate-600">Total: {total} employeurs</p></div>
-                <Button onClick={() => fetchEmployers(page)} disabled={loading}>{loading ? 'Rafraîchir...' : 'Rafraîchir'}</Button>
+              <div className="flex gap-2">
+                <Button
+                  variant={filterStatus === "" ? "default" : "outline"}
+                  onClick={() => setFilterStatus("")}
+                  size="sm"
+                >
+                  Tous
+                </Button>
+                <Button
+                  variant={filterStatus === "PENDING" ? "default" : "outline"}
+                  onClick={() => setFilterStatus("PENDING")}
+                  size="sm"
+                >
+                  En attente
+                </Button>
+                <Button
+                  variant={filterStatus === "VALIDATED" ? "default" : "outline"}
+                  onClick={() => setFilterStatus("VALIDATED")}
+                  size="sm"
+                >
+                  Validés
+                </Button>
+                <Button
+                  variant={filterStatus === "REJECTED" ? "default" : "outline"}
+                  onClick={() => setFilterStatus("REJECTED")}
+                  size="sm"
+                >
+                  Rejetés
+                </Button>
               </div>
+            </div>
+          </CardContent>
+        </Card>
 
+        {/* Error Display */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+            {error}
+          </div>
+        )}
+
+        {/* Employers List */}
+        <Card>
+          <CardContent className="p-0">
+            {loading ? (
+              <div className="p-8 text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <p className="text-gray-600">Chargement des employeurs...</p>
+              </div>
+            ) : employers.length === 0 ? (
+              <div className="p-8 text-center">
+                <Building className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  Aucun employeur trouvé
+                </h3>
+                <p className="text-gray-600">
+                  {searchQuery || filterStatus
+                    ? "Aucun employeur ne correspond à vos critères de recherche."
+                    : "Aucun employeur n'est enregistré sur la plateforme."}
+                </p>
+              </div>
+            ) : (
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-slate-50 border-b"><tr><th className="text-left p-4 font-semibold text-slate-900">Photo</th><th className="text-left p-4 font-semibold text-slate-900">Société</th><th className="text-left p-4 font-semibold text-slate-900">Contact</th><th className="text-left p-4 font-semibold text-slate-900">Email</th><th className="text-left p-4 font-semibold text-slate-900">Statut</th><th className="text-left p-4 font-semibold text-slate-900">Bloqué</th><th className="text-right p-4 font-semibold text-slate-900">Actions</th></tr></thead>
-                  <tbody>{employers.map((em) => {
-                    const employerJobs = jobs.filter(j => j.employer_id === em.id);
-                    const totalJobs = employerJobs.length;
-                    const activeJobs = employerJobs.filter(j => j.is_active).length;
-                    return (
-                    <tr key={em.id} className={`border-b hover:bg-slate-50 transition-colors ${em.validation_status === 'PENDING' ? 'bg-yellow-50' : ''}`}>
-                      <td className="p-4">
-                        {em.img ? (
-                          <img src={em.img} alt="Profile" className="w-10 h-10 rounded-full object-cover border border-slate-300" title="Photo de profil" />
-                        ) : (
-                          <div className="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-xs text-slate-600">-</div>
-                        )}
-                      </td>
-                      <td className="p-4 font-medium flex items-center gap-3">
-                        <Donut value={activeJobs} total={Math.max(1, totalJobs)} color="#10b981" />
-                        <div>{em.company_name || '-'}</div>
-                      </td>
-                      <td className="p-4">{em.contact_person || '-'}</td>
-                      <td className="p-4">{em.email}</td>
-                      <td className="p-4"><span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${em.validation_status === 'VALIDATED' ? 'bg-green-100 text-green-800' : em.validation_status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`}>{em.validation_status || 'N/A'}</span></td>
-                      <td className="p-4"><span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${em.blocked ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>{em.blocked ? 'Bloqué' : 'Actif'}</span></td>
-                      <td className="p-4 text-right">
-                        {em.validation_status === 'PENDING' ? (
-                          <div className="flex items-center gap-2 justify-end">
-                            <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => quickValidate(em.id, 'VALIDATED')}>Valider</Button>
-                            <Button size="sm" variant="destructive" onClick={() => quickValidate(em.id, 'REJECTED')}>Invalider</Button>
-                            <Button variant="outline" size="sm" onClick={() => openDetailModal(em)}>Détails</Button>
-                          </div>
-                        ) : (
-                          <Button variant="outline" size="sm" onClick={() => openDetailModal(em)} className="flex items-center gap-1"><Eye className="h-4 w-4" />Détails</Button>
-                        )}
-                      </td>
+                  <thead className="bg-gray-50 border-b">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Entreprise
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Contact
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Statut
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Date d'inscription
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
                     </tr>
-                    );
-                  })}</tbody>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {employers.map((employer) => (
+                      <tr key={employer.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center gap-3">
+                            {employer.img && (
+                              <img
+                                src={employer.img}
+                                alt="Logo"
+                                className="h-10 w-10 rounded-full object-cover border border-gray-200"
+                              />
+                            )}
+                            <div>
+                              <div className="text-sm font-medium text-gray-900">
+                                {employer.company_name || "Nom non défini"}
+                              </div>
+                              {employer.address && (
+                                <div className="text-xs text-gray-500">
+                                  {employer.address}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">
+                              {employer.contact_person || "Contact non défini"}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {employer.email}
+                            </div>
+                            {employer.phone && (
+                              <div className="text-xs text-gray-400 flex items-center gap-1 mt-1">
+                                <Phone className="h-3 w-3" />
+                                {employer.phone}
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <Badge
+                            className={
+                              employer.validation_status === 'VALIDATED'
+                                ? 'bg-green-100 text-green-800'
+                                : employer.validation_status === 'REJECTED'
+                                ? 'bg-red-100 text-red-800'
+                                : 'bg-yellow-100 text-yellow-800'
+                            }
+                          >
+                            {employer.validation_status === 'VALIDATED' && (
+                              <>
+                                <CheckCircle className="h-3 w-3 mr-1" />
+                                Validé
+                              </>
+                            )}
+                            {employer.validation_status === 'REJECTED' && (
+                              <>
+                                <AlertTriangle className="h-3 w-3 mr-1" />
+                                Rejeté
+                              </>
+                            )}
+                            {employer.validation_status === 'PENDING' && (
+                              <>
+                                <Clock className="h-3 w-3 mr-1" />
+                                En attente
+                              </>
+                            )}
+                            {!employer.validation_status && (
+                              <>
+                                <Clock className="h-3 w-3 mr-1" />
+                                Non défini
+                              </>
+                            )}
+                          </Badge>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <div className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3" />
+                            {new Date(employer.created_at).toLocaleDateString('fr-FR')}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                // TODO: Implémenter le modal de détails
+                                console.log('Voir détails employeur:', employer);
+                              }}
+                            >
+                              <Eye className="h-3 w-3 mr-1" />
+                              Voir
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
                 </table>
               </div>
-
-              <div className="p-4 flex items-center justify-between"><div className="text-sm text-slate-600">Page {page} sur {pages}</div><div className="flex gap-2"><Button variant="outline" disabled={page===1} onClick={() => fetchEmployers(page-1)}>Précédent</Button><Button variant="outline" disabled={page===pages} onClick={() => fetchEmployers(page+1)}>Suivant</Button></div></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Detail Modal */}
-      {showDetailModal && selectedEmployer && (
-        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full p-8 max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-6"><h2 className="text-2xl font-bold text-slate-900">Détails de l'employeur</h2><button onClick={() => { setShowDetailModal(false); setSelectedEmployer(null); setSelectedProfile(null); }} className="text-slate-400 hover:text-slate-600 transition-colors"><X className="h-6 w-6" /></button></div>
-
-            <div className="space-y-8">
-              <div>
-                <h3 className="text-lg font-semibold text-slate-900 mb-4 border-b-2 pb-2">Informations Compte</h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-6"><div><label className="block text-sm font-medium text-slate-700 mb-2">ID</label><p className="text-slate-900 font-semibold">{selectedEmployer.id}</p></div><div className="col-span-2 md:col-span-2"><label className="block text-sm font-medium text-slate-700 mb-2">Email</label><p className="text-slate-900 font-semibold">{selectedEmployer.email}</p></div><div><label className="block text-sm font-medium text-slate-700 mb-2">Statut du Compte</label><span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${selectedEmployer.blocked ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}`}>{selectedEmployer.blocked ? 'Bloqué' : 'Actif'}</span></div><div className="col-span-2"><label className="block text-sm font-medium text-slate-700 mb-2">Créé le</label><p className="text-slate-900">{new Date(selectedEmployer.created_at).toLocaleDateString('fr-FR')}</p></div></div>
-              </div>
-
-              <div>
-                <h3 className="text-lg font-semibold text-slate-900 mb-4 border-b-2 pb-2">Profil Employeur</h3>
-                {profileLoading ? <p className="text-slate-600">Chargement...</p> : selectedProfile ? (
-                  <div className="space-y-6">
-                    {(selectedProfile.img || selectedProfile.identity) && (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {selectedProfile.img && (
-                          <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-3">Photo de profil</label>
-                            <img src={selectedProfile.img} alt="Profile photo" className="w-full h-auto max-h-64 object-cover rounded-lg border border-slate-300" />
-                          </div>
-                        )}
-                        {selectedProfile.identity && (
-                          <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-3">Carte d'identité</label>
-                            <img src={selectedProfile.identity} alt="Identity document" className="w-full h-auto max-h-64 object-cover rounded-lg border border-slate-300" />
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-6">{selectedProfile.company_name && <div><label className="block text-sm font-medium text-slate-700 mb-2">Nom Entreprise</label><p className="text-slate-900">{selectedProfile.company_name}</p></div>}{selectedProfile.contact_person && <div><label className="block text-sm font-medium text-slate-700 mb-2">Personne de Contact</label><p className="text-slate-900">{selectedProfile.contact_person}</p></div>}{selectedProfile.phone && <div><label className="block text-sm font-medium text-slate-700 mb-2">Téléphone</label><p className="text-slate-900">{selectedProfile.phone}</p></div>}{selectedProfile.address && <div className="col-span-2"><label className="block text-sm font-medium text-slate-700 mb-2">Adresse</label><p className="text-slate-900">{selectedProfile.address}</p></div>}{selectedProfile.description && <div className="col-span-3"><label className="block text-sm font-medium text-slate-700 mb-2">Description</label><p className="text-slate-900">{selectedProfile.description}</p></div>}<div><label className="block text-sm font-medium text-slate-700 mb-2">Statut de Validation</label><span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${selectedProfile.validation_status === 'VALIDATED' ? 'bg-green-100 text-green-800' : selectedProfile.validation_status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`}>{selectedProfile.validation_status}</span></div></div>
-                  </div>
-                ) : <p className="text-slate-600">Aucun profil</p>}
-              </div>
-
-              <div>
-                <h3 className="text-lg font-semibold text-slate-900 mb-4 border-b-2 pb-2">Offres publiées</h3>
-                {jobsLoading ? <p className="text-slate-600">Chargement des offres...</p> : (
-                  jobs.length > 0 ? (
-                    <>
-                      <OffersHistogram jobs={jobs} />
-                      <div className="space-y-3 mt-6">
-                        {jobs.map((j) => (
-                          <div key={j.id} className="p-3 border rounded-md flex items-center justify-between">
-                            <div>
-                              <div className="font-medium text-slate-900">{j.title}</div>
-                              <div className="text-sm text-slate-600">{j.company || ''} • {j.location || ''}</div>
-                              <div className="text-xs text-slate-500">Publié: {j.posted_at ? new Date(j.posted_at).toLocaleDateString('fr-FR') : '-'}</div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <div className="text-sm text-slate-700">{j.is_active ? 'Active' : 'Fermée'}</div>
-                              <Button size="sm" variant="outline" onClick={() => openJobDetailModal(j.id)}>Détails</Button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </>
-                  ) : <p className="text-slate-600">Aucune offre trouvée</p>
-                )}
-              </div>
-
-              <div className="flex gap-3 mt-8">
-                <Button variant="outline" onClick={() => { setShowDetailModal(false); setSelectedEmployer(null); setSelectedProfile(null); }} className="flex-1">Fermer</Button>
-                <div className="flex gap-2">
-                  {/* <Button size="sm" onClick={() => selectedEmployer && quickValidate(selectedEmployer.id, 'VALIDATED')} className="bg-green-600 text-white hover:bg-green-700">Valider profil</Button> */}
-                  {/* <Button size="sm" variant="outline" onClick={() => selectedEmployer && quickValidate(selectedEmployer.id, 'REJECTED')}>Rejeter profil</Button> */}
-                </div>
-                <Button variant={selectedEmployer.blocked ? "default" : "destructive"} onClick={toggleBlockStatus} disabled={editLoading} className="flex-1">{editLoading ? 'Traitement...' : selectedEmployer.blocked ? 'Débloquer' : 'Bloquer'}</Button>
-                <Button onClick={openEditModal} disabled={!selectedProfile} className="flex-1">Modifier</Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Edit Modal */}
-      {showEditModal && selectedEmployer && (
-        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full p-8 max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-6"><h2 className="text-2xl font-bold text-slate-900">Modifier l'employeur</h2><button onClick={() => { setShowEditModal(false); setSelectedEmployer(null); setSelectedProfile(null); }} className="text-slate-400 hover:text-slate-600 transition-colors"><X className="h-6 w-6" /></button></div>
-            <div className="space-y-8"><div><h3 className="text-lg font-semibold text-slate-900 mb-6 border-b-2 pb-2">Profil Employeur</h3><div className="grid grid-cols-2 md:grid-cols-3 gap-6"><div><label className="block text-sm font-medium text-slate-700 mb-2">Nom Entreprise</label><Input type="text" value={editData.company_name || ''} onChange={(e) => setEditData({ ...editData, company_name: e.target.value })} placeholder="Nom Entreprise" className="w-full" /></div><div><label className="block text-sm font-medium text-slate-700 mb-2">Personne de Contact</label><Input type="text" value={editData.contact_person || ''} onChange={(e) => setEditData({ ...editData, contact_person: e.target.value })} placeholder="Personne de Contact" className="w-full" /></div><div><label className="block text-sm font-medium text-slate-700 mb-2">Téléphone</label><Input type="tel" value={editData.phone || ''} onChange={(e) => setEditData({ ...editData, phone: e.target.value })} placeholder="Téléphone" className="w-full" /></div><div className="col-span-2"><label className="block text-sm font-medium text-slate-700 mb-2">Adresse</label><Input type="text" value={editData.address || ''} onChange={(e) => setEditData({ ...editData, address: e.target.value })} placeholder="Adresse" className="w-full" /></div><div className="col-span-3"><label className="block text-sm font-medium text-slate-700 mb-2">Description</label><textarea value={editData.description || ''} onChange={(e) => setEditData({ ...editData, description: e.target.value })} placeholder="Description" rows={4} className="w-full px-3 py-2 border border-slate-300 rounded-md text-slate-900 bg-white hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500" /></div><div><label className="block text-sm font-medium text-slate-700 mb-2">Statut de Validation</label><select value={editData.validation_status || 'PENDING'} onChange={(e) => setEditData({ ...editData, validation_status: e.target.value })} className="w-full px-3 py-2 border border-slate-300 rounded-md text-slate-900 bg-white hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"><option value="PENDING">En attente</option><option value="VALIDATED">Validé</option><option value="REJECTED">Rejeté</option></select></div></div></div></div>
-            <div className="flex gap-3 mt-8"><Button variant="outline" onClick={() => { setShowEditModal(false); setSelectedEmployer(null); setSelectedProfile(null); }} className="flex-1" disabled={editLoading}>Annuler</Button><Button onClick={saveEmployerChanges} className="flex-1" disabled={editLoading}>{editLoading ? 'Enregistrement...' : 'Enregistrer'}</Button></div>
-          </div>
-        </div>
-      )}
-
-      {/* Job Detail Modal */}
-      {showJobModal && (
-        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full p-8 max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-slate-900">Détails de l'offre</h2>
-              <button onClick={() => { setShowJobModal(false); setSelectedJob(null); }} className="text-slate-400 hover:text-slate-600 transition-colors"><X className="h-6 w-6" /></button>
-            </div>
-
-            {!selectedJob ? (
-              <p className="text-slate-600">Chargement...</p>
-            ) : (
-              <div className="space-y-6">
-                <div>
-                  <h3 className="text-lg font-semibold text-slate-900 mb-2">{selectedJob.job.title}</h3>
-                  <div className="text-sm text-slate-600">{selectedJob.job.company} • {selectedJob.job.location}</div>
-                  <div className="mt-4 text-slate-800">{selectedJob.job.description}</div>
-                </div>
-
-                <div>
-                  <h4 className="font-semibold text-slate-900 mb-3">Candidatures ({selectedJob.applicants?.length || 0})</h4>
-                  {selectedJob.applicants && selectedJob.applicants.length > 0 ? (
-                    <div className="space-y-3">
-                      {selectedJob.applicants.map((a: any) => (
-                        <div key={a.id} className="p-3 border rounded-md">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <div className="font-medium">{a.first_name} {a.last_name} ({a.user_email || a.email})</div>
-                              <div className="text-sm text-slate-600">Status: {a.status}</div>
-                              <div className="text-xs text-slate-500">Candidature: {a.applied_at ? new Date(a.applied_at).toLocaleString('fr-FR') : '-'}</div>
-                            </div>
-                            <div>
-                              <Button size="sm" variant="outline" onClick={() => {
-                                // open application detail in new modal or navigate to admin application route
-                                window.open(`/admin/applications/${a.id}`, '_blank');
-                              }}>Voir</Button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : <p className="text-slate-600">Aucune candidature</p>}
-                </div>
-              </div>
             )}
-          </div>
-        </div>
-      )}
-      {/* Message Modal */}
-      {showMsgModal && (
-        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">Message de notification</h3>
-              <button onClick={() => { setShowMsgModal(false); setMsgAction(null); setMsgText(''); }} className="text-slate-400 hover:text-slate-600"><X className="h-5 w-5" /></button>
+          </CardContent>
+        </Card>
+
+        {/* Pagination */}
+        {employers.length > 0 && pages > 1 && (
+          <div className="flex items-center justify-between">
+            <div className="text-sm text-gray-700">
+              Affichage de {(page - 1) * limit + 1} à {Math.min(page * limit, total)} sur {total} employeurs
             </div>
-            <p className="text-sm text-slate-600 mb-3">Rédigez le message envoyé à l'utilisateur.</p>
-            <textarea value={msgText} onChange={(e) => setMsgText(e.target.value)} rows={5} className="w-full px-3 py-2 border border-slate-300 rounded-md mb-4" />
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => { setShowMsgModal(false); setMsgAction(null); setMsgText(''); }}>Annuler</Button>
-              <Button onClick={performMsgAction}>Envoyer</Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage(page - 1)}
+                disabled={page === 1}
+              >
+                Précédent
+              </Button>
+              <span className="px-3 py-1 text-sm text-gray-700">
+                Page {page} sur {pages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage(page + 1)}
+                disabled={page === pages}
+              >
+                Suivant
+              </Button>
             </div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+    </AdminLayout>
   );
 }

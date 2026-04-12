@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { decodeToken } from "@/lib/jwt";
+import { AdminLayout } from "@/components/admin-layout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -185,8 +186,8 @@ export default function EmployerValidationPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 py-8">
+    <AdminLayout>
+      <div className="space-y-6">
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">
             Validation des Profils Employeurs
@@ -408,6 +409,6 @@ export default function EmployerValidationPage() {
           </div>
         )}
       </div>
-    </div>
+    </AdminLayout>
   );
 }

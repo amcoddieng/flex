@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from "next/server";
+import { verifyAdmin } from "@/lib/admin-auth";
 import mysql from 'mysql2/promise';
-import { verifyToken } from '@/lib/jwt';
 
 const pool = mysql.createPool({
   host: process.env.DB_HOST,
@@ -12,96 +12,159 @@ const pool = mysql.createPool({
   queueLimit: 0,
 });
 
-const verifyAdmin = (request: NextRequest): boolean => {
-  const authHeader = request.headers.get('Authorization');
-  if (!authHeader) return false;
-  const parts = authHeader.split(' ');
-  if (parts.length !== 2 || parts[0] !== 'Bearer') return false;
-  const token = parts[1];
-  const decoded = verifyToken(token);
-  return decoded?.role === 'ADMIN';
-};
-
+// GET - Récupérer tous les employeurs avec pagination et filtres
 export async function GET(request: NextRequest) {
   try {
-    if (!verifyAdmin(request)) {
-      return NextResponse.json({ error: 'Accès refusé. Vous devez être administrateur.' }, { status: 403 });
+    const user = verifyAdmin(request);
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Accès refusé' },
+        { status: 403 }
+      );
     }
 
-    const searchParams = request.nextUrl.searchParams;
+    const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
-    const search = searchParams.get('search');
-    const validationStatus = searchParams.get('validation_status');
-
+    const search = searchParams.get('search') || '';
+    const status = searchParams.get('status') || '';
+    
     const offset = (page - 1) * limit;
-    const safeLimit = Math.max(1, Math.min(1000, limit));
-    const safeOffset = Math.max(0, offset);
 
     const connection = await pool.getConnection();
+
     try {
       let query = `
         SELECT 
-          u.id, 
-          u.email, 
-          u.role, 
+          u.id,
+          u.email,
+          u.role,
           u.blocked,
           u.created_at,
           ep.id as profile_id,
           ep.company_name,
           ep.contact_person,
           ep.phone,
-          ep.email as contact_email,
           ep.address,
           ep.description,
+          ep.img,
+          ep.identity,
           ep.validation_status
         FROM user u
         LEFT JOIN employer_profile ep ON u.id = ep.user_id
         WHERE u.role = 'EMPLOYER'
       `;
-
+      
       const params: any[] = [];
 
       if (search) {
         query += ` AND (u.email LIKE ? OR ep.company_name LIKE ? OR ep.contact_person LIKE ?)`;
-        params.push(`%${search}%`, `%${search}%`, `%${search}%`);
+        const searchPattern = `%${search}%`;
+        params.push(searchPattern, searchPattern, searchPattern);
       }
 
-      if (validationStatus) {
+      if (status) {
         query += ` AND ep.validation_status = ?`;
-        params.push(validationStatus);
+        params.push(status);
       }
 
-      query += ` ORDER BY u.created_at DESC LIMIT ${safeLimit} OFFSET ${safeOffset}`;
+      // Compter le total
+      const countQuery = query.replace(
+        'SELECT u.id, u.email, u.role, u.blocked, u.created_at, ep.id as profile_id, ep.company_name, ep.contact_person, ep.phone, ep.address, ep.description, ep.img, ep.identity, ep.validation_status',
+        'SELECT COUNT(*) as total'
+      );
+      const [countResult] = await connection.execute(countQuery, params);
+      const total = (countResult as any)[0].total;
 
-      const [result]: any = await connection.execute(query, params);
-      const employers = Array.isArray(result) ? result : [];
+      // Ajouter pagination et tri
+      query += ` ORDER BY u.created_at DESC LIMIT ? OFFSET ?`;
+      params.push(limit, offset);
 
-      // Count
-      let countQuery = `
-        SELECT COUNT(*) as total FROM user u
-        LEFT JOIN employer_profile ep ON u.id = ep.user_id
-        WHERE u.role = 'EMPLOYER'
-      `;
-      const countParams: any[] = [];
-      if (search) {
-        countQuery += ` AND (u.email LIKE ? OR ep.company_name LIKE ? OR ep.contact_person LIKE ?)`;
-        countParams.push(`%${search}%`, `%${search}%`, `%${search}%`);
-      }
-      if (validationStatus) {
-        countQuery += ` AND ep.validation_status = ?`;
-        countParams.push(validationStatus);
-      }
+      const [employers] = await connection.execute(query, params);
 
-      const [countResult]: any = await connection.execute(countQuery, countParams);
-      const total = Array.isArray(countResult) && countResult.length > 0 ? countResult[0].total : 0;
-
-      return NextResponse.json({ success: true, data: employers, pagination: { page, limit, total, pages: Math.ceil(total / limit) } });
-    } finally {
       connection.release();
+
+      return NextResponse.json({
+        success: true,
+        data: employers,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit)
+        }
+      });
+
+    } catch (dbError) {
+      connection.release();
+      console.error('Database error:', dbError);
+      return NextResponse.json(
+        { error: 'Erreur base de données' },
+        { status: 500 }
+      );
     }
-  } catch (error: any) {
-    console.error('Erreur GET /api/admin/employers:', error);
-    return NextResponse.json({ error: error.message || 'Erreur serveur' }, { status: 500 });
+  } catch (error) {
+    console.error('Admin employers GET error:', error);
+    return NextResponse.json(
+      { error: 'Erreur serveur' },
+      { status: 500 }
+    );
+  }
+}
+
+// PUT - Mettre à jour un employeur (bloquer/débloquer, valider/rejeter)
+export async function PUT(request: NextRequest) {
+  try {
+    const user = verifyAdmin(request);
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Accès refusé' },
+        { status: 403 }
+      );
+    }
+
+    const body = await request.json();
+    const { employerId, blocked, validation_status, rejection_reason } = body;
+
+    const connection = await pool.getConnection();
+
+    try {
+      // Mettre à jour le statut de blocage
+      if (typeof blocked === 'boolean') {
+        await connection.execute(
+          'UPDATE user SET blocked = ? WHERE id = ?',
+          [blocked, employerId]
+        );
+      }
+
+      // Mettre à jour le statut de validation
+      if (validation_status) {
+        await connection.execute(
+          'UPDATE employer_profile SET validation_status = ?, rejection_reason = ? WHERE user_id = ?',
+          [validation_status, rejection_reason || null, employerId]
+        );
+      }
+
+      connection.release();
+
+      return NextResponse.json({
+        success: true,
+        message: 'Employeur mis à jour avec succès'
+      });
+
+    } catch (dbError) {
+      connection.release();
+      console.error('Database error:', dbError);
+      return NextResponse.json(
+        { error: 'Erreur base de données' },
+        { status: 500 }
+      );
+    }
+  } catch (error) {
+    console.error('Admin employers PUT error:', error);
+    return NextResponse.json(
+      { error: 'Erreur serveur' },
+      { status: 500 }
+    );
   }
 }

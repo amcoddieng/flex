@@ -12,8 +12,8 @@ const pool = mysql.createPool({
   queueLimit: 0,
 });
 
-// Helper: Verify employer token
-const verifyEmployer = (request: NextRequest): { role: string; userId: string } | null => {
+// Helper: Verify employer or admin token
+const verifyEmployerOrAdmin = (request: NextRequest): { role: string; userId: string } | null => {
   const authHeader = request.headers.get('Authorization');
   if (!authHeader) return null;
   
@@ -23,7 +23,7 @@ const verifyEmployer = (request: NextRequest): { role: string; userId: string } 
   const token = parts[1];
   const decoded = verifyToken(token);
   
-  if (decoded?.role !== 'EMPLOYER') return null;
+  if (!decoded || (decoded.role !== 'EMPLOYER' && decoded.role !== 'ADMIN')) return null;
   return decoded as { role: string; userId: string };
 };
 
@@ -36,7 +36,7 @@ export async function GET(
     const { id } = await params;
     const jobId = parseInt(id);
 
-    const user = verifyEmployer(request);
+    const user = verifyEmployerOrAdmin(request);
     if (!user) {
       return NextResponse.json(
         { error: 'Accès refusé' },
@@ -48,14 +48,22 @@ export async function GET(
     const connection = await pool.getConnection();
 
     try {
-      // Get job and verify ownership
-      const [jobRows] = await connection.execute(
-        `SELECT j.*, e.id as employer_id
+      // Get job and verify ownership (or admin access)
+      let query = `
+        SELECT j.*, e.id as employer_id
          FROM job_offer j
          JOIN employer_profile e ON j.employer_id = e.id
-         WHERE j.id = ? AND e.user_id = ?`,
-        [jobId, userId]
-      );
+         WHERE j.id = ?`;
+      
+      let params: any[] = [jobId];
+      
+      // If not admin, check ownership
+      if (user.role !== 'ADMIN') {
+        query += ` AND e.user_id = ?`;
+        params.push(userId);
+      }
+      
+      const [jobRows] = await connection.execute(query, params);
 
       if (!jobRows || (jobRows as any).length === 0) {
         connection.release();
@@ -112,7 +120,7 @@ export async function PUT(
     const jobId = parseInt(id);
     const body = await request.json();
 
-    const user = verifyEmployer(request);
+    const user = verifyEmployerOrAdmin(request);
     if (!user) {
       return NextResponse.json(
         { error: 'Accès refusé' },
@@ -124,13 +132,20 @@ export async function PUT(
     const connection = await pool.getConnection();
 
     try {
-      // Verify ownership
-      const [jobRows] = await connection.execute(
-        `SELECT j.id FROM job_offer j
+      // Verify ownership (or admin access)
+      let query = `SELECT j.id FROM job_offer j
          JOIN employer_profile e ON j.employer_id = e.id
-         WHERE j.id = ? AND e.user_id = ?`,
-        [jobId, userId]
-      );
+         WHERE j.id = ?`;
+      
+      let params: any[] = [jobId];
+      
+      // If not admin, check ownership
+      if (user.role !== 'ADMIN') {
+        query += ` AND e.user_id = ?`;
+        params.push(userId);
+      }
+      
+      const [jobRows] = await connection.execute(query, params);
 
       if (!jobRows || (jobRows as any).length === 0) {
         connection.release();
@@ -262,7 +277,7 @@ export async function DELETE(
     const { id } = await params;
     const jobId = parseInt(id);
 
-    const user = verifyEmployer(request);
+    const user = verifyEmployerOrAdmin(request);
     if (!user) {
       return NextResponse.json(
         { error: 'Accès refusé' },
@@ -274,13 +289,20 @@ export async function DELETE(
     const connection = await pool.getConnection();
 
     try {
-      // Verify ownership
-      const [jobRows] = await connection.execute(
-        `SELECT j.id FROM job_offer j
+      // Verify ownership (or admin access)
+      let query = `SELECT j.id FROM job_offer j
          JOIN employer_profile e ON j.employer_id = e.id
-         WHERE j.id = ? AND e.user_id = ?`,
-        [jobId, userId]
-      );
+         WHERE j.id = ?`;
+      
+      let params: any[] = [jobId];
+      
+      // If not admin, check ownership
+      if (user.role !== 'ADMIN') {
+        query += ` AND e.user_id = ?`;
+        params.push(userId);
+      }
+      
+      const [jobRows] = await connection.execute(query, params);
 
       if (!jobRows || (jobRows as any).length === 0) {
         connection.release();

@@ -12,7 +12,7 @@ const pool = mysql.createPool({
   queueLimit: 0,
 });
 
-// GET - Récupérer toutes les offres d'emploi avec pagination et filtres
+// GET - Récupérer tous les utilisateurs avec pagination et filtres
 export async function GET(request: NextRequest) {
   try {
     const user = verifyAdmin(request);
@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
     const search = searchParams.get('search') || '';
-    const status = searchParams.get('status') || '';
+    const role = searchParams.get('role') || '';
     
     const offset = (page - 1) * limit;
 
@@ -36,78 +36,50 @@ export async function GET(request: NextRequest) {
     try {
       let query = `
         SELECT 
-          jo.id,
-          jo.employer_id,
-          jo.title,
-          jo.location,
-          jo.description,
-          jo.requirements,
-          jo.salary,
-          jo.is_active,
-          jo.posted_at,
-          jo.contact_email,
-          jo.contact_phone,
-          ep.company_name
-        FROM job_offer jo
-        LEFT JOIN employer_profile ep ON jo.employer_id = ep.user_id
+          u.id,
+          u.email,
+          u.role,
+          u.created_at,
+          u.blocked
+        FROM user u
         WHERE 1=1
       `;
       
       const params: any[] = [];
 
       if (search) {
-        query += ` AND (jo.title LIKE ? OR jo.location LIKE ? OR ep.company_name LIKE ?)`;
+        query += ` AND (u.email LIKE ? OR u.id IN (
+          SELECT user_id FROM student_profile WHERE 
+          first_name LIKE ? OR last_name LIKE ? OR university LIKE ?
+        ) OR u.id IN (
+          SELECT user_id FROM employer_profile WHERE 
+          company_name LIKE ? OR contact_person LIKE ?
+        ))`;
         const searchPattern = `%${search}%`;
-        params.push(searchPattern, searchPattern, searchPattern);
+        params.push(searchPattern, searchPattern, searchPattern, searchPattern, searchPattern, searchPattern);
       }
 
-      if (status === 'active') {
-        query += ` AND jo.is_active = 1`;
-      } else if (status === 'inactive') {
-        query += ` AND jo.is_active = 0`;
+      if (role) {
+        query += ` AND u.role = ?`;
+        params.push(role);
       }
 
       // Compter le total
-      const countQuery = query.replace(
-        'SELECT jo.id, jo.employer_id, jo.title, jo.location, jo.description, jo.requirements, jo.salary, jo.is_active, jo.posted_at, ep.company_name, ep.contact_email, ep.contact_phone',
-        'SELECT COUNT(*) as total'
-      );
+      const countQuery = query.replace('SELECT u.id, u.email, u.role, u.created_at, u.blocked', 'SELECT COUNT(*) as total');
       const [countResult] = await connection.execute(countQuery, params);
       const total = (countResult as any)[0].total;
 
       // Ajouter pagination et tri
-      query += ` ORDER BY jo.posted_at DESC LIMIT ? OFFSET ?`;
+      query += ` ORDER BY u.created_at DESC LIMIT ? OFFSET ?`;
       params.push(limit, offset);
 
-      const [jobs] = await connection.execute(query, params);
-
-      // Ajouter le nombre de candidats pour chaque offre
-      const jobsWithApplicants = await Promise.all(
-        (jobs as any[]).map(async (job) => {
-          try {
-            const [applicants] = await connection.execute(
-              'SELECT COUNT(*) as count FROM job_application WHERE job_id = ?',
-              [job.id]
-            );
-            return {
-              ...job,
-              applicants: (applicants as any)[0].count
-            };
-          } catch (err) {
-            console.error('Error fetching applicants for job', job.id, err);
-            return {
-              ...job,
-              applicants: 0
-            };
-          }
-        })
-      );
+      const [users] = await connection.execute(query, params);
 
       connection.release();
 
       return NextResponse.json({
         success: true,
-        data: jobsWithApplicants,
+        data: users,
         pagination: {
           page,
           limit,
@@ -125,7 +97,7 @@ export async function GET(request: NextRequest) {
       );
     }
   } catch (error) {
-    console.error('Admin jobs GET error:', error);
+    console.error('Admin users GET error:', error);
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }
@@ -133,7 +105,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// PUT - Mettre à jour une offre d'emploi (activer/désactiver)
+// PUT - Mettre à jour un utilisateur (bloquer/débloquer)
 export async function PUT(request: NextRequest) {
   try {
     const user = verifyAdmin(request);
@@ -145,9 +117,9 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { jobId, is_active } = body;
+    const { userId, blocked } = body;
 
-    if (!jobId || typeof is_active !== 'boolean') {
+    if (!userId || typeof blocked !== 'boolean') {
       return NextResponse.json(
         { error: 'Paramètres invalides' },
         { status: 400 }
@@ -158,15 +130,15 @@ export async function PUT(request: NextRequest) {
 
     try {
       await connection.execute(
-        'UPDATE job_offer SET is_active = ? WHERE id = ?',
-        [is_active, jobId]
+        'UPDATE user SET blocked = ? WHERE id = ?',
+        [blocked, userId]
       );
 
       connection.release();
 
       return NextResponse.json({
         success: true,
-        message: is_active ? 'Offre activée avec succès' : 'Offre désactivée avec succès'
+        message: blocked ? 'Utilisateur bloqué avec succès' : 'Utilisateur débloqué avec succès'
       });
 
     } catch (dbError) {
@@ -178,7 +150,7 @@ export async function PUT(request: NextRequest) {
       );
     }
   } catch (error) {
-    console.error('Admin jobs PUT error:', error);
+    console.error('Admin users PUT error:', error);
     return NextResponse.json(
       { error: 'Erreur serveur' },
       { status: 500 }
