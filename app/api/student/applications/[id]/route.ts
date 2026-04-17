@@ -11,7 +11,7 @@ const pool = mysql.createPool({
   connectionLimit: 10,
   queueLimit: 0,
 });
-
+// commentaire de la fonction : cette fonction permet de supprimer une candidature d'un étudiant
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }

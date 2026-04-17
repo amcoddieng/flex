@@ -80,11 +80,13 @@ const statusConfig = {
 // Composant helper pour les items d'information
 function InfoItem({ icon: Icon, label, value }: { icon: any; label: string; value: string }) {
   return (
-    <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-100">
-      <Icon className="h-4 w-4 text-gray-400" />
-      <div>
-        <p className="text-xs text-gray-500">{label}</p>
-        <p className="text-sm font-medium text-gray-900">{value}</p>
+    <div className="flex items-center gap-3 p-4 bg-white rounded-2xl border border-slate-200/50 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1 card-hover form-input">
+      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/10 to-violet-500/10 flex items-center justify-center">
+        <Icon className="h-5 w-5 text-primary" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-xs text-slate-500 font-medium mb-1">{label}</p>
+        <p className="text-sm font-semibold text-slate-800 truncate">{value}</p>
       </div>
     </div>
   );
@@ -107,32 +109,32 @@ export function ApplicationDetailModal({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl w-[95vw] max-h-[95vh] overflow-hidden flex flex-col">
+      <DialogContent className="max-w-5xl w-[95vw] max-h-[95vh] overflow-hidden flex flex-col rounded-3xl modal-content">
         <div className="h-full flex flex-col overflow-hidden">
           {/* Header avec statut */}
-          <DialogHeader className="pb-4 border-b flex-shrink-0">
-            <div className="flex items-start justify-between gap-4">
+          <DialogHeader className="pb-6 border-b border-slate-200/50 flex-shrink-0 bg-gradient-to-r from-slate-50 to-white">
+            <div className="flex items-start justify-between gap-6">
               <div className="flex-1 min-w-0">
-                <DialogTitle className="text-2xl font-bold text-gray-900 mb-2 truncate">
+                <DialogTitle className="text-3xl font-bold text-slate-900 mb-3 truncate animate-fade-in">
                   {application.job_title}
                 </DialogTitle>
-                <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600">
-                  <div className="flex items-center gap-1 flex-shrink-0">
-                    <Calendar className="h-4 w-4 flex-shrink-0" />
-                    <span className="truncate">Candidature du {new Date(application.applied_at).toLocaleDateString("fr-FR")}</span>
+                <div className="flex flex-wrap items-center gap-4 text-sm text-slate-600 animate-slide-in">
+                  <div className="flex items-center gap-2 flex-shrink-0 bg-white/50 px-4 py-2 rounded-2xl border border-slate-200/50">
+                    <Calendar className="h-5 w-5 text-primary flex-shrink-0" />
+                    <span className="truncate font-medium">Candidature du {new Date(application.applied_at).toLocaleDateString("fr-FR")}</span>
                   </div>
-                  <div className="flex items-center gap-1 flex-shrink-0">
-                    <User className="h-4 w-4 flex-shrink-0" />
-                    <span className="truncate font-medium">{student.first_name} {student.last_name}</span>
+                  <div className="flex items-center gap-2 flex-shrink-0 bg-white/50 px-4 py-2 rounded-2xl border border-slate-200/50">
+                    <User className="h-5 w-5 text-primary flex-shrink-0" />
+                    <span className="truncate font-semibold">{student.first_name} {student.last_name}</span>
                   </div>
                 </div>
               </div>
-              <div className="flex flex-col items-end gap-2 flex-shrink-0">
-                <Badge className={`${config.color} ${config.textColor} border px-3 py-1.5 text-sm font-medium whitespace-nowrap`}>
-                  <StatusIcon className="h-4 w-4 mr-2 flex-shrink-0" />
+              <div className="flex flex-col items-end gap-3 flex-shrink-0 animate-scale-in">
+                <Badge className={`${config.color} ${config.textColor} border-2 px-4 py-2 text-sm font-bold whitespace-nowrap shadow-lg badge-entrance`}>
+                  <StatusIcon className="h-5 w-5 mr-2 flex-shrink-0 animate-pulse" />
                   {config.label}
                 </Badge>
-                <p className="text-xs text-gray-500 text-right">{config.description}</p>
+                <p className="text-xs text-slate-500 text-right animate-fade-in">{config.description}</p>
               </div>
             </div>
           </DialogHeader>
@@ -146,10 +148,13 @@ export function ApplicationDetailModal({
             ) : (
               <>
                 {/* Section Profil Candidat */}
-                <section className="bg-gradient-to-br from-gray-50 to-white rounded-xl border border-gray-200 overflow-hidden flex-shrink-0">
-                  <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-4 py-3 flex-shrink-0">
-                    <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                      <User className="h-5 w-5 flex-shrink-0" />
+                <section className="bg-gradient-to-br from-slate-50 to-white rounded-3xl border border-slate-200/50 overflow-hidden flex-shrink-0 shadow-lg hover:shadow-xl transition-all duration-300 card-hover card-entrance">
+                  <div className="bg-gradient-to-r from-primary via-violet-600 to-indigo-600 px-6 py-4 flex-shrink-0 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 animate-pulse" />
+                    <h3 className="text-xl font-bold text-white flex items-center gap-3 relative z-10">
+                      <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center animate-float">
+                        <User className="h-6 w-6 text-white" />
+                      </div>
                       <span className="truncate">Profil du Candidat</span>
                     </h3>
                   </div>
@@ -157,15 +162,15 @@ export function ApplicationDetailModal({
                     {/* Informations principales */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                       <div className="space-y-3">
-                        <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-100">
-                          <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg flex-shrink-0">
+                        <div className="flex items-center gap-4 p-4 bg-white rounded-2xl border border-slate-200/50 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1 card-hover">
+                          <div className="w-14 h-14 bg-gradient-to-br from-primary to-violet-600 rounded-2xl flex items-center justify-center text-white font-bold text-xl flex-shrink-0 animate-glow">
                             {student.first_name?.charAt(0).toUpperCase()}{student.last_name?.charAt(0).toUpperCase()}
                           </div>
                           <div className="min-w-0 flex-1">
-                            <p className="font-semibold text-gray-900 truncate">
+                            <p className="font-bold text-slate-900 truncate text-lg">
                               {student.first_name} {student.last_name}
                             </p>
-                            <p className="text-sm text-gray-600 truncate">{student.email}</p>
+                            <p className="text-sm text-slate-600 truncate">{student.email}</p>
                           </div>
                         </div>
                         
@@ -243,46 +248,59 @@ export function ApplicationDetailModal({
                 </section>
 
                 {/* Section Détails de la candidature */}
-                <section className="bg-gradient-to-br from-gray-50 to-white rounded-xl border border-gray-200 overflow-hidden flex-shrink-0">
-                  <div className="bg-gradient-to-r from-green-600 to-teal-600 px-4 py-3 flex-shrink-0">
-                    <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                      <Briefcase className="h-5 w-5 flex-shrink-0" />
+                <section className="bg-gradient-to-br from-emerald-50 to-white rounded-3xl border border-emerald-200/50 overflow-hidden flex-shrink-0 shadow-lg hover:shadow-xl transition-all duration-300 card-hover card-entrance" style={{animationDelay: "0.1s"}}>
+                  <div className="bg-gradient-to-r from-emerald-600 to-teal-600 px-6 py-4 flex-shrink-0 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 animate-pulse" />
+                    <h3 className="text-xl font-bold text-white flex items-center gap-3 relative z-10">
+                      <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center animate-float">
+                        <Briefcase className="h-6 w-6 text-white" />
+                      </div>
                       <span className="truncate">Détails de la Candidature</span>
                     </h3>
                   </div>
                   <div className="p-4 space-y-4">
                     {application.message && (
-                      <div className="bg-white rounded-lg border border-gray-100 p-4">
-                        <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
-                          <MessageSquare className="h-4 w-4 flex-shrink-0" />
+                      <div className="bg-white rounded-2xl border border-slate-200/50 p-5 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1 card-hover animate-scale-in" style={{animationDelay: "0.2s"}}>
+                        <h4 className="font-bold text-slate-900 mb-4 flex items-center gap-3 text-lg">
+                          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary/10 to-violet-500/10 flex items-center justify-center">
+                            <MessageSquare className="h-4 w-4 text-primary" />
+                          </div>
                           <span>Message du candidat</span>
                         </h4>
-                        <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap bg-gray-50 p-3 rounded-md break-words max-h-40 overflow-y-auto">
-                          {application.message}
-                        </p>
+                        <div className="bg-gradient-to-br from-slate-50 to-slate-100 p-4 rounded-2xl border border-slate-200/30">
+                          <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap break-words max-h-40 overflow-y-auto">
+                            {application.message}
+                          </p>
+                        </div>
                       </div>
                     )}
 
                     {application.experience && (
-                      <div className="bg-white rounded-lg border border-gray-100 p-4">
-                        <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
-                          <Award className="h-4 w-4 flex-shrink-0" />
+                      <div className="bg-white rounded-2xl border border-slate-200/50 p-5 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1 card-hover animate-scale-in" style={{animationDelay: "0.3s"}}>
+                        <h4 className="font-bold text-slate-900 mb-4 flex items-center gap-3 text-lg">
+                          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-500/10 to-amber-600/10 flex items-center justify-center">
+                            <Award className="h-4 w-4 text-amber-600" />
+                          </div>
                           <span>Expérience</span>
                         </h4>
-                        <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap break-words max-h-32 overflow-y-auto">
-                          {application.experience}
-                        </p>
+                        <div className="bg-gradient-to-br from-amber-50 to-amber-100 p-4 rounded-2xl border border-amber-200/30">
+                          <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap break-words max-h-32 overflow-y-auto">
+                            {application.experience}
+                          </p>
+                        </div>
                       </div>
                     )}
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {application.start_date && (
-                        <div className="bg-white rounded-lg border border-gray-100 p-4">
-                          <div className="flex items-center gap-3">
-                            <Calendar className="h-5 w-5 text-green-600 flex-shrink-0" />
+                        <div className="bg-white rounded-2xl border border-slate-200/50 p-5 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1 card-hover animate-scale-in" style={{animationDelay: "0.4s"}}>
+                          <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center animate-glow">
+                              <Calendar className="h-5 w-5 text-white flex-shrink-0" />
+                            </div>
                             <div className="min-w-0 flex-1">
-                              <p className="font-medium text-gray-900 truncate">Date de début souhaitée</p>
-                              <p className="text-sm text-gray-600">
+                              <p className="font-bold text-slate-900 truncate text-lg">Date de début souhaitée</p>
+                              <p className="text-sm text-slate-600">
                                 {new Date(application.start_date).toLocaleDateString("fr-FR")}
                               </p>
                             </div>
@@ -291,12 +309,14 @@ export function ApplicationDetailModal({
                       )}
 
                       {application.availability && (
-                        <div className="bg-white rounded-lg border border-gray-100 p-4">
-                          <div className="flex items-center gap-3">
-                            <Clock className="h-5 w-5 text-green-600 flex-shrink-0" />
+                        <div className="bg-white rounded-2xl border border-slate-200/50 p-5 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1 card-hover animate-scale-in" style={{animationDelay: "0.5s"}}>
+                          <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center animate-glow">
+                              <Clock className="h-5 w-5 text-white flex-shrink-0" />
+                            </div>
                             <div className="min-w-0 flex-1">
-                              <p className="font-medium text-gray-900 truncate">Disponibilité</p>
-                              <p className="text-sm text-gray-600 break-words">{application.availability}</p>
+                              <p className="font-bold text-slate-900 truncate text-lg">Disponibilité</p>
+                              <p className="text-sm text-slate-600 break-words">{application.availability}</p>
                             </div>
                           </div>
                         </div>
@@ -307,10 +327,13 @@ export function ApplicationDetailModal({
 
                 {/* Section Entretien si programmé */}
                 {application.status === "INTERVIEW" && (
-                  <section className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-200 overflow-hidden flex-shrink-0">
-                    <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-3 flex-shrink-0">
-                      <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                        <Calendar className="h-5 w-5 flex-shrink-0" />
+                  <section className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-3xl border border-blue-200/50 overflow-hidden flex-shrink-0 shadow-lg hover:shadow-xl transition-all duration-300 card-hover card-entrance" style={{animationDelay: "0.6s"}}>
+                    <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4 flex-shrink-0 relative overflow-hidden">
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 animate-pulse" />
+                      <h3 className="text-xl font-bold text-white flex items-center gap-3 relative z-10">
+                        <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center animate-float">
+                          <Calendar className="h-6 w-6 text-white" />
+                        </div>
                         <span className="truncate">Entretien Programmé</span>
                       </h3>
                     </div>
@@ -344,9 +367,9 @@ export function ApplicationDetailModal({
           </div>
 
           {/* Footer avec actions */}
-          <div className="border-t bg-gray-50 px-4 py-3 flex-shrink-0">
-            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3">
-              <div className="flex flex-wrap gap-2 w-full lg:w-auto">
+          <div className="border-t border-slate-200/50 bg-gradient-to-r from-slate-50 to-white px-6 py-4 flex-shrink-0">
+            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+              <div className="flex flex-wrap gap-3 w-full lg:w-auto">
                 {application.status === "PENDING" && (
                   <ActionButtonsPending
                     application={application}
@@ -377,17 +400,17 @@ export function ApplicationDetailModal({
                 <Button
                   onClick={() => onStartConversation(application.student_id, application.job_id)}
                   variant="outline"
-                  className="gap-2 w-full lg:w-auto flex-shrink-0"
+                  className="gap-3 w-full lg:w-auto flex-shrink-0 px-6 py-3 rounded-2xl border-2 border-primary/20 hover:border-primary/40 hover:bg-primary/5 transition-all duration-300 hover:-translate-y-1 btn-hover-lift"
                   disabled={conversationLoading}
                 >
                   {conversationLoading ? (
                     <>
-                      <div className="w-4 h-4 border-2 border-gray-600 border-t-transparent rounded-full animate-spin"></div>
+                      <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
                       <span>Ouverture...</span>
                     </>
                   ) : (
                     <>
-                      <MessageCircle className="h-4 w-4 flex-shrink-0" />
+                      <MessageCircle className="h-5 w-5 flex-shrink-0" />
                       <span>Contacter</span>
                     </>
                   )}
@@ -430,20 +453,22 @@ function ActionButtonsAccepted({
 
   return (
     <>
-      <div className="flex-1 bg-green-50 border border-green-200 rounded-lg p-3">
-        <div className="flex items-center gap-2 mb-2">
-          <CheckCircle className="h-4 w-4 text-green-600" />
-          <span className="text-sm font-medium text-green-800">Candidature acceptée</span>
+      <div className="flex-1 bg-gradient-to-br from-emerald-50 to-emerald-100 border-2 border-emerald-200 rounded-2xl p-4 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 card-hover">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center animate-glow">
+            <CheckCircle className="h-4 w-4 text-white" />
+          </div>
+          <span className="text-sm font-bold text-emerald-800">Candidature acceptée</span>
         </div>
-        <p className="text-xs text-green-700 mb-3">Le candidat a été accepté pour ce poste</p>
+        <p className="text-xs text-emerald-700 mb-4 font-medium">Le candidat a été accepté pour ce poste</p>
         <Button 
           variant="outline" 
           size="sm" 
-          className="w-full border-amber-200 text-amber-700 hover:bg-amber-50"
+          className="w-full border-2 border-amber-300 text-amber-700 hover:bg-amber-50 hover:border-amber-400 rounded-xl transition-all duration-300 hover:-translate-y-1 btn-hover-lift"
           onClick={() => setShowCancelConfirm(true)}
           disabled={loading}
         >
-          <RotateCcw className="h-3 w-3 mr-2" />
+          <RotateCcw className="h-4 w-4 mr-2" />
           Annuler l'acceptation
         </Button>
       </div>
@@ -452,42 +477,45 @@ function ActionButtonsAccepted({
       {showCancelConfirm && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-xl border border-slate-200/50 p-4 max-w-sm w-full">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center">
-                <AlertTriangle className="h-4 w-4 text-amber-600" />
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-100 to-amber-200 flex items-center justify-center animate-pulse">
+                <AlertTriangle className="h-6 w-6 text-amber-600" />
               </div>
               <div>
-                <h3 className="text-base font-semibold text-slate-900">Annuler l'acceptation</h3>
-                <p className="text-xs text-slate-600 mt-1">Voulez-vous vraiment annuler cette acceptation ?</p>
+                <h3 className="text-lg font-bold text-slate-900">Annuler l'acceptation</h3>
+                <p className="text-sm text-slate-600 mt-1">Voulez-vous vraiment annuler cette acceptation ?</p>
               </div>
             </div>
             
-            <div className="text-xs text-amber-600 bg-amber-50 p-3 rounded-lg mb-4">
-              <p className="font-medium">⚠️ Attention</p>
-              <p className="mt-1">Cela remettra la candidature en statut "En attente" et le candidat sera notifié du changement.</p>
+            <div className="text-sm text-amber-700 bg-gradient-to-br from-amber-50 to-amber-100 p-4 rounded-2xl mb-6 border border-amber-200">
+              <p className="font-bold mb-2 flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4" />
+                Attention
+              </p>
+              <p>Cela remettra la candidature en statut "En attente" et le candidat sera notifié du changement.</p>
             </div>
 
             <div className="flex gap-3">
               <Button 
                 variant="outline" 
-                className="flex-1 text-sm"
+                className="flex-1 text-sm px-4 py-3 rounded-xl border-2 border-slate-200 hover:bg-slate-50 transition-all duration-300 hover:-translate-y-1 btn-hover-lift"
                 onClick={() => setShowCancelConfirm(false)}
               >
                 Annuler
               </Button>
               <Button 
-                className="flex-1 text-sm bg-amber-600 hover:bg-amber-700"
+                className="flex-1 text-sm px-4 py-3 rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 transition-all duration-300 hover:-translate-y-1 shadow-lg shadow-amber-600/25 hover:shadow-xl hover:shadow-amber-600/30 btn-hover-lift"
                 onClick={handleCancelAcceptance}
                 disabled={loading}
               >
                 {loading ? (
                   <>
-                    <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
                     Confirmation...
                   </>
                 ) : (
                   <>
-                    <RotateCcw className="h-3 w-3 mr-2" />
+                    <RotateCcw className="h-4 w-4 mr-2" />
                     Confirmer
                   </>
                 )}

@@ -20,7 +20,8 @@ import {
   Users,
   GraduationCap,
   Briefcase,
-  MessageSquare
+  MessageSquare,
+  RotateCcw
 } from "lucide-react";
 
 type ApplicationDetails = {
@@ -71,21 +72,21 @@ export function ApplicationDetailsModal({
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'ACCEPTED': return 'bg-green-100 text-green-800';
-      case 'REJECTED': return 'bg-red-100 text-red-800';
-      case 'INTERVIEW': return 'bg-blue-100 text-blue-800';
-      case 'PENDING': return 'bg-yellow-100 text-yellow-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'ACCEPTED': return 'bg-gradient-to-br from-emerald-100 to-emerald-200 text-emerald-800 border-2 border-emerald-300';
+      case 'REJECTED': return 'bg-gradient-to-br from-red-100 to-red-200 text-red-800 border-2 border-red-300';
+      case 'INTERVIEW': return 'bg-gradient-to-br from-blue-100 to-blue-200 text-blue-800 border-2 border-blue-300';
+      case 'PENDING': return 'bg-gradient-to-br from-amber-100 to-amber-200 text-amber-800 border-2 border-amber-300';
+      default: return 'bg-gradient-to-br from-slate-100 to-slate-200 text-slate-800 border-2 border-slate-300';
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'ACCEPTED': return <CheckCircle className="h-4 w-4" />;
-      case 'REJECTED': return <XCircle className="h-4 w-4" />;
-      case 'INTERVIEW': return <Clock className="h-4 w-4" />;
-      case 'PENDING': return <Clock className="h-4 w-4" />;
-      default: return <Clock className="h-4 w-4" />;
+      case 'ACCEPTED': return <CheckCircle className="h-5 w-5 animate-pulse" />;
+      case 'REJECTED': return <XCircle className="h-5 w-5 animate-pulse" />;
+      case 'INTERVIEW': return <Clock className="h-5 w-5 animate-pulse" />;
+      case 'PENDING': return <Clock className="h-5 w-5 animate-pulse" />;
+      default: return <Clock className="h-5 w-5 animate-pulse" />;
     }
   };
 
@@ -119,55 +120,73 @@ export function ApplicationDetailsModal({
       description="Informations complètes sur la candidature et actions disponibles"
       maxWidth="6xl"
     >
-      <div className="flex items-center gap-3 mb-6">
-        <Badge className={getStatusColor(application.status)}>
-          <span className="flex items-center gap-1">
+      <div className="flex items-center gap-4 mb-8 animate-fade-in">
+        <Badge className={`${getStatusColor(application.status)} px-4 py-2 text-sm font-bold shadow-lg badge-entrance`}>
+          <span className="flex items-center gap-2">
             {getStatusIcon(application.status)}
             {getStatusText(application.status)}
           </span>
         </Badge>
       </div>
 
-        <div className="space-y-6">
+        <div className="space-y-8">
           {/* Informations de l'offre d'emploi */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Briefcase className="h-5 w-5" />
+          <Card className="rounded-3xl border-2 border-slate-200/50 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 card-hover card-entrance">
+            <CardHeader className="bg-gradient-to-r from-slate-50 to-white border-b border-slate-200/50">
+              <CardTitle className="flex items-center gap-4 text-xl font-bold">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-violet-600 flex items-center justify-center animate-glow">
+                  <Briefcase className="h-5 w-5 text-white" />
+                </div>
                 Offre d'emploi
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <h3 className="font-semibold text-lg text-gray-900 mb-2">
+                  <h3 className="font-bold text-xl text-slate-900 mb-3 animate-fade-in">
                     {application.job_title}
                   </h3>
                   <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Building className="h-4 w-4 text-gray-400" />
-                      <span className="text-sm text-gray-600">Entreprise:</span>
-                      <span className="font-medium">{application.company_name}</span>
+                    <div className="flex items-center gap-3 bg-slate-50 px-4 py-2.5 rounded-xl animate-scale-in" style={{animationDelay: "0.1s"}}>
+                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-slate-200 to-slate-300 flex items-center justify-center">
+                        <Building className="h-4 w-4 text-slate-600" />
+                      </div>
+                      <div>
+                        <span className="text-xs text-slate-500 font-medium">Entreprise</span>
+                        <p className="font-semibold text-slate-800">{application.company_name}</p>
+                      </div>
                     </div>
                     {application.job_location && (
-                      <div className="flex items-center gap-2">
-                        <MapPin className="h-4 w-4 text-gray-400" />
-                        <span className="text-sm text-gray-600">Lieu:</span>
-                        <span className="font-medium">{application.job_location}</span>
+                      <div className="flex items-center gap-3 bg-slate-50 px-4 py-2.5 rounded-xl animate-scale-in" style={{animationDelay: "0.2s"}}>
+                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center">
+                          <MapPin className="h-4 w-4 text-blue-600" />
+                        </div>
+                        <div>
+                          <span className="text-xs text-slate-500 font-medium">Lieu</span>
+                          <p className="font-semibold text-slate-800">{application.job_location}</p>
+                        </div>
                       </div>
                     )}
                     {application.job_salary && (
-                      <div className="flex items-center gap-2">
-                        <DollarSign className="h-4 w-4 text-gray-400" />
-                        <span className="text-sm text-gray-600">Salaire:</span>
-                        <span className="font-medium">{application.job_salary}</span>
+                      <div className="flex items-center gap-3 bg-emerald-50 px-4 py-2.5 rounded-xl animate-scale-in" style={{animationDelay: "0.3s"}}>
+                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-200 to-emerald-300 flex items-center justify-center">
+                          <DollarSign className="h-4 w-4 text-emerald-600" />
+                        </div>
+                        <div>
+                          <span className="text-xs text-slate-500 font-medium">Salaire</span>
+                          <p className="font-semibold text-emerald-700">{application.job_salary}</p>
+                        </div>
                       </div>
                     )}
                     {application.job_service_type && (
-                      <div className="flex items-center gap-2">
-                        <Briefcase className="h-4 w-4 text-gray-400" />
-                        <span className="text-sm text-gray-600">Type:</span>
-                        <span className="font-medium">{application.job_service_type}</span>
+                      <div className="flex items-center gap-3 bg-violet-50 px-4 py-2.5 rounded-xl animate-scale-in" style={{animationDelay: "0.4s"}}>
+                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-200 to-violet-300 flex items-center justify-center">
+                          <Briefcase className="h-4 w-4 text-violet-600" />
+                        </div>
+                        <div>
+                          <span className="text-xs text-slate-500 font-medium">Type</span>
+                          <p className="font-semibold text-violet-700">{application.job_service_type}</p>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -175,10 +194,14 @@ export function ApplicationDetailsModal({
                 <div>
                   {application.job_description && (
                     <div>
-                      <span className="text-sm text-gray-600">Description:</span>
-                      <p className="mt-1 text-sm text-gray-700 bg-gray-50 p-3 rounded">
-                        {application.job_description}
-                      </p>
+                      <div className="animate-scale-in" style={{animationDelay: "0.5s"}}>
+                        <span className="text-sm text-slate-500 font-medium">Description</span>
+                        <div className="mt-2 p-4 bg-gradient-to-br from-slate-50 to-slate-100 rounded-2xl border border-slate-200/30">
+                          <p className="text-sm text-slate-700 leading-relaxed">
+                            {application.job_description}
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -187,84 +210,112 @@ export function ApplicationDetailsModal({
           </Card>
 
           {/* Informations de l'étudiant */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <GraduationCap className="h-5 w-5" />
+          <Card className="rounded-3xl border-2 border-slate-200/50 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 card-hover card-entrance" style={{animationDelay: "0.1s"}}>
+            <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-blue-200/50">
+              <CardTitle className="flex items-center gap-4 text-xl font-bold">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center animate-glow">
+                  <GraduationCap className="h-5 w-5 text-white" />
+                </div>
                 Informations de l'étudiant
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-3">
-                  <div>
-                    <span className="text-sm text-gray-600">Nom complet:</span>
-                    <p className="font-medium">{application.student_name}</p>
+                <div className="space-y-4">
+                  <div className="animate-scale-in" style={{animationDelay: "0.2s"}}>
+                    <span className="text-sm text-slate-500 font-medium">Nom complet</span>
+                    <p className="font-bold text-lg text-slate-900">{application.student_name}</p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Mail className="h-4 w-4 text-gray-400" />
-                    <span className="text-sm text-gray-600">Email:</span>
-                    <span className="font-medium">{application.student_email}</span>
+                  <div className="flex items-center gap-3 bg-slate-50 px-4 py-2.5 rounded-xl animate-scale-in" style={{animationDelay: "0.3s"}}>
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-red-200 to-red-300 flex items-center justify-center">
+                      <Mail className="h-4 w-4 text-red-600" />
+                    </div>
+                    <div>
+                      <span className="text-xs text-slate-500 font-medium">Email</span>
+                      <p className="font-semibold text-slate-800 text-sm">{application.student_email}</p>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Phone className="h-4 w-4 text-gray-400" />
-                    <span className="text-sm text-gray-600">Téléphone:</span>
-                    <span className="font-medium">{application.student_phone}</span>
+                  <div className="flex items-center gap-3 bg-slate-50 px-4 py-2.5 rounded-xl animate-scale-in" style={{animationDelay: "0.4s"}}>
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-green-200 to-green-300 flex items-center justify-center">
+                      <Phone className="h-4 w-4 text-green-600" />
+                    </div>
+                    <div>
+                      <span className="text-xs text-slate-500 font-medium">Téléphone</span>
+                      <p className="font-semibold text-slate-800 text-sm">{application.student_phone}</p>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <GraduationCap className="h-4 w-4 text-gray-400" />
-                    <span className="text-sm text-gray-600">Université:</span>
-                    <span className="font-medium">{application.student_university}</span>
+                  <div className="flex items-center gap-3 bg-slate-50 px-4 py-2.5 rounded-xl animate-scale-in" style={{animationDelay: "0.5s"}}>
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-200 to-blue-300 flex items-center justify-center">
+                      <GraduationCap className="h-4 w-4 text-blue-600" />
+                    </div>
+                    <div>
+                      <span className="text-xs text-slate-500 font-medium">Université</span>
+                      <p className="font-semibold text-slate-800 text-sm">{application.student_university}</p>
+                    </div>
                   </div>
                 </div>
-                <div className="space-y-3">
-                  <div>
-                    <span className="text-sm text-gray-600">Département:</span>
-                    <p className="font-medium">{application.student_department}</p>
+                <div className="space-y-4">
+                  <div className="animate-scale-in" style={{animationDelay: "0.6s"}}>
+                    <span className="text-sm text-slate-500 font-medium">Département</span>
+                    <p className="font-bold text-slate-900">{application.student_department}</p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Users className="h-4 w-4 text-gray-400" />
-                    <span className="text-sm text-gray-600">Niveau:</span>
-                    <span className="font-medium">{application.student_year_of_study}ème année</span>
+                  <div className="flex items-center gap-3 bg-slate-50 px-4 py-2.5 rounded-xl animate-scale-in" style={{animationDelay: "0.7s"}}>
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-200 to-purple-300 flex items-center justify-center">
+                      <Users className="h-4 w-4 text-purple-600" />
+                    </div>
+                    <div>
+                      <span className="text-xs text-slate-500 font-medium">Niveau</span>
+                      <p className="font-semibold text-slate-800 text-sm">{application.student_year_of_study}ème année</p>
+                    </div>
                   </div>
                   {application.student_hourly_rate && (
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="h-4 w-4 text-gray-400" />
-                      <span className="text-sm text-gray-600">Taux horaire:</span>
-                      <span className="font-medium">{application.student_hourly_rate}€/h</span>
+                    <div className="flex items-center gap-3 bg-emerald-50 px-4 py-2.5 rounded-xl animate-scale-in" style={{animationDelay: "0.8s"}}>
+                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-200 to-emerald-300 flex items-center justify-center">
+                        <DollarSign className="h-4 w-4 text-emerald-600" />
+                      </div>
+                      <div>
+                        <span className="text-xs text-slate-500 font-medium">Taux horaire</span>
+                        <p className="font-semibold text-emerald-700 text-sm">{application.student_hourly_rate}€/h</p>
+                      </div>
                     </div>
                   )}
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-gray-400" />
-                    <span className="text-sm text-gray-600">Candidaté le:</span>
-                    <span className="font-medium">
-                      {new Date(application.applied_at).toLocaleDateString('fr-FR')}
-                    </span>
+                  <div className="flex items-center gap-3 bg-slate-50 px-4 py-2.5 rounded-xl animate-scale-in" style={{animationDelay: "0.9s"}}>
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-200 to-amber-300 flex items-center justify-center">
+                      <Calendar className="h-4 w-4 text-amber-600" />
+                    </div>
+                    <div>
+                      <span className="text-xs text-slate-500 font-medium">Candidaté le</span>
+                      <p className="font-semibold text-slate-800 text-sm">
+                        {new Date(application.applied_at).toLocaleDateString('fr-FR')}
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
 
               {application.student_bio && (
-                <div>
-                  <span className="text-sm text-gray-600">Biographie:</span>
-                  <p className="mt-1 text-sm text-gray-700 bg-gray-50 p-3 rounded">
-                    {application.student_bio}
-                  </p>
+                <div className="animate-scale-in" style={{animationDelay: "1.0s"}}>
+                  <span className="text-sm text-slate-500 font-medium">Biographie</span>
+                  <div className="mt-2 p-4 bg-gradient-to-br from-slate-50 to-slate-100 rounded-2xl border border-slate-200/30">
+                    <p className="text-sm text-slate-700 leading-relaxed">
+                      {application.student_bio}
+                    </p>
+                  </div>
                 </div>
               )}
 
               {application.student_skills && (
-                <div>
-                  <span className="text-sm text-gray-600">Compétences:</span>
-                  <div className="mt-1 flex flex-wrap gap-2">
+                <div className="animate-scale-in" style={{animationDelay: "1.1s"}}>
+                  <span className="text-sm text-slate-500 font-medium">Compétences</span>
+                  <div className="mt-2 flex flex-wrap gap-2">
                     {Array.isArray(application.student_skills) 
                       ? application.student_skills.map((skill, index) => (
-                          <Badge key={index} variant="outline" className="text-xs">
+                          <Badge key={index} variant="outline" className="text-xs bg-gradient-to-br from-violet-50 to-violet-100 border-violet-200 text-violet-700 px-3 py-1 rounded-xl badge-entrance" style={{animationDelay: `${1.2 + index * 0.05}s`}}>
                             {skill}
                           </Badge>
                         ))
                       : Object.values(application.student_skills).map((skill, index) => (
-                          <Badge key={index} variant="outline" className="text-xs">
+                          <Badge key={index} variant="outline" className="text-xs bg-gradient-to-br from-violet-50 to-violet-100 border-violet-200 text-violet-700 px-3 py-1 rounded-xl badge-entrance" style={{animationDelay: `${1.2 + index * 0.05}s`}}>
                             {skill}
                           </Badge>
                         ))
@@ -276,84 +327,106 @@ export function ApplicationDetailsModal({
           </Card>
 
           {/* Détails de la candidature */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MessageSquare className="h-5 w-5" />
+          <Card className="rounded-3xl border-2 border-slate-200/50 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 card-hover card-entrance" style={{animationDelay: "0.2s"}}>
+            <CardHeader className="bg-gradient-to-r from-emerald-50 to-teal-50 border-b border-emerald-200/50">
+              <CardTitle className="flex items-center gap-4 text-xl font-bold">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center animate-glow">
+                  <MessageSquare className="h-5 w-5 text-white" />
+                </div>
                 Détails de la candidature
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {application.message && (
-                <div>
-                  <span className="text-sm text-gray-600">Message de motivation:</span>
-                  <p className="mt-1 text-sm text-gray-700 bg-gray-50 p-3 rounded">
-                    {application.message}
-                  </p>
+                <div className="animate-scale-in" style={{animationDelay: "0.3s"}}>
+                  <span className="text-sm text-slate-500 font-medium">Message de motivation</span>
+                  <div className="mt-2 p-4 bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-2xl border border-emerald-200/30">
+                    <p className="text-sm text-slate-700 leading-relaxed">
+                      {application.message}
+                    </p>
+                  </div>
                 </div>
               )}
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {application.availability && (
-                  <div className="p-3 bg-blue-50 rounded">
-                    <p className="text-xs text-blue-700 font-medium mb-1">Disponibilité</p>
-                    <p className="text-sm text-blue-600">{application.availability}</p>
+                  <div className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl border border-blue-200/30 animate-scale-in" style={{animationDelay: "0.4s"}}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Clock className="h-4 w-4 text-blue-600" />
+                      <p className="text-xs text-blue-700 font-bold">Disponibilité</p>
+                    </div>
+                    <p className="text-sm text-blue-600 font-medium">{application.availability}</p>
                   </div>
                 )}
                 {application.experience && (
-                  <div className="p-3 bg-green-50 rounded">
-                    <p className="text-xs text-green-700 font-medium mb-1">Expérience</p>
-                    <p className="text-sm text-green-600">{application.experience}</p>
+                  <div className="p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-2xl border border-green-200/30 animate-scale-in" style={{animationDelay: "0.5s"}}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Briefcase className="h-4 w-4 text-green-600" />
+                      <p className="text-xs text-green-700 font-bold">Expérience</p>
+                    </div>
+                    <p className="text-sm text-green-600 font-medium">{application.experience}</p>
                   </div>
                 )}
                 {application.start_date && (
-                  <div className="p-3 bg-purple-50 rounded">
-                    <p className="text-xs text-purple-700 font-medium mb-1">Date de début souhaitée</p>
-                    <p className="text-sm text-purple-600">{application.start_date}</p>
+                  <div className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl border border-purple-200/30 animate-scale-in" style={{animationDelay: "0.6s"}}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Calendar className="h-4 w-4 text-purple-600" />
+                      <p className="text-xs text-purple-700 font-bold">Date de début souhaitée</p>
+                    </div>
+                    <p className="text-sm text-purple-600 font-medium">{application.start_date}</p>
                   </div>
                 )}
               </div>
 
               {application.interview_details && (
-                <div className="p-3 bg-yellow-50 rounded">
-                  <p className="text-xs text-yellow-700 font-medium mb-1">Détails d'entretien</p>
-                  <p className="text-sm text-yellow-600">{application.interview_details}</p>
+                <div className="p-4 bg-gradient-to-br from-amber-50 to-amber-100 rounded-2xl border border-amber-200/30 animate-scale-in" style={{animationDelay: "0.7s"}}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Clock className="h-4 w-4 text-amber-600" />
+                    <p className="text-xs text-amber-700 font-bold">Détails d'entretien</p>
+                  </div>
+                  <p className="text-sm text-amber-600 font-medium">{application.interview_details}</p>
                 </div>
               )}
             </CardContent>
           </Card>
 
           {/* Actions */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Actions</CardTitle>
+          <Card className="rounded-3xl border-2 border-slate-200/50 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1 card-hover card-entrance" style={{animationDelay: "0.3s"}}>
+            <CardHeader className="bg-gradient-to-r from-slate-50 to-white border-b border-slate-200/50">
+              <CardTitle className="flex items-center gap-4 text-xl font-bold">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-violet-600 flex items-center justify-center animate-glow">
+                  <Users className="h-5 w-5 text-white" />
+                </div>
+                Actions
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex flex-wrap gap-3">
+              <div className="flex flex-wrap gap-4">
                 {application.status === 'PENDING' && (
                   <>
                     <Button
                       onClick={() => handleStatusUpdate('ACCEPTED')}
-                      className="bg-green-600 hover:bg-green-700"
+                      className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 px-6 py-3 rounded-2xl shadow-lg shadow-emerald-600/25 hover:shadow-xl hover:shadow-emerald-600/30 transition-all duration-300 hover:-translate-y-1 btn-hover-lift"
                       disabled={loading}
                     >
-                      <CheckCircle className="h-4 w-4 mr-2" />
+                      <CheckCircle className="h-5 w-5 mr-2" />
                       Accepter la candidature
                     </Button>
                     <Button
                       onClick={() => handleStatusUpdate('INTERVIEW')}
                       variant="outline"
+                      className="px-6 py-3 rounded-2xl border-2 border-blue-300 hover:bg-blue-50 hover:border-blue-400 transition-all duration-300 hover:-translate-y-1 btn-hover-lift"
                       disabled={loading}
                     >
-                      <Clock className="h-4 w-4 mr-2" />
+                      <Clock className="h-5 w-5 mr-2" />
                       Planifier un entretien
                     </Button>
                     <Button
                       onClick={() => handleStatusUpdate('REJECTED')}
-                      variant="destructive"
+                      className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 px-6 py-3 rounded-2xl shadow-lg shadow-red-600/25 hover:shadow-xl hover:shadow-red-600/30 transition-all duration-300 hover:-translate-y-1 btn-hover-lift"
                       disabled={loading}
                     >
-                      <XCircle className="h-4 w-4 mr-2" />
+                      <XCircle className="h-5 w-5 mr-2" />
                       Rejeter la candidature
                     </Button>
                   </>
@@ -363,18 +436,18 @@ export function ApplicationDetailsModal({
                   <>
                     <Button
                       onClick={() => handleStatusUpdate('ACCEPTED')}
-                      className="bg-green-600 hover:bg-green-700"
+                      className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 px-6 py-3 rounded-2xl shadow-lg shadow-emerald-600/25 hover:shadow-xl hover:shadow-emerald-600/30 transition-all duration-300 hover:-translate-y-1 btn-hover-lift"
                       disabled={loading}
                     >
-                      <CheckCircle className="h-4 w-4 mr-2" />
+                      <CheckCircle className="h-5 w-5 mr-2" />
                       Accepter après entretien
                     </Button>
                     <Button
                       onClick={() => handleStatusUpdate('REJECTED')}
-                      variant="destructive"
+                      className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 px-6 py-3 rounded-2xl shadow-lg shadow-red-600/25 hover:shadow-xl hover:shadow-red-600/30 transition-all duration-300 hover:-translate-y-1 btn-hover-lift"
                       disabled={loading}
                     >
-                      <XCircle className="h-4 w-4 mr-2" />
+                      <XCircle className="h-5 w-5 mr-2" />
                       Rejeter après entretien
                     </Button>
                   </>
@@ -383,10 +456,10 @@ export function ApplicationDetailsModal({
                 {application.status === 'ACCEPTED' && (
                   <Button
                     onClick={() => handleStatusUpdate('REJECTED')}
-                    variant="destructive"
+                    className="bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-700 hover:to-amber-800 px-6 py-3 rounded-2xl shadow-lg shadow-amber-600/25 hover:shadow-xl hover:shadow-amber-600/30 transition-all duration-300 hover:-translate-y-1 btn-hover-lift"
                     disabled={loading}
                   >
-                    <XCircle className="h-4 w-4 mr-2" />
+                    <XCircle className="h-5 w-5 mr-2" />
                     Annuler l'acceptation
                   </Button>
                 )}
@@ -394,11 +467,11 @@ export function ApplicationDetailsModal({
                 {application.status === 'REJECTED' && (
                   <Button
                     onClick={() => handleStatusUpdate('PENDING')}
-                    variant="outline"
+                    className="px-6 py-3 rounded-2xl border-2 border-amber-300 hover:bg-amber-50 hover:border-amber-400 transition-all duration-300 hover:-translate-y-1 btn-hover-lift"
                     disabled={loading}
                   >
-                    <Clock className="h-4 w-4 mr-2" />
-                      Remettre en attente
+                    <RotateCcw className="h-5 w-5 mr-2" />
+                    Réexaminer
                   </Button>
                 )}
               </div>
