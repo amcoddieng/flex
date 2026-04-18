@@ -154,7 +154,7 @@ export default function StudentDashboard() {
                 </div>
                 <div>
                   <p className="text-slate-600 text-xs font-medium mb-1">Candidatures envoyées</p>
-                  <p className="text-2xl font-bold text-slate-900">{stats.total_applications || 0}</p>
+                  <p className="text-2xl font-bold text-slate-900">{stats.applications?.total || 0}</p>
                 </div>
                 <div className="mt-4 pt-4 border-t border-slate-100">
                   <Link href="/student/applications" className="text-blue-600 text-sm font-medium inline-flex items-center gap-1 hover:gap-2 transition-all">
@@ -179,11 +179,11 @@ export default function StudentDashboard() {
                 </div>
                 <div>
                   <p className="text-slate-600 text-xs font-medium mb-1">En attente de réponse</p>
-                  <p className="text-2xl font-bold text-slate-900">{stats.pending_applications || 0}</p>
+                  <p className="text-2xl font-bold text-slate-900">{stats.applications?.pending || 0}</p>
                 </div>
                 <div className="mt-4 pt-4 border-t border-slate-100">
                   <p className="text-slate-600 text-xs">
-                    {stats.total_applications > 0 ? Math.round(((stats.pending_applications || 0) / (stats.total_applications || 1)) * 100) : 0}% du total
+                    {stats.applications?.total > 0 ? Math.round(((stats.applications?.pending || 0) / (stats.applications?.total || 1)) * 100) : 0}% du total
                   </p>
                 </div>
               </div>
@@ -204,7 +204,7 @@ export default function StudentDashboard() {
                 </div>
                 <div>
                   <p className="text-slate-600 text-xs font-medium mb-1">Entretiens obtenus</p>
-                  <p className="text-2xl font-bold text-slate-900">{stats.interview_count || 0}</p>
+                  <p className="text-2xl font-bold text-slate-900">{stats.applications?.interview || 0}</p>
                 </div>
                 <div className="mt-4 pt-4 border-t border-slate-100">
                   <p className="text-slate-600 text-xs">Excellent progression!</p>
@@ -226,12 +226,12 @@ export default function StudentDashboard() {
                   </div>
                 </div>
                 <div>
-                  <p className="text-slate-600 text-xs font-medium mb-1">Profil consulté</p>
-                  <p className="text-2xl font-bold text-slate-900">{stats.profile_views || 0}</p>
+                  <p className="text-slate-600 text-xs font-medium mb-1">Messages non lus</p>
+                  <p className="text-2xl font-bold text-slate-900">{stats.messages?.unread || 0}</p>
                 </div>
                 <div className="mt-4 pt-4 border-t border-slate-100">
-                  <Link href="/student/profile" className="text-blue-600 text-sm font-medium inline-flex items-center gap-1 hover:gap-2 transition-all">
-                    Mettre à jour <ArrowRight className="h-4 w-4" />
+                  <Link href="/student/messages" className="text-blue-600 text-sm font-medium inline-flex items-center gap-1 hover:gap-2 transition-all">
+                    Voir les messages <ArrowRight className="h-4 w-4" />
                   </Link>
                 </div>
               </div>
