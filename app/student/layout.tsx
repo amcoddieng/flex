@@ -21,6 +21,7 @@ import {
   TrendingUp
 } from "lucide-react";
 import Link from "next/link";
+import LogoutButton from "@/components/auth/LogoutButton";
 
 export default function StudentLayout({
   children,
@@ -217,6 +218,9 @@ export default function StudentLayout({
                     </div>
                   )}
                 </div>
+                
+                {/* Logout Button */}
+                <LogoutButton variant="outline" size="sm" className="gap-2" />
               </div>
             </div>
           </div>

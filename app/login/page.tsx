@@ -71,8 +71,10 @@ export default function LoginPage() {
         router.push('/admin');
       } else if (userRole === 'EMPLOYER') {
         router.push('/employer');
+      } else if (userRole === 'STUDENT') {
+        router.push('/student');
       } else {
-        router.push('/jobs');
+        router.push('/student');
       }
     } catch (err: any) {
       console.error('Login error:', err);
