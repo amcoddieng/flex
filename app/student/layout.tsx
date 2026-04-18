@@ -83,6 +83,11 @@ export default function StudentLayout({
       hasBadge: true 
     },
     { 
+      label: "Forum", 
+      href: "/student/forum", 
+      icon: MessageCircle 
+    },
+    { 
       label: "Profil", 
       href: "/student/profile", 
       icon: User 
