@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ApplicationDetailModalMinimal } from "@/components/application-detail-modal-minimal";
 import { EmployerProtection } from "@/components/employer-protection";
-import { Search, X } from "lucide-react";
+import { Search, X, Briefcase, Calendar } from "lucide-react";
 
 type Application = {
   id: number;
@@ -319,25 +319,25 @@ export default function EmployerApplicationsPage() {
 
   return (
     <EmployerProtection>
-      <div className="space-y-8">
+      <div className="space-y-6 px-4 sm:px-0">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Candidatures reçues</h1>
-        <p className="text-slate-600 mt-2">Gérez les candidatures pour vos offres</p>
-      </div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Candidatures reçues</h1>
+          <p className="text-slate-600 mt-2 text-sm sm:text-base">Gérez les candidatures pour vos offres</p>
+        </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mx-4 sm:mx-0">
           {error}
         </div>
       )}
 
       {/* Filters */}
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white rounded-lg shadow p-4 sm:p-6 mx-4 sm:mx-0">
         <div className="flex items-center gap-2 mb-4">
           <Search className="h-5 w-5 text-slate-400" />
-          <h3 className="font-semibold text-slate-900">Filtres</h3>
+          <h3 className="font-semibold text-slate-900 text-lg">Filtres</h3>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-2">
               Rechercher (Nom, Email)
@@ -370,15 +370,62 @@ export default function EmployerApplicationsPage() {
       </div>
 
       {/* Applications Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="p-6 border-b flex items-center justify-between">
+      <div className="bg-white rounded-lg shadow overflow-hidden mx-4 sm:mx-0">
+        <div className="p-4 sm:p-6 border-b flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <p className="text-sm text-slate-600">Total: {total} candidatures</p>
-          <Button onClick={() => fetchApplications(page)} disabled={loading}>
+          <Button onClick={() => fetchApplications(page)} disabled={loading} className="w-full sm:w-auto">
             {loading ? 'Rafraîchir...' : 'Rafraîchir'}
           </Button>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Mobile Card View */}
+        <div className="sm:hidden">
+          {applications.map((app) => (
+            <div key={app.id} className="border-b border-slate-200 p-4 hover:bg-slate-50 transition-colors">
+              <div className="flex justify-between items-start mb-3">
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-semibold text-slate-900 truncate">
+                    {app.first_name} {app.last_name}
+                  </h4>
+                  <p className="text-sm text-slate-600 truncate">{app.email}</p>
+                </div>
+                <span
+                  className={`inline-block px-2 py-1 rounded-full text-xs font-medium flex-shrink-0 ml-2 ${getStatusColor(
+                    app.status
+                  )}`}
+                >
+                  {app.status}
+                </span>
+              </div>
+              
+              <div className="space-y-2 mb-3">
+                <div className="flex items-center gap-2 text-sm">
+                  <Briefcase className="h-4 w-4 text-slate-400" />
+                  <span className="text-slate-700 truncate">{app.job_title}</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm">
+                  <Calendar className="h-4 w-4 text-slate-400" />
+                  <span className="text-slate-700">
+                    {app.applied_at
+                      ? new Date(app.applied_at).toLocaleDateString('fr-FR')
+                      : '-'}
+                  </span>
+                </div>
+              </div>
+              
+              <Button
+                size="sm"
+                className="w-full bg-blue-600 text-white hover:bg-blue-700"
+                onClick={() => openDetailModal(app.id)}
+              >
+                Voir les détails
+              </Button>
+            </div>
+          ))}
+        </div>
+        
+        {/* Desktop Table View */}
+        <div className="hidden sm:block overflow-x-auto">
           <table className="w-full">
             <thead className="bg-slate-50 border-b">
               <tr>
@@ -434,18 +481,19 @@ export default function EmployerApplicationsPage() {
           </div>
         )}
 
-        <div className="p-4 border-t flex items-center justify-between">
-          <div className="text-sm text-slate-600">
+        <div className="p-4 border-t flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="text-sm text-slate-600 text-center sm:text-left">
             Page {page} sur {pages}
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" disabled={page === 1} onClick={() => fetchApplications(page - 1)}>
+          <div className="flex gap-2 justify-center sm:justify-end">
+            <Button variant="outline" disabled={page === 1} onClick={() => fetchApplications(page - 1)} className="flex-1 sm:flex-none">
               Précédent
             </Button>
             <Button
               variant="outline"
               disabled={page === pages || pages === 0}
               onClick={() => fetchApplications(page + 1)}
+              className="flex-1 sm:flex-none"
             >
               Suivant
             </Button>

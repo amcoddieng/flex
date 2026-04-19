@@ -685,7 +685,15 @@ function ActionButtonsInterviewMinimal({
           <Briefcase className="h-3 w-3 text-blue-600" />
           <span className="text-xs font-medium text-blue-800">Entretien</span>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          <Button 
+            onClick={() => onUpdateStatus(application.id, "ACCEPTED")}
+            size="sm"
+            className="bg-green-600 hover:bg-green-700 text-white text-xs"
+          >
+            <CheckCircle className="h-3 w-3 mr-1" />
+            Accepter
+          </Button>
           <Button 
             variant="outline"
             onClick={() => setShowRescheduleForm(true)}

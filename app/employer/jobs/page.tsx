@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { decodeToken } from "@/lib/jwt";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useEmployerValidation } from "@/hooks/useEmployerValidation";
 import { ValidationStatusModal } from "@/components/validation-status-modal";
-import { Search, X, AlertTriangle, CheckCircle, Clock, Info } from "lucide-react";
+import { Search, X, AlertTriangle, CheckCircle, Clock, Info, Users, Plus, RefreshCw } from "lucide-react";
 
 type Job = {
   id: number;
@@ -30,6 +30,15 @@ type Job = {
   updated_at?: string;
 };
 
+type Application = {
+  id: number;
+  first_name: string;
+  last_name: string;
+  user_email: string;
+  status: string;
+  applied_at: string;
+};
+
 export default function EmployerJobsPage() {
   const [isAuthed, setIsAuthed] = useState(false);
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -45,7 +54,7 @@ export default function EmployerJobsPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [createLoading, setCreateLoading] = useState(false);
   const [editingJobId, setEditingJobId] = useState<number | null>(null);
-  const [applications, setApplications] = useState<any[]>([]);
+  const [applications, setApplications] = useState<Application[]>([]);
   const [showValidationModal, setShowValidationModal] = useState(false);
   const [createFormData, setCreateFormData] = useState({
     title: '',
@@ -60,8 +69,10 @@ export default function EmployerJobsPage() {
     availability: '',
     type_paiement: 'jour',
   });
+  
   const router = useRouter();
   const hasCheckedAuth = useRef(false);
+  const debounceTimer = useRef<NodeJS.Timeout>();
 
   // Hook pour vérifier la validation du profil employeur
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
@@ -71,7 +82,7 @@ export default function EmployerJobsPage() {
    * Helper: Get current valid token from localStorage
    * Returns null if token doesn't exist or is invalid
    */
-  const getValidToken = (): string | null => { 
+  const getValidToken = useCallback((): string | null => {
     if (typeof window === 'undefined') return null;
     
     const token = localStorage.getItem('token');
@@ -86,30 +97,13 @@ export default function EmployerJobsPage() {
     }
     
     return token;
-  };
-
-  /**
-   * Initialize auth check on mount
-   * Redirects to /login if token is invalid or missing
-   */
-  useEffect(() => {
-    if (hasCheckedAuth.current) return;
-    hasCheckedAuth.current = true;
-
-    const token = getValidToken();
-    if (!token) {
-      router.push('/login');
-      return;
-    }
-    
-    setIsAuthed(true);
-  }, [router]);
+  }, []);
 
   /**
    * Fetch jobs list from API
    * @param pageNum - Page number to fetch
    */
-  const fetchJobs = async (pageNum: number) => {
+  const fetchJobs = useCallback(async (pageNum: number) => {
     setLoading(true);
     setError(null);
 
@@ -176,15 +170,23 @@ export default function EmployerJobsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [getValidToken, router, searchQuery, limit]);
 
   /**
-   * Handle search input change
-   * Reset to page 1 and trigger fetch
+   * Handle search input change with debouncing
    */
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value);
-    setPage(1);
+    const value = e.target.value;
+    setSearchQuery(value);
+    
+    // Debounce search to avoid too many requests
+    if (debounceTimer.current) {
+      clearTimeout(debounceTimer.current);
+    }
+    
+    debounceTimer.current = setTimeout(() => {
+      setPage(1);
+    }, 500);
   };
 
   /**
@@ -194,7 +196,24 @@ export default function EmployerJobsPage() {
     if (isAuthed) {
       fetchJobs(1);
     }
-  }, [searchQuery, isAuthed]);
+  }, [searchQuery, isAuthed, fetchJobs]);
+
+  /**
+   * Initialize auth check on mount
+   * Redirects to /login if token is invalid or missing
+   */
+  useEffect(() => {
+    if (hasCheckedAuth.current) return;
+    hasCheckedAuth.current = true;
+
+    const token = getValidToken();
+    if (!token) {
+      router.push('/login');
+      return;
+    }
+    
+    setIsAuthed(true);
+  }, [router, getValidToken]);
 
   /**
    * Open detail modal for a job
@@ -252,6 +271,7 @@ export default function EmployerJobsPage() {
     } catch (err: any) {
       const message = err instanceof Error ? err.message : 'Erreur inconnue';
       console.error('openDetailModal error:', message);
+      setError(message);
       setSelectedJob(null);
       setApplications([]);
     } finally {
@@ -260,7 +280,7 @@ export default function EmployerJobsPage() {
   };
 
   /**
-   * Create new job offer
+   * Create or update job offer
    */
   const createJob = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -365,7 +385,7 @@ export default function EmployerJobsPage() {
       });
 
       if (!res.ok) {
-        let errorMsg = 'Erreur lors de la création de l\'offre';
+        let errorMsg = editingJobId ? 'Erreur lors de la mise à jour de l\'offre' : 'Erreur lors de la création de l\'offre';
         try {
           const errorData = await res.json();
           if (errorData.error) {
@@ -404,7 +424,7 @@ export default function EmployerJobsPage() {
       setShowCreateModal(false);
       
       // Refresh jobs list
-      await fetchJobs(1);
+      await fetchJobs(page);
       
       alert(editingJobId ? 'Offre mise à jour avec succès !' : 'Offre créée avec succès !');
     } catch (err: any) {
@@ -418,7 +438,6 @@ export default function EmployerJobsPage() {
 
   /**
    * Toggle job active status
-   * Requires confirmation before updating
    */
   const toggleJobActive = async (jobId: number, activate: boolean) => {
     if (!confirm(`Confirmer ${activate ? 'l\'activation' : 'la désactivation'} de l'offre ?`)) {
@@ -467,7 +486,7 @@ export default function EmployerJobsPage() {
 
       // Refresh list and detail if modal is open
       await fetchJobs(page);
-      if (selectedJob && showDetailModal) {
+      if (selectedJob && showDetailModal && selectedJob.id === jobId) {
         await openDetailModal(jobId);
       }
     } catch (err: any) {
@@ -559,6 +578,15 @@ export default function EmployerJobsPage() {
 
   const pages = Math.ceil(total / limit);
 
+  // Cleanup debounce on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceTimer.current) {
+        clearTimeout(debounceTimer.current);
+      }
+    };
+  }, []);
+
   // Afficher un message si le profil n'est pas validé
   if (validationLoading) {
     return (
@@ -643,13 +671,14 @@ export default function EmployerJobsPage() {
   }
 
   return (
-    <div className="space-y-8 pl-12 pr-12 pt-8">
-      <div className="flex items-center justify-between mb-6">
+    <div className="space-y-6 px-4 sm:px-0">
+      {/* Header Section - Fixed missing div closing */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Mes offres d'emploi</h1>
-          <p className="text-slate-600 mt-2">Gérez vos offres et candidatures</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Mes offres d'emploi</h1>
+          <p className="text-slate-600 mt-2 text-sm sm:text-base">Gérez vos offres et candidatures</p>
           {validationStatus && (
-            <div className="mt-2 flex items-center gap-2">
+            <div className="mt-2 flex flex-col sm:flex-row sm:items-center gap-2">
               {isValidated && (
                 <Badge className="bg-green-100 text-green-800 border-green-200">
                   <CheckCircle className="h-3 w-3 mr-1" />
@@ -672,7 +701,7 @@ export default function EmployerJobsPage() {
                 onClick={() => setShowValidationModal(true)}
                 variant="outline"
                 size="sm"
-                className="ml-2"
+                className="sm:ml-2"
               >
                 <Info className="h-3 w-3 mr-1" />
                 Détails
@@ -682,24 +711,25 @@ export default function EmployerJobsPage() {
         </div>
         <Button 
           onClick={() => setShowCreateModal(true)}
-          className="bg-blue-600 hover:bg-blue-700"
+          className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700"
           disabled={!isValidated}
         >
-          + Créer une offre
+          <Plus className="h-4 w-4 mr-2" />
+          Créer une offre
         </Button>
       </div>
-
+      
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mx-4 sm:mx-0">
           {error}
         </div>
       )}
 
       {/* Search */}
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white rounded-lg shadow p-4 sm:p-6">
         <div className="flex items-center gap-2 mb-4">
           <Search className="h-5 w-5 text-slate-400" />
-          <h3 className="font-semibold text-slate-900">Recherche</h3>
+          <h3 className="font-semibold text-slate-900 text-lg">Recherche</h3>
         </div>
         <Input
           type="text"
@@ -712,14 +742,66 @@ export default function EmployerJobsPage() {
 
       {/* Jobs Table */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="p-6 border-b flex items-center justify-between">
+        <div className="p-4 sm:p-6 border-b flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <p className="text-sm text-slate-600">Total: {total} offres</p>
-          <Button onClick={() => fetchJobs(page)} disabled={loading}>
-            {loading ? 'Rafraîchir...' : 'Rafraîchir'}
+          <Button onClick={() => fetchJobs(page)} disabled={loading} className="w-full sm:w-auto">
+            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            {loading ? 'Rafraîchissement...' : 'Rafraîchir'}
           </Button>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Mobile Card View */}
+        <div className="sm:hidden">
+          {jobs.map((job) => (
+            <div key={job.id} className="border-b border-slate-200 p-4 hover:bg-slate-50 transition-colors">
+              <div className="flex justify-between items-start mb-3">
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-semibold text-slate-900 truncate">
+                    {job.title}
+                  </h4>
+                  <p className="text-sm text-slate-600 truncate">{job.location}</p>
+                </div>
+                <span
+                  className={`inline-block px-2 py-1 rounded-full text-xs font-medium flex-shrink-0 ml-2 ${
+                    job.is_active
+                      ? 'bg-green-100 text-green-800'
+                      : 'bg-slate-100 text-slate-800'
+                  }`}
+                >
+                  {job.is_active ? 'Active' : 'Fermée'}
+                </span>
+              </div>
+              
+              <div className="space-y-2 mb-3">
+                <div className="flex items-center gap-2 text-sm">
+                  <Users className="h-4 w-4 text-slate-400" />
+                  <span className="text-slate-700">{job.applicants || 0} candidatures</span>
+                </div>
+              </div>
+              
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  className="flex-1 bg-blue-600 text-white hover:bg-blue-700"
+                  onClick={() => openDetailModal(job.id)}
+                >
+                  Détails
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => toggleJobActive(job.id, !job.is_active)}
+                >
+                  {job.is_active ? 'Désactiver' : 'Activer'}
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+        
+        {/* Desktop Table View */}
+        <div className="hidden sm:block overflow-x-auto">
           <table className="w-full">
             <thead className="bg-slate-50 border-b">
               <tr>
@@ -774,32 +856,43 @@ export default function EmployerJobsPage() {
         {jobs.length === 0 && !loading && (
           <div className="p-8 text-center">
             <p className="text-slate-600">Aucune offre trouvée</p>
-            <Button 
-              onClick={() => setShowCreateModal(true)}
-              className="mt-4 bg-blue-600 hover:bg-blue-700"
-            >
-              Créer votre première offre
-            </Button>
+            {isValidated && (
+              <Button 
+                onClick={() => setShowCreateModal(true)}
+                className="mt-4 bg-blue-600 hover:bg-blue-700"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Créer votre première offre
+              </Button>
+            )}
           </div>
         )}
 
-        <div className="p-4 border-t flex items-center justify-between">
-          <div className="text-sm text-slate-600">
-            Page {page} sur {pages}
+        {jobs.length > 0 && (
+          <div className="p-4 border-t flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="text-sm text-slate-600 text-center sm:text-left">
+              Page {page} sur {pages}
+            </div>
+            <div className="flex gap-2 justify-center sm:justify-end">
+              <Button 
+                variant="outline" 
+                disabled={page === 1 || loading} 
+                onClick={() => fetchJobs(page - 1)} 
+                className="flex-1 sm:flex-none"
+              >
+                Précédent
+              </Button>
+              <Button
+                variant="outline"
+                disabled={page === pages || pages === 0 || loading}
+                onClick={() => fetchJobs(page + 1)}
+                className="flex-1 sm:flex-none"
+              >
+                Suivant
+              </Button>
+            </div>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" disabled={page === 1} onClick={() => fetchJobs(page - 1)}>
-              Précédent
-            </Button>
-            <Button
-              variant="outline"
-              disabled={page === pages || pages === 0}
-              onClick={() => fetchJobs(page + 1)}
-            >
-              Suivant
-            </Button>
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Detail Modal */}
@@ -847,8 +940,17 @@ export default function EmployerJobsPage() {
                       <div className="mt-1 text-slate-800 whitespace-pre-wrap">{selectedJob.description}</div>
                     </div>
                   )}
-                  <div className="mt-4 text-sm text-slate-600">Contact: {selectedJob.contact_email || '-'} {selectedJob.contact_phone ? `• ${selectedJob.contact_phone}` : ''}</div>
-                  <div className="mt-2 text-sm text-slate-600">Posté le: {selectedJob.posted_at}</div>
+                  <div className="mt-4 text-sm text-slate-600">
+                    Contact: {selectedJob.contact_email || '-'} {selectedJob.contact_phone ? `• ${selectedJob.contact_phone}` : ''}
+                  </div>
+                  <div className="mt-2 text-sm text-slate-600">
+                    Posté le: {new Date(selectedJob.posted_at).toLocaleDateString('fr-FR')}
+                  </div>
+                  {selectedJob.updated_at && (
+                    <div className="text-sm text-slate-600">
+                      Modifié le: {new Date(selectedJob.updated_at).toLocaleDateString('fr-FR')}
+                    </div>
+                  )}
                 </div>
 
                 {/* Applications Section */}
@@ -858,7 +960,7 @@ export default function EmployerJobsPage() {
                     <p className="text-sm text-slate-600">Aucune candidature pour cette offre.</p>
                   ) : (
                     <div className="space-y-3">
-                      {applications.map((app: any) => (
+                      {applications.map((app: Application) => (
                         <div key={app.id} className="border border-slate-200 rounded p-3 bg-slate-50">
                           <div className="flex justify-between items-start">
                             <div>
@@ -867,7 +969,7 @@ export default function EmployerJobsPage() {
                               </div>
                               <div className="text-sm text-slate-600">{app.user_email}</div>
                               <div className="text-xs text-slate-500 mt-1">
-                                Postuée le: {new Date(app.applied_at).toLocaleDateString('fr-FR')}
+                                Postulée le: {new Date(app.applied_at).toLocaleDateString('fr-FR')}
                               </div>
                             </div>
                             <div className="text-right">
@@ -892,7 +994,7 @@ export default function EmployerJobsPage() {
                   )}
                 </div>
 
-                <div className="flex gap-3 pt-6 border-t">
+                <div className="flex flex-wrap gap-3 pt-6 border-t">
                   <Button
                     variant="outline"
                     onClick={() => {
@@ -1084,7 +1186,7 @@ export default function EmployerJobsPage() {
                   <select
                     value={createFormData.type_paiement}
                     onChange={(e) => setCreateFormData({ ...createFormData, type_paiement: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-md"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
                     <option value="heure">heure</option>
                     <option value="jour">jour</option>
@@ -1158,7 +1260,7 @@ export default function EmployerJobsPage() {
                 />
               </div>
 
-              <div className="flex gap-3 pt-4">
+              <div className="flex flex-wrap gap-3 pt-4">
                 <Button
                   type="button"
                   variant="outline"
