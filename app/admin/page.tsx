@@ -97,6 +97,7 @@ export default function AdminPage() {
       title: "Utilisateurs",
       value: stats?.total_users || 0,
       icon: Users,
+      // COULEUR: Gris foncé - Couleur neutre pour les statistiques générales
       color: "bg-gray-700",
       change: `+${stats?.new_users_last_7_days || 0} cette semaine`,
       changeType: "positive"
@@ -105,6 +106,7 @@ export default function AdminPage() {
       title: "Étudiants",
       value: stats?.total_students || 0,
       icon: Users,
+      // COULEUR: Vert - Couleur positive pour les étudiants (utilisateurs actifs)
       color: "bg-green-500",
       change: `+${stats?.new_users_last_7_days || 0} cette semaine`,
       changeType: "positive"
@@ -113,6 +115,7 @@ export default function AdminPage() {
       title: "Employeurs",
       value: stats?.total_employers || 0,
       icon: Briefcase,
+      // COULEUR: Violet - Couleur distinctive pour les employeurs (professionnel)
       color: "bg-purple-500",
       change: `${stats?.pending_employers || 0} en attente`,
       changeType: stats?.pending_employers > 0 ? "warning" : "positive"
@@ -121,6 +124,7 @@ export default function AdminPage() {
       title: "Offres d'Emploi",
       value: stats?.total_jobs || 0,
       icon: FileText,
+      // COULEUR: Orange - Couleur chaude pour les offres d'emploi (opportunités)
       color: "bg-orange-500",
       change: `${stats?.active_jobs || 0} actives`,
       changeType: "positive"
@@ -129,6 +133,7 @@ export default function AdminPage() {
       title: "Validations en Attente",
       value: (stats?.pending_employers || 0) + (stats?.pending_students || 0),
       icon: CheckCircle,
+      // COULEUR: Jaune - Couleur d'alerte pour les validations en attente (attention requise)
       color: "bg-yellow-500",
       change: `${stats?.pending_employers || 0} employeurs, ${stats?.pending_students || 0} étudiants`,
       changeType: "warning"
@@ -137,6 +142,7 @@ export default function AdminPage() {
       title: "Candidatures Totales",
       value: stats?.total_applications || 0,
       icon: FileText,
+      // COULEUR: Indigo - Couleur informative pour les candidatures (données)
       color: "bg-indigo-500",
       change: `${stats?.pending_applications || 0} en attente`,
       changeType: "info"
@@ -145,6 +151,7 @@ export default function AdminPage() {
       title: "Offres Actives",
       value: stats?.active_jobs || 0,
       icon: TrendingUp,
+      // COULEUR: Turquoise - Couleur positive pour les offres actives (croissance)
       color: "bg-teal-500",
       change: `${stats?.total_jobs || 0} totales`,
       changeType: "positive"
@@ -232,6 +239,7 @@ export default function AdminPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <CheckCircle className="h-5 w-5 text-gray-700" />
+                {/* COULEUR: Gris foncé - Couleur neutre pour le titre des actions */}
                 Actions Rapides
               </CardTitle>
             </CardHeader>
@@ -243,12 +251,15 @@ export default function AdminPage() {
                 >
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-yellow-100 rounded-lg">
+                      {/* COULEUR: Jaune clair (bg-yellow-100) + Jaune foncé (text-yellow-600) - Couleur d'alerte pour les validations en attente */}
                       <CheckCircle className="h-4 w-4 text-yellow-600" />
                     </div>
                     <div>
+                      {/* COULEUR: Gris foncé (text-gray-900) - Couleur principale pour le texte */}
                       <p className="font-medium text-gray-900">
                         Validations en Attente
                       </p>
+                      {/* COULEUR: Gris moyen (text-gray-600) - Couleur secondaire pour la description */}
                       <p className="text-sm text-gray-600">
                         {stats?.pendingValidations || 0} profils à valider
                       </p>
@@ -262,12 +273,15 @@ export default function AdminPage() {
                 >
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-gray-100 rounded-lg">
+                      {/* COULEUR: Gris très clair (bg-gray-100) + Gris foncé (text-gray-700) - Couleur neutre pour la gestion utilisateurs */}
                       <Users className="h-4 w-4 text-gray-700" />
                     </div>
                     <div>
+                      {/* COULEUR: Gris foncé (text-gray-900) - Couleur principale pour le texte */}
                       <p className="font-medium text-gray-900">
                         Gestion Utilisateurs
                       </p>
+                      {/* COULEUR: Gris moyen (text-gray-600) - Couleur secondaire pour la description */}
                       <p className="text-sm text-gray-600">
                         Administrer les comptes
                       </p>
@@ -282,6 +296,7 @@ export default function AdminPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Building className="h-5 w-5 text-purple-600" />
+                {/* COULEUR: Violet - Couleur distinctive pour l'activité récente (données dynamiques) */}
                 Activité Récente
               </CardTitle>
             </CardHeader>
@@ -289,9 +304,12 @@ export default function AdminPage() {
               <div className="space-y-3">
                 <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                   <div>
+                    {/* COULEUR: Gris foncé (text-gray-900) - Titre principal */}
                     <p className="font-medium text-gray-900">Nouveaux employeurs</p>
+                    {/* COULEUR: Gris moyen (text-gray-600) - Description secondaire */}
                     <p className="text-sm text-gray-600">Ce mois</p>
                   </div>
+                  {/* COULEUR: Violet (text-purple-600) - Statistique principale (cohérent avec l'icône Building) */}
                   <span className="text-lg font-bold text-purple-600">
                     {stats?.thisMonthRegistrations || 0}
                   </span>
@@ -299,9 +317,12 @@ export default function AdminPage() {
                 
                 <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                   <div>
+                    {/* COULEUR: Gris foncé (text-gray-900) - Titre principal */}
                     <p className="font-medium text-gray-900">Offres actives</p>
+                    {/* COULEUR: Gris moyen (text-gray-600) - Description secondaire */}
                     <p className="text-sm text-gray-600">En ligne</p>
                   </div>
+                  {/* COULEUR: Vert (text-green-600) - Statistique positive (offres actives = bon signe) */}
                   <span className="text-lg font-bold text-green-600">
                     {stats?.activeJobs || 0}
                   </span>

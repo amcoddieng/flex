@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Search, User, Mail, Calendar, GraduationCap, Phone, CheckCircle, Clock, AlertTriangle, Eye } from "lucide-react";
+import { Search, User, Mail, Calendar, GraduationCap, Phone, CheckCircle, Clock, AlertTriangle, Eye, Shield, ShieldOff, Trash2 } from "lucide-react";
+import { StudentManagementModal } from "@/components/admin/student-management-modal";
 
 type Student = {
   id: number;
@@ -36,6 +37,8 @@ export default function AdminStudentsPage() {
   const [isAuthed, setIsAuthed] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState<string>("");
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const router = useRouter();
 
   const getValidToken = (): string | null => {
@@ -102,6 +105,73 @@ export default function AdminStudentsPage() {
       setStudents([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleStudentUpdate = async (studentId: number, updates: any) => {
+    try {
+      const token = getValidToken();
+      if (!token) return;
+
+      console.log('Updating student:', studentId, updates);
+
+      const response = await fetch(`/api/admin/students/${studentId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updates)
+      });
+
+      const responseText = await response.text();
+      console.log('Response:', response.status, responseText);
+
+      if (!response.ok) {
+        let errorData;
+        try {
+          errorData = JSON.parse(responseText);
+        } catch (e) {
+          errorData = { error: responseText };
+        }
+        alert(errorData.error || 'Erreur lors de la mise à jour');
+        return;
+      }
+
+      await fetchStudents(token);
+      setIsModalOpen(false);
+      alert('Étudiant mis à jour avec succès');
+    } catch (error: any) {
+      console.error('handleStudentUpdate error:', error);
+      alert(error.message || 'Erreur lors de la mise à jour');
+    }
+  };
+
+  const handleStudentDelete = async (studentId: number) => {
+    try {
+      const token = getValidToken();
+      if (!token) return;
+
+      const response = await fetch(`/api/admin/students/${studentId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        alert(errorData.error || 'Erreur lors de la suppression');
+        return;
+      }
+
+      await fetchStudents(token);
+      setIsModalOpen(false);
+      alert('Étudiant supprimé avec succès');
+    } catch (error: any) {
+      console.error('handleStudentDelete error:', error);
+      alert(error.message || 'Erreur lors de la suppression');
     }
   };
 
@@ -315,12 +385,12 @@ export default function AdminStudentsPage() {
                               variant="outline"
                               size="sm"
                               onClick={() => {
-                                // TODO: Implémenter le modal de détails
-                                console.log('Voir détails étudiant:', student);
+                                setSelectedStudent(student);
+                                setIsModalOpen(true);
                               }}
                             >
                               <Eye className="h-3 w-3 mr-1" />
-                              Voir
+                              Gérer
                             </Button>
                           </div>
                         </td>
@@ -363,6 +433,18 @@ export default function AdminStudentsPage() {
           </div>
         )}
       </div>
+
+      {/* Modal de gestion des étudiants */}
+      <StudentManagementModal
+        student={selectedStudent}
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedStudent(null);
+        }}
+        onUpdate={handleStudentUpdate}
+        onDelete={handleStudentDelete}
+      />
     </AdminLayout>
   );
 }

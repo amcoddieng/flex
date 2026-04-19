@@ -444,7 +444,7 @@ export default function StudentForumPage() {
         </div>
         <Button
           onClick={() => setShowNewTopicModal(true)}
-          className="gap-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+          className="gap-2 bg-gradient-to-r from-gray-900 to-gray-900 hover:from-blue-600 hover:to-purple-700"
         >
           <Plus className="h-4 w-4"/>
           Nouveau Sujet
@@ -507,7 +507,7 @@ export default function StudentForumPage() {
               {/* Post Header */}
               <div className="p-6 border-b border-gray-100">
                 <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
+                  <div className="w-10 h-10 rounded-full bg-gray-900 flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
                     {topic.author_name?.charAt(0).toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -584,7 +584,7 @@ export default function StudentForumPage() {
                       <>
                         {(expandedComments.has(topic.id) ? replies : replies.slice(0, 2)).map((reply) => (
                           <div key={reply.id} className="flex gap-3">
-                            <div className="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center text-white font-semibold text-xs flex-shrink-0">
+                            <div className="w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center text-white font-semibold text-xs flex-shrink-0">
                               {reply.author_name?.charAt(0).toUpperCase()}
                             </div>
                             <div className="flex-1 min-w-0">
@@ -684,7 +684,7 @@ export default function StudentForumPage() {
                   {/* Add Comment Input */}
                   <div className="px-6 pb-6">
                     <div className="flex gap-3">
-                      <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold text-xs flex-shrink-0">
+                      <div className="w-8 h-8 rounded-full bg-gray-500 flex items-center justify-center text-white font-semibold text-xs flex-shrink-0">
                         MOI
                       </div>
                       <div className="flex-1">

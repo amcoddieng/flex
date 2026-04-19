@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import mysql from 'mysql2/promise';
+import { verifyToken } from '@/lib/jwt';
 
 const pool = mysql.createPool({
   host: 'localhost',
-  user: 'dieng',
-  password: 'Papa1997',
+  user: 'root',
+  password: '',
   database: 'job_platform',
   waitForConnections: true,
   connectionLimit: 10,
@@ -81,6 +82,66 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     console.error('Erreur GET /api/admin/applications/[id]:', error);
     return NextResponse.json(
       { error: error.message || 'Erreur serveur' },
+      { status: 500 }
+    );
+  }
+}
+
+// PUT - Mettre à jour le statut d'une candidature
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 403 });
+    }
+
+    const token = authHeader.substring(7);
+    const decoded = verifyToken(token);
+    
+    if (!decoded || decoded.role !== 'ADMIN') {
+      return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
+    }
+
+    const { id } = await params;
+    const applicationId = parseInt(id);
+    
+    if (isNaN(applicationId)) {
+      return NextResponse.json({ error: 'ID invalide' }, { status: 400 });
+    }
+
+    const body = await request.json();
+    const { status } = body;
+
+    if (!status || !['PENDING', 'ACCEPTED', 'REJECTED', 'INTERVIEW'].includes(status)) {
+      return NextResponse.json({ error: 'Statut invalide' }, { status: 400 });
+    }
+
+    const connection = await pool.getConnection();
+
+    try {
+      await connection.execute(
+        'UPDATE job_application SET status = ? WHERE id = ?',
+        [status, applicationId]
+      );
+
+      return NextResponse.json({
+        success: true,
+        message: 'Statut mis à jour avec succès',
+        data: { id: applicationId, status }
+      });
+    } finally {
+      connection.release();
+    }
+  } catch (error) {
+    console.error('Error updating application status:', error);
+    return NextResponse.json(
+      { 
+        error: error.message || 'Erreur lors de la mise à jour du statut',
+        details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      },
       { status: 500 }
     );
   }

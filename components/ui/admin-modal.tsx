@@ -18,6 +18,29 @@ const AdminModal = React.forwardRef<
   React.ElementRef<"div">,
   AdminModalProps
 >(({ children, open, onOpenChange, title, description, className, maxWidth = "4xl" }, ref) => {
+  // Gérer la fermeture avec la touche Escape
+  React.useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onOpenChange(false);
+      }
+    };
+
+    if (open) {
+      document.addEventListener('keydown', handleEscape);
+      // Empêcher le scroll du body quand le modal est ouvert
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.removeEventListener('keydown', handleEscape);
+      // Rétablir le scroll du body quand le modal est fermé
+      document.body.style.overflow = 'unset';
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+      document.body.style.overflow = 'unset';
+    };
+  }, [open, onOpenChange]);
   const maxWidthClass = {
     sm: "max-w-sm",
     md: "max-w-md", 
@@ -46,7 +69,7 @@ const AdminModal = React.forwardRef<
         ref={ref}
         className={cn(
           // Base styles
-          "relative z-50 w-full mx-4",
+          "relative z-50 w-full mx-4 my-4",
           // Max width
           maxWidthClass,
           // Glass effect with gradient border
@@ -89,7 +112,7 @@ const AdminModal = React.forwardRef<
         )}
         
         {/* Content */}
-        <div className="p-6 pt-4">
+        <div className="p-6 pt-4 max-h-[80vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
           {children}
         </div>
       </div>

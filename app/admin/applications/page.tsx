@@ -147,7 +147,10 @@ export default function AdminApplicationsPage() {
   const handleStatusUpdate = async (applicationId: number, newStatus: string) => {
     try {
       const token = localStorage.getItem('token');
-      if (!token) return;
+      if (!token) {
+        alert('Erreur: Token non trouvé');
+        return;
+      }
 
       const response = await fetch(`/api/admin/applications/${applicationId}`, {
         method: 'PUT',
@@ -158,11 +161,42 @@ export default function AdminApplicationsPage() {
         body: JSON.stringify({ status: newStatus }),
       });
 
-      if (response.ok) {
-        fetchApplications();
+      if (!response.ok) {
+        try {
+          const errorData = await response.json();
+          console.error('API Error:', errorData);
+          alert(`Erreur: ${errorData.error || 'Impossible de mettre à jour le statut'}`);
+          return;
+        } catch (parseError) {
+          console.error('JSON Parse Error:', parseError);
+          alert('Erreur: Impossible de lire la réponse du serveur');
+          return;
+        }
       }
-    } catch (error) {
+
+      let data;
+      try {
+        data = await response.json();
+      } catch (parseError) {
+        console.error('Response Parse Error:', parseError);
+        alert('Erreur: Réponse invalide du serveur');
+        return;
+      }
+      console.log('Status updated successfully:', data);
+      
+      // Rafraîchir la liste des candidatures
+      fetchApplications();
+      
+      // Fermer le modal après succès
+      setSelectedApplication(null);
+      setIsModalOpen(false);
+      
+      // Notification de succès
+      alert(`Statut mis à jour: ${newStatus}`);
+      
+    } catch (error: any) {
       console.error('Error updating application status:', error);
+      alert(`Erreur réseau: ${error.message || 'Impossible de mettre à jour le statut'}`);
     }
   };
 

@@ -33,7 +33,8 @@ import {
   Star,
   Download,
   CreditCard,
-  BookOpen
+  BookOpen,
+  AlertCircle
 } from "lucide-react";
 
 // ========================================
@@ -397,10 +398,10 @@ const handleProfilePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) 
       {/* ========================================
           SOUS-SECTION 9.1: HEADER DU PROFIL
           ======================================== */}
-      <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6 border border-blue-100">
+      <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6 border border-blue-50">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-slate-900 to-blue-600 bg-clip-text text-transparent">Mon Profil</h1>
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-slate-900 to-blue-900 bg-clip-text text-transparent">Mon Profil</h1>
             <p className="text-slate-600 text-sm mt-1">Gérez vos informations et préférences</p>
           </div>
           <div className="flex items-center gap-3">
@@ -408,7 +409,7 @@ const handleProfilePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) 
               <Settings className="h-3 w-3" />
               Paramètres
             </Button>
-            <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-semibold">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-r from-gray-900 to-gray-900 flex items-center justify-center text-white text-sm font-semibold">
               {profile?.first_name?.charAt(0)?.toUpperCase() || 'S'}
             </div>
           </div>
@@ -416,13 +417,13 @@ const handleProfilePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) 
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+        <div className="bg-gray-100 border border-gray-300 text-gray-800 px-4 py-3 rounded-lg">
           {error}
         </div>
       )}
 
       {success && (
-        <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">
+        <div className="bg-gray-100 border border-gray-300 text-gray-800 px-4 py-3 rounded-lg">
           {success}
         </div>
       )}
@@ -482,7 +483,7 @@ const handleProfilePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) 
         <div className="bg-white rounded-xl shadow hover:shadow-lg transition-all duration-300 border border-slate-200/50 p-4">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-base font-semibold text-slate-900 flex items-center gap-2">
-              <CreditCard className="h-4 w-4 text-green-600" />
+              <CreditCard className="h-4 w-4 text-gray-800" />
               Carte étudiante
             </h3>
             <span className="text-xs text-slate-500">PDF, JPEG</span>
@@ -531,8 +532,8 @@ const handleProfilePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) 
                   )}
                 </div>
               ) : (
-                <div className="w-full h-48 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 border-2 border-dashed border-slate-300 flex flex-col items-center justify-center group hover:border-green-400 hover:bg-green-50/30 transition-all duration-200">
-                  <CreditCard className="h-10 w-10 text-slate-400 group-hover:text-green-600 transition-colors" />
+                <div className="w-full h-48 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 border-2 border-dashed border-slate-300 flex flex-col items-center justify-center group hover:border-gray-400 hover:bg-gray-50/30 transition-all duration-200">
+                  <CreditCard className="h-10 w-10 text-slate-400 group-hover:text-gray-800 transition-colors" />
                   <p className="text-slate-600 mt-2 text-sm font-medium">Ajouter votre carte</p>
                   <p className="text-xs text-slate-500 mt-1">Carte d'identité étudiante</p>
                 </div>
@@ -547,11 +548,11 @@ const handleProfilePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) 
             </div>
             <Button 
               onClick={() => document.getElementById("upload-student-card")?.click()}
-              className="w-full gap-2 text-sm"
+              className="w-full gap-2 text-sm text-gray-800 hover:text-gray-900 border-gray-300"
               variant="outline"
               disabled={false}
             >
-              <Upload className="h-4 w-4" />
+              <Upload className="h-4 w-4 text-gray-800" />
               {profile?.student_card_pdf ? "Changer la carte" : "Ajouter une carte"}
             </Button>
           </div>
@@ -562,7 +563,7 @@ const handleProfilePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) 
       <div className="bg-white rounded-xl shadow hover:shadow-lg transition-all duration-300 border border-slate-200/50 p-6 w-full">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-base font-semibold text-slate-900 flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-gray-900 to-gray-900 flex items-center justify-center">
               <User className="h-4 w-4 text-white" />
             </div>
             Informations du profil
@@ -579,54 +580,98 @@ const handleProfilePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) 
           )}
         </div>
 
+        {/* ========================================
+            SECTION STATUT DE VALIDATION DU PROFIL
+            ======================================== */}
+        <div className="mb-6 p-4 rounded-lg border border-gray-200">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              {profile?.validation_status === 'VALIDATED' ? (
+                <>
+                  <CheckCircle className="h-5 w-5 text-green-600" />
+                  <span className="text-sm font-medium text-green-700">Profil validé</span>
+                </>
+              ) : profile?.validation_status === 'PENDING' ? (
+                <>
+                  <Clock className="h-5 w-5 text-amber-600" />
+                  <span className="text-sm font-medium text-amber-700">Profil en attente de validation</span>
+                </>
+              ) : profile?.validation_status === 'REJECTED' ? (
+                <>
+                  <XCircle className="h-5 w-5 text-red-600" />
+                  <span className="text-sm font-medium text-red-700">Profil rejeté</span>
+                </>
+              ) : (
+                <>
+                  <AlertCircle className="h-5 w-5 text-gray-600" />
+                  <span className="text-sm font-medium text-gray-700">Statut inconnu</span>
+                </>
+              )}
+            </div>
+          </div>
+          
+          {/* Message d'instructions selon le statut */}
+          <div className="mt-3 text-sm text-gray-600">
+            {profile?.validation_status === 'VALIDATED' ? (
+              <p className="text-green-700 bg-green-50 p-3 rounded-lg border border-green-200">
+                ✅ Votre profil est validé ! Vous pouvez maintenant postuler aux offres d'emploi.
+              </p>
+            ) : profile?.validation_status === 'PENDING' ? (
+              <p className="text-amber-700 bg-amber-50 p-3 rounded-lg border border-amber-200">
+                ⏳ Votre profil est en cours de validation. Un administrateur examinera vos informations dans les plus brefs délais.
+              </p>
+            ) : profile?.validation_status === 'REJECTED' ? (
+              <p className="text-red-700 bg-red-50 p-3 rounded-lg border border-red-200">
+                ❌ Votre profil a été rejeté. {profile?.rejection_reason ? `Raison : ${profile.rejection_reason}` : 'Veuillez contacter l\'administrateur pour plus d\'informations.'}
+              </p>
+            ) : (
+              <p className="text-gray-700 bg-gray-50 p-3 rounded-lg border border-gray-200">
+                ⚠️ Statut de validation non disponible. Veuillez actualiser la page.
+              </p>
+            )}
+          </div>
+        </div>
+
         {!editMode ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div className="group p-4 rounded-lg border border-slate-200/50 hover:border-blue-200 hover:bg-blue-50/30 transition-all duration-200">
+            <div className="group p-4 rounded-lg border border-slate-200/50 hover:border-gray-300 hover:bg-gray-50/30 transition-all duration-200">
               <div className="flex items-center gap-2 mb-2">
-                <Mail className="h-4 w-4 text-blue-600" />
+                <Mail className="h-4 w-4 text-gray-800" />
                 <span className="text-sm font-medium text-slate-700">Email</span>
               </div>
               <p className="text-slate-900 font-medium">{profile?.email}</p>
             </div>
 
-            <div className="group p-4 rounded-lg border border-slate-200/50 hover:border-blue-200 hover:bg-blue-50/30 transition-all duration-200">
+            <div className="group p-4 rounded-lg border border-slate-200/50 hover:border-gray-300 hover:bg-gray-50/30 transition-all duration-200">
               <div className="flex items-center gap-2 mb-2">
-                <Building className="h-4 w-4 text-blue-600" />
+                <Building className="h-4 w-4 text-gray-800" />
                 <span className="text-sm font-medium text-slate-700">Université</span>
               </div>
               <p className="text-slate-900 font-medium">{profile?.university || 'Non spécifié'}</p>
             </div>
 
-            <div className="group p-4 rounded-lg border border-slate-200/50 hover:border-blue-200 hover:bg-blue-50/30 transition-all duration-200">
+            <div className="group p-4 rounded-lg border border-slate-200/50 hover:border-gray-300 hover:bg-gray-50/30 transition-all duration-200">
               <div className="flex items-center gap-2 mb-2">
-                <User className="h-4 w-4 text-blue-600" />
+                <User className="h-4 w-4 text-gray-800" />
                 <span className="text-sm font-medium text-slate-700">Nom complet</span>
               </div>
               <p className="text-slate-900 font-medium">{profile?.first_name} {profile?.last_name}</p>
             </div>
 
-            <div className="group p-4 rounded-lg border border-slate-200/50 hover:border-blue-200 hover:bg-blue-50/30 transition-all duration-200">
+            <div className="group p-4 rounded-lg border border-slate-200/50 hover:border-gray-300 hover:bg-gray-50/30 transition-all duration-200">
               <div className="flex items-center gap-2 mb-2">
-                <Phone className="h-4 w-4 text-blue-600" />
+                <Phone className="h-4 w-4 text-gray-800" />
                 <span className="text-sm font-medium text-slate-700">Téléphone</span>
               </div>
               <p className="text-slate-900 font-medium">{profile?.phone || 'Non spécifié'}</p>
             </div>
 
-            <div className="group p-4 rounded-lg border border-slate-200/50 hover:border-blue-200 hover:bg-blue-50/30 transition-all duration-200">
+            <div className="group p-4 rounded-lg border border-slate-200/50 hover:border-gray-300 hover:bg-gray-50/30 transition-all duration-200">
               <div className="flex items-center gap-2 mb-2">
-                <MapPin className="h-4 w-4 text-blue-600" />
-                <span className="text-sm font-medium text-slate-700">Département</span>
-              </div>
-              <p className="text-slate-900 font-medium">{profile?.department || 'Non spécifié'}</p>
-            </div>
-
-            <div className="group p-4 rounded-lg border border-slate-200/50 hover:border-blue-200 hover:bg-blue-50/30 transition-all duration-200">
-              <div className="flex items-center gap-2 mb-2">
-                <DollarSign className="h-4 w-4 text-blue-600" />
+                <DollarSign className="h-4 w-4 text-gray-800" />
                 <span className="text-sm font-medium text-slate-700">Taux horaire</span>
               </div>
-              <p className="text-slate-900 font-medium">{profile?.hourly_rate || 'Non spécifié'} MAD/heure</p>
+              <p className="text-slate-900 font-medium">{profile?.hourly_rate || 'Non spécifié'} $/heure</p>
             </div>
           </div>
         ) : (

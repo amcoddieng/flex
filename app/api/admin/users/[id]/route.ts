@@ -44,7 +44,7 @@ export async function GET(
           u.email,
           u.role,
           u.created_at,
-          u.is_active,
+          u.blocked,
           sp.first_name,
           sp.last_name,
           sp.phone as student_phone,
@@ -118,15 +118,24 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { is_active } = body;
+    const { blocked } = body;
 
     const connection = await pool.getConnection();
 
     try {
-      await connection.execute(
-        'UPDATE user SET is_active = ? WHERE id = ?',
-        [is_active, userId]
-      );
+      // Mettre à jour le statut blocked seulement si fourni
+      if (blocked !== undefined) {
+        await connection.execute(
+          'UPDATE user SET blocked = ? WHERE id = ?',
+          [blocked ? 1 : 0, userId]
+        );
+      } else {
+        // Si aucun paramètre n'est fourni, retourner une erreur
+        return NextResponse.json(
+          { error: 'Aucun paramètre à mettre à jour fourni' },
+          { status: 400 }
+        );
+      }
 
       connection.release();
 

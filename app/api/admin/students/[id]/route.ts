@@ -107,6 +107,8 @@ export async function PUT(request: NextRequest, { params }: RequestParams) {
     const userId = parseInt(id);
     const body = await request.json();
 
+    console.log('PUT student update:', userId, body);
+
     const connection = await pool.getConnection();
 
     try {
@@ -125,42 +127,28 @@ export async function PUT(request: NextRequest, { params }: RequestParams) {
         );
       }
 
-      // Mettre à jour les infos utilisateur
+      // Mettre à jour le statut de blocage
       if (body.blocked !== undefined) {
-        // When blocking a profile, require a notification message explaining reasons
-        if (body.blocked === true && !body.notification_message) {
-          return NextResponse.json({ error: 'Veuillez fournir un message de notification lors du blocage.' }, { status: 400 });
-        }
-
+        console.log('Updating blocked status:', body.blocked);
+        
         await connection.execute(
           'UPDATE user SET blocked = ? WHERE id = ?',
           [body.blocked ? 1 : 0, userId]
         );
 
-        // insert a notification for the user when blocked/unblocked
-        if (body.blocked === true) {
-          const title = 'Compte bloqué par l\'administration';
-          const message = body.notification_message || 'Votre compte a été bloqué par l\'administration.';
+        // Ajouter une notification
+        if (body.notification_message) {
+          const title = body.blocked ? 'Compte bloqué par l\'administration' : 'Compte débloqué';
           await connection.execute(
             `INSERT INTO notification (user_id, type, title, message, metadata) VALUES (?, ?, ?, ?, ?)`,
-            [userId, 'VALIDATION', title, message, JSON.stringify({ action: 'blocked' })]
-          );
-        } else if (body.blocked === false && body.notification_message) {
-          const title = 'Compte débloqué';
-          const message = body.notification_message;
-          await connection.execute(
-            `INSERT INTO notification (user_id, type, title, message, metadata) VALUES (?, ?, ?, ?, ?)`,
-            [userId, 'VALIDATION', title, message, JSON.stringify({ action: 'unblocked' })]
+            [userId, 'VALIDATION', title, body.notification_message, JSON.stringify({ action: body.blocked ? 'blocked' : 'unblocked' })]
           );
         }
       }
 
       // Mettre à jour le profil étudiant
-      if (body.first_name !== undefined || body.last_name !== undefined || 
-          body.phone !== undefined || body.university !== undefined || 
-          body.department !== undefined || body.year_of_study !== undefined || 
-          body.bio !== undefined || body.hourly_rate !== undefined ||
-          body.validation_status !== undefined) {
+      if (body.validation_status !== undefined || body.rejection_reason !== undefined) {
+        console.log('Updating validation status:', body.validation_status);
         
         // Vérifier si le profil existe
         const [profileCheckResult]: any = await connection.execute(
@@ -174,57 +162,22 @@ export async function PUT(request: NextRequest, { params }: RequestParams) {
           // Créer le profil s'il n'existe pas
           await connection.execute(
             `INSERT INTO student_profile 
-            (user_id, first_name, last_name, phone, university, department, year_of_study, bio, hourly_rate, validation_status) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [userId, body.first_name || null, body.last_name || null, body.phone || null, 
-             body.university || null, body.department || null, body.year_of_study || null, 
-             body.bio || null, body.hourly_rate || null, body.validation_status || 'PENDING']
+            (user_id, validation_status, rejection_reason) 
+            VALUES (?, ?, ?)`,
+            [userId, body.validation_status || 'PENDING', body.rejection_reason || null]
           );
         } else {
           // Mettre à jour le profil existant
           const updates: string[] = [];
           const updateParams: any[] = [];
 
-          if (body.first_name !== undefined) {
-            updates.push('first_name = ?');
-            updateParams.push(body.first_name);
-          }
-          if (body.last_name !== undefined) {
-            updates.push('last_name = ?');
-            updateParams.push(body.last_name);
-          }
-          if (body.phone !== undefined) {
-            updates.push('phone = ?');
-            updateParams.push(body.phone);
-          }
-          if (body.university !== undefined) {
-            updates.push('university = ?');
-            updateParams.push(body.university);
-          }
-          if (body.department !== undefined) {
-            updates.push('department = ?');
-            updateParams.push(body.department);
-          }
-          if (body.year_of_study !== undefined) {
-            updates.push('year_of_study = ?');
-            updateParams.push(body.year_of_study);
-          }
-          if (body.bio !== undefined) {
-            updates.push('bio = ?');
-            updateParams.push(body.bio);
-          }
-          if (body.hourly_rate !== undefined) {
-            updates.push('hourly_rate = ?');
-            updateParams.push(body.hourly_rate);
-          }
           if (body.validation_status !== undefined) {
-            // If admin is rejecting the profile, require a notification message
-            if (body.validation_status === 'REJECTED' && !body.notification_message) {
-              return NextResponse.json({ error: 'Veuillez fournir un message de notification lors du refus de validation.' }, { status: 400 });
-            }
-
             updates.push('validation_status = ?');
             updateParams.push(body.validation_status);
+          }
+          if (body.rejection_reason !== undefined) {
+            updates.push('rejection_reason = ?');
+            updateParams.push(body.rejection_reason);
           }
 
           if (updates.length > 0) {
@@ -233,10 +186,11 @@ export async function PUT(request: NextRequest, { params }: RequestParams) {
               `UPDATE student_profile SET ${updates.join(', ')} WHERE user_id = ?`,
               updateParams
             );
-            // After changing validation_status, add a notification when provided
-            if (body.validation_status !== undefined && body.notification_message) {
+
+            // Ajouter une notification de validation
+            if (body.notification_message) {
               const notifTitle = body.validation_status === 'VALIDATED' ? 'Profil validé' : 'Profil refusé';
-              const notifType = 'VALIDATION';
+              const notifType = body.validation_status === 'VALIDATED' ? 'VALIDATION' : 'REJECTED';
               await connection.execute(
                 `INSERT INTO notification (user_id, type, title, message, metadata) VALUES (?, ?, ?, ?, ?)`,
                 [userId, notifType, notifTitle, body.notification_message, JSON.stringify({ validation_status: body.validation_status })]
@@ -260,7 +214,7 @@ export async function PUT(request: NextRequest, { params }: RequestParams) {
     console.error('Erreur lors de la mise à jour de l\'étudiant:', error);
 
     return NextResponse.json(
-      { error: 'Erreur lors de la mise à jour de l\'étudiant' },
+      { error: error.message || 'Erreur lors de la mise à jour de l\'étudiant' },
       { status: 500 }
     );
   }

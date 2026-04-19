@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Search, User, Mail, Calendar, Users, Building, GraduationCap, Shield, Eye } from "lucide-react";
+import { Search, User, Mail, Calendar, Users, Building, GraduationCap, Shield, Eye, ShieldCheck, ShieldX, AlertTriangle, Trash2, CheckCircle, XCircle, Clock } from "lucide-react";
 import { UserDetailsModal } from "@/components/admin/user-details-modal";
 
 type User = {
@@ -16,7 +16,8 @@ type User = {
   email: string;
   role: string;
   created_at: string;
-  is_active?: boolean;
+  blocked?: boolean;
+  validation_status?: string;
 };
 
 type StudentProfile = {
@@ -182,7 +183,7 @@ export default function AdminUsersPage() {
       first_name: profiles[user.id]?.first_name || user.email.split('@')[0],
       last_name: profiles[user.id]?.last_name || '',
       phone: profiles[user.id]?.phone || '',
-      is_active: user.is_active !== false // Par défaut, considérer comme actif
+      blocked: user.blocked || false // Par défaut, considérer comme non bloqué
     };
     setSelectedUser(userWithProfile);
     setIsModalOpen(true);
@@ -215,6 +216,10 @@ export default function AdminUsersPage() {
           endpoint = `/api/admin/students/${userId}`;
           body = { validation_status: 'REJECTED' };
           break;
+        case 'reexamine_student':
+          endpoint = `/api/admin/students/${userId}`;
+          body = { validation_status: 'PENDING' };
+          break;
         case 'validate_employer':
           endpoint = `/api/admin/employers/${userId}`;
           body = { validation_status: 'VALIDATED' };
@@ -227,9 +232,9 @@ export default function AdminUsersPage() {
           endpoint = `/api/admin/users/${userId}`;
           // Récupérer le statut actuel et l'inverser
           const currentUser = users.find((u: User) => u.id === userId);
-          newStatus = !currentUser?.is_active;
-          body = { is_active: newStatus };
-          console.log('Toggle active for user:', userId, 'from', currentUser?.is_active, 'to', newStatus);
+          newStatus = !currentUser?.blocked;
+          body = { blocked: newStatus };
+          console.log('Toggle active for user:', userId, 'from', currentUser?.blocked, 'to', newStatus);
           break;
         case 'delete_user':
           endpoint = `/api/admin/users/${userId}`;
@@ -259,17 +264,28 @@ export default function AdminUsersPage() {
         // Mettre à jour localement
         if (action.includes('student') || action.includes('employer')) {
           // Mettre à jour le profil
+          const newValidationStatus = action === 'validate_student' ? 'VALIDATED' : 
+                                     action === 'reject_student' ? 'REJECTED' : 
+                                     action === 'reexamine_student' ? 'PENDING' :
+                                     action.includes('validate') ? 'VALIDATED' : 'REJECTED';
           setProfiles((prev: { [key: number]: UserProfile }) => ({
             ...prev,
             [userId]: prev[userId] ? {
               ...prev[userId],
-              validation_status: action.includes('validate') ? 'VALIDATED' : 'REJECTED'
+              validation_status: newValidationStatus
             } : null
           }));
+        } else if (action === 'validate_student' || action === 'reject_student' || action === 'reexamine_student') {
+          // Mettre à jour le statut de validation de l'étudiant
+          const newValidationStatus = action === 'validate_student' ? 'VALIDATED' : 
+                                     action === 'reject_student' ? 'REJECTED' : 'PENDING';
+          setUsers((prev: User[]) => prev.map(user => 
+            user.id === userId ? { ...user, validation_status: newValidationStatus } : user
+          ));
         } else if (action === 'toggle_active') {
           // Mettre à jour le statut actif
           setUsers((prev: User[]) => prev.map(user => 
-            user.id === userId ? { ...user, is_active: !user.is_active } : user
+            user.id === userId ? { ...user, blocked: !user.blocked } : user
           ));
         } else if (action === 'delete_user') {
           // Supprimer l'utilisateur de la liste
@@ -285,11 +301,16 @@ export default function AdminUsersPage() {
           setSelectedUser((prev: any) => {
             if (!prev) return null;
             if (action.includes('student') || action.includes('employer')) {
+              const newValidationStatus = action === 'validate_student' ? 'VALIDATED' : 
+                                         action === 'reject_student' ? 'REJECTED' : 
+                                         action === 'reexamine_student' ? 'PENDING' :
+                                         action.includes('validate') ? 'VALIDATED' : 'REJECTED';
               return {
                 ...prev,
+                validation_status: action.includes('student') ? newValidationStatus : prev.validation_status,
                 student_profile: action.includes('student') && prev.student_profile ? {
                   ...prev.student_profile,
-                  validation_status: action.includes('validate') ? 'VALIDATED' : 'REJECTED'
+                  validation_status: newValidationStatus
                 } : prev.student_profile,
                 employer_profile: action.includes('employer') && prev.employer_profile ? {
                   ...prev.employer_profile,
@@ -297,7 +318,7 @@ export default function AdminUsersPage() {
                 } : prev.employer_profile
               };
             } else if (action === 'toggle_active') {
-              return { ...prev, is_active: newStatus };
+              return { ...prev, blocked: newStatus };
             }
             return prev;
           });
@@ -335,6 +356,15 @@ export default function AdminUsersPage() {
       default:
         return <User className="h-4 w-4" />;
     }
+  };
+
+  const getStudentValidationStatus = (user: any) => {
+    // Récupérer le statut de validation depuis les données du profil
+    if (user.role === 'STUDENT') {
+      const profile = profiles[user.id];
+      return profile?.validation_status || user.validation_status || 'PENDING';
+    }
+    return null;
   };
 
   const getRoleBadgeColor = (role: string) => {
@@ -505,6 +535,12 @@ export default function AdminUsersPage() {
                         Rôle
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Validation
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Statut
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Date d'inscription
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -547,6 +583,65 @@ export default function AdminUsersPage() {
                             </div>
                           </Badge>
                         </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {user.role === 'STUDENT' ? (
+                            <Badge
+                              className={
+                                getStudentValidationStatus(user) === 'VALIDATED'
+                                  ? 'bg-green-100 text-green-800 border-green-200'
+                                  : getStudentValidationStatus(user) === 'REJECTED'
+                                  ? 'bg-red-100 text-red-800 border-red-200'
+                                  : 'bg-yellow-100 text-yellow-800 border-yellow-200'
+                              }
+                            >
+                              <div className="flex items-center gap-1">
+                                {getStudentValidationStatus(user) === 'VALIDATED' && (
+                                  <>
+                                    <CheckCircle className="h-3 w-3" />
+                                    Validé
+                                  </>
+                                )}
+                                {getStudentValidationStatus(user) === 'REJECTED' && (
+                                  <>
+                                    <XCircle className="h-3 w-3" />
+                                    Rejeté
+                                  </>
+                                )}
+                                {getStudentValidationStatus(user) === 'PENDING' && (
+                                  <>
+                                    <Clock className="h-3 w-3" />
+                                    En attente
+                                  </>
+                                )}
+                              </div>
+                            </Badge>
+                          ) : (
+                            <span className="text-gray-400 text-sm">-</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <Badge
+                            className={
+                              user.blocked
+                                ? 'bg-red-100 text-red-800 border-red-200'
+                                : 'bg-green-100 text-green-800 border-green-200'
+                            }
+                          >
+                            <div className="flex items-center gap-1">
+                              {user.blocked ? (
+                                <>
+                                  <ShieldX className="h-3 w-3" />
+                                  Bloqué
+                                </>
+                              ) : (
+                                <>
+                                  <ShieldCheck className="h-3 w-3" />
+                                  Actif
+                                </>
+                              )}
+                            </div>
+                          </Badge>
+                        </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           <div className="flex items-center gap-1">
                             <Calendar className="h-3 w-3" />
@@ -554,7 +649,7 @@ export default function AdminUsersPage() {
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <div className="flex items-center gap-2">
+                          <div className="flex flex-wrap items-center gap-2">
                             <Button
                               variant="outline"
                               size="sm"
@@ -562,6 +657,111 @@ export default function AdminUsersPage() {
                             >
                               <Eye className="h-3 w-3 mr-1" />
                               Voir
+                            </Button>
+                            
+                            {/* Actions de validation pour les étudiants */}
+                            {user.role === 'STUDENT' && (
+                              <>
+                                {getStudentValidationStatus(user) === 'PENDING' && (
+                                  <>
+                                    <Button
+                                      variant="default"
+                                      size="sm"
+                                      className="bg-green-600 hover:bg-green-700"
+                                      onClick={() => {
+                                        const userName = getProfileName(user);
+                                        if (confirm(`Êtes-vous sûr de vouloir valider le profil de l'étudiant "${userName}" ?\n\nEmail: ${user.email}\n\nCette action permettra à l'étudiant de postuler aux offres d'emploi.`)) {
+                                          handleUserAction(user.id, 'validate_student');
+                                        }
+                                      }}
+                                    >
+                                      <CheckCircle className="h-3 w-3 mr-1" />
+                                      Valider
+                                    </Button>
+                                    <Button
+                                      variant="destructive"
+                                      size="sm"
+                                      onClick={() => {
+                                        const userName = getProfileName(user);
+                                        const reason = prompt(`Veuillez indiquer la raison du rejet pour l'étudiant "${userName}":\n\nEmail: ${user.email}\n\nCette raison sera visible par l'étudiant.`);
+                                        if (reason && reason.trim()) {
+                                          handleUserAction(user.id, 'reject_student');
+                                        }
+                                      }}
+                                    >
+                                      <XCircle className="h-3 w-3 mr-1" />
+                                      Rejeter
+                                    </Button>
+                                  </>
+                                )}
+                                {getStudentValidationStatus(user) === 'VALIDATED' && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                      const userName = getProfileName(user);
+                                      if (confirm(`Êtes-vous sûr de vouloir réexaminer le profil de l'étudiant "${userName}" ?\n\nEmail: ${user.email}\n\nLe profil repassera en attente de validation.`)) {
+                                        handleUserAction(user.id, 'reexamine_student');
+                                      }
+                                    }}
+                                  >
+                                    <Clock className="h-3 w-3 mr-1" />
+                                    Réexaminer
+                                  </Button>
+                                )}
+                                {getStudentValidationStatus(user) === 'REJECTED' && (
+                                  <Button
+                                    variant="default"
+                                    size="sm"
+                                    onClick={() => {
+                                      const userName = getProfileName(user);
+                                      if (confirm(`Êtes-vous sûr de vouloir réexaminer le profil rejeté de l'étudiant "${userName}" ?\n\nEmail: ${user.email}\n\nLe profil repassera en attente de validation.`)) {
+                                        handleUserAction(user.id, 'reexamine_student');
+                                      }
+                                    }}
+                                  >
+                                    <Clock className="h-3 w-3 mr-1" />
+                                    Réexaminer
+                                  </Button>
+                                )}
+                              </>
+                            )}
+                            
+                            <Button
+                              variant={user.blocked ? "default" : "destructive"}
+                              size="sm"
+                              onClick={() => {
+                                const action = user.blocked ? 'débloquer' : 'bloquer';
+                                const userName = getProfileName(user);
+                                if (confirm(`Êtes-vous sûr de vouloir ${action} l'utilisateur "${userName}" ?\n\nEmail: ${user.email}\n\nCette action ${user.blocked ? 'permettra à l\'utilisateur d\'accéder à nouveau à la plateforme' : 'empêchera l\'utilisateur d\'accéder à la plateforme'}.`)) {
+                                  handleUserAction(user.id, 'toggle_active');
+                                }
+                              }}
+                            >
+                              {user.blocked ? (
+                                <>
+                                  <ShieldCheck className="h-3 w-3 mr-1" />
+                                  Débloquer
+                                </>
+                              ) : (
+                                <>
+                                  <ShieldX className="h-3 w-3 mr-1" />
+                                  Bloquer
+                                </>
+                              )}
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => {
+                                const userName = getProfileName(user);
+                                if (confirm(`Êtes-vous sûr de vouloir supprimer définitivement l'utilisateur "${userName}" ?\n\nEmail: ${user.email}\nRôle: ${user.role}\n\nCette action est irréversible et supprimera toutes les données associées (profil, candidatures, offres d'emploi, etc.).`)) {
+                                  handleUserAction(user.id, 'delete_user');
+                                }
+                              }}
+                            >
+                              <Trash2 className="h-3 w-3 mr-1" />
+                              Supprimer
                             </Button>
                           </div>
                         </td>

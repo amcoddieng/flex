@@ -259,6 +259,28 @@ useEffect(() => {
       const token = getValidToken();
       if (!token) return;
 
+      // Vérifier le statut de validation du profil étudiant
+      const profileRes = await fetch('/api/student/profile', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const profileData = await profileRes.json();
+      
+      if (profileData.student && profileData.student.validation_status !== 'VALIDATED') {
+        if (profileData.student.validation_status === 'PENDING') {
+          setApplicationError('Votre profil est en attente de validation. Vous ne pouvez postuler qu\'une fois votre profil validé.');
+        } else if (profileData.student.validation_status === 'REJECTED') {
+          setApplicationError('Votre profil a été rejeté. Veuillez contacter l\'administrateur pour plus d\'informations.');
+        } else {
+          setApplicationError('Votre profil n\'est pas validé. Veuillez compléter votre profil et attendre la validation.');
+        }
+        return;
+      }
+
       const res = await fetch('/api/student/applications', {
         method: 'POST',
         headers: {
@@ -353,6 +375,7 @@ useEffect(() => {
                 variant={selectedType === type.value ? "default" : "outline"}
                 size="sm"
                 onClick={() => setSelectedType(type.value)}
+                // je veux comme le bacground des boutons actifs dans le top bar
                 className={selectedType === type.value ? "bg-blue-600 hover:bg-blue-700" : ""}
               >
                 {type.label}

@@ -104,7 +104,7 @@ export default function StudentLayout({
         <div className="p-4">
           {/* Logo */}
           <Link href="/student" className="flex items-center gap-3 group mb-8">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-200">
+            <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-blue-900 to-purple-900 flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-200">
               <span className="text-white font-bold">F</span>
             </div>
             {sidebarOpen && (
@@ -211,7 +211,7 @@ export default function StudentLayout({
               <Button
                 variant="outline"
                 size="sm"
-                className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                className="text-gray-800 hover:text-gray-900 hover:bg-gray-100 border-gray-300"
                 onClick={handleLogout}
               >
                 <LogOut className="h-4 w-4 mr-2" />

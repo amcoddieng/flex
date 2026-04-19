@@ -102,11 +102,20 @@ export function AdminLayout({ children }: AdminLayoutProps) {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
+      {/* ========================================
+          SECTION LAYOUT: STRUCTURE PRINCIPALE
+          ======================================== */}
+      {/* COULEUR: bg-gray-50 - Gris très clair pour le fond principal de l'admin */}
+      
       {/* Sidebar gauche */}
+      {/* COULEUR: bg-white - Blanc pur pour la sidebar (contraste avec le fond) */}
+      {/* COULEUR: border-gray-300 - Gris moyen pour la bordure droite de la sidebar */}
       <div className={`${sidebarOpen ? 'w-64' : 'w-20'} bg-white border-r border-gray-300 transition-all duration-300 ease-in-out flex flex-col`}>
         {/* Header */}
+        {/* COULEUR: border-gray-200 - Gris clair pour la bordure du header */}
         <div className="p-4 border-b border-gray-200">
           <div className="flex items-center justify-between">
+            {/* COULEUR: text-gray-900 - Gris très foncé pour le titre principal */}
             <h1 className={`font-bold text-xl text-gray-900 ${!sidebarOpen && 'hidden'}`}>
               Admin Panel
             </h1>
@@ -135,6 +144,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                 onClick={() => router.push(item.href)}
               >
                 <Icon className="h-4 w-4" />
+                {/* COULEUR: Actif = Bleu (variant="default") pour indiquer la sélection, Inactif = Gris (variant="ghost") */}
                 {sidebarOpen && <span className="ml-3">{item.title}</span>}
               </Button>
             );
@@ -142,9 +152,14 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         </nav>
       </div>
 
+      {/* ========================================
+          SECTION MAIN CONTENT: CONTENU PRINCIPAL
+          ======================================== */}
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Bar */}
+        {/* COULEUR: bg-white - Blanc pur pour la top bar */}
+        {/* COULEUR: border-gray-200 - Gris clair pour la bordure inférieure */}
         <div className="bg-white border-b border-gray-200 px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -156,15 +171,18 @@ export function AdminLayout({ children }: AdminLayoutProps) {
               >
                 <Menu className="h-4 w-4" />
               </Button>
+              {/* COULEUR: text-gray-900 - Gris très foncé pour le titre de page */}
               <h2 className="text-lg font-semibold text-gray-900">
                 {menuItems.find(item => item.href === pathname)?.title || "Administration"}
               </h2>
             </div>
             
             <div className="flex items-center gap-4">
+              {/* COULEUR: text-gray-600 - Gris moyen pour le texte d'utilisateur */}
               <div className="text-sm text-gray-600">
                 Administrateur
               </div>
+              {/* COULEUR: text-red-600 + hover:text-red-700 + hover:bg-red-50 + border-red-200 - Rouge pour déconnexion (action critique) */}
               <Button
                 variant="outline"
                 size="sm"
@@ -179,6 +197,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         </div>
 
         {/* Page Content */}
+        {/* COULEUR: Fond par défaut (hérite du bg-gray-50 du parent) */}
         <div className="flex-1 overflow-y-auto p-6">
           {children}
         </div>

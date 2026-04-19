@@ -142,13 +142,33 @@ export function UserDetailsModal({ user, isOpen, onClose, onStatusChange }: User
                       </p>
                     </div>
                     <div>
-                      <span className="text-sm text-gray-500">Statut</span>
+                      <span className="text-sm text-gray-500">Statut du compte</span>
                       <div className="mt-1">
-                        <Badge className={getStatusColor(user.status)}>
-                          {getStatusLabel(user.status)}
+                        <Badge className={user.blocked ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}>
+                          {user.blocked ? 'Bloqué' : 'Actif'}
                         </Badge>
                       </div>
                     </div>
+                    {user.role === 'STUDENT' && (
+                      <div>
+                        <span className="text-sm text-gray-500">Validation du profil</span>
+                        <div className="mt-1">
+                          <Badge className={getStatusColor(user.student_profile?.validation_status || user.validation_status || 'PENDING')}>
+                            {getStatusLabel(user.student_profile?.validation_status || user.validation_status || 'PENDING')}
+                          </Badge>
+                        </div>
+                      </div>
+                    )}
+                    {user.role === 'EMPLOYER' && (
+                      <div>
+                        <span className="text-sm text-gray-500">Validation du profil</span>
+                        <div className="mt-1">
+                          <Badge className={getStatusColor(user.employer_profile?.validation_status || 'PENDING')}>
+                            {getStatusLabel(user.employer_profile?.validation_status || 'PENDING')}
+                          </Badge>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -166,20 +186,24 @@ export function UserDetailsModal({ user, isOpen, onClose, onStatusChange }: User
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <span className="text-sm text-gray-500">Université</span>
-                        <p className="text-gray-900">{user.student_profile.university || 'Non spécifié'}</p>
+                        <p className="text-gray-900">{user.student_profile?.university || user.university || 'Non spécifié'}</p>
                       </div>
                       <div>
                         <span className="text-sm text-gray-500">Département</span>
-                        <p className="text-gray-900">{user.student_profile.department || 'Non spécifié'}</p>
+                        <p className="text-gray-900">{user.student_profile?.department || user.department || 'Non spécifié'}</p>
                       </div>
                       <div>
                         <span className="text-sm text-gray-500">Année d'étude</span>
-                        <p className="text-gray-900">{user.student_profile.year_of_study || 'Non spécifié'}</p>
+                        <p className="text-gray-900">{user.student_profile?.year_of_study || user.year_of_study || 'Non spécifié'}</p>
+                      </div>
+                      <div>
+                        <span className="text-sm text-gray-500">Taux horaire</span>
+                        <p className="text-gray-900">{user.student_profile?.hourly_rate || user.hourly_rate ? `${user.student_profile?.hourly_rate || user.hourly_rate} $/h` : 'Non spécifié'}</p>
                       </div>
                       <div>
                         <span className="text-sm text-gray-500">Carte étudiante</span>
                         <p className="text-gray-900">
-                          {user.student_profile.student_card_pdf ? '✅ Disponible' : '❌ Non fournie'}
+                          {user.student_profile?.student_card_pdf || user.student_card_pdf ? 'Disponible' : 'Non fournie'}
                         </p>
                       </div>
                     </div>

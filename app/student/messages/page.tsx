@@ -324,7 +324,7 @@ export default function StudentMessagesPage() {
                   }`}
                 >
                   <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold shrink-0">
+                    <div className="w-10 h-10 rounded-full bg-gray-600 flex items-center justify-center text-white font-semibold shrink-0">
                       {conversation.participant_name.charAt(0).toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -378,7 +378,7 @@ export default function StudentMessagesPage() {
             {/* Chat Header */}
             <div className="p-4 border-b border-gray-100 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold">
+                <div className="w-10 h-10 rounded-full bg-gray-600 flex items-center justify-center text-white font-semibold">
                   {selectedConversation.participant_name.charAt(0).toUpperCase()}
                 </div>
                 <div>
@@ -419,14 +419,14 @@ export default function StudentMessagesPage() {
                       className={`flex mb-4 ${message.sender_type === 'STUDENT' ? 'justify-end' : 'justify-start'}`}
                     >
                       {message.sender_type === 'EMPLOYER' && (
-                        <div className="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center text-white font-semibold text-xs mr-2 flex-shrink-0">
+                        <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-white font-semibold text-xs mr-2 flex-shrink-0">
                           {message.sender_name?.charAt(0).toUpperCase() || 'E'}
                         </div>
                       )}
                       <div
                         className={`max-w-[70%] px-4 py-3 rounded-2xl shadow-sm ${
                           message.sender_type === 'STUDENT'
-                            ? 'bg-blue-600 text-white shadow-lg rounded-br-none'
+                            ? 'bg-white-900 text-black shadow-lg rounded-br-none'
                             : 'bg-white text-gray-900 border border-gray-200 shadow-md rounded-bl-none'
                         }`}
                       >
@@ -498,7 +498,7 @@ export default function StudentMessagesPage() {
                 <Button
                   onClick={sendMessage}
                   disabled={!newMessage.trim() || sendingMessage}
-                  className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+                  className="bg-gradient-to-r from-gray-900 to-gray-900 hover:from-green-500 hover:to-gray-800"
                 >
                   {sendingMessage ? (
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
