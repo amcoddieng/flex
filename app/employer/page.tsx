@@ -138,7 +138,7 @@ export default function EmployerDashboard() {
               <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
               <div className="relative p-4">
                 <div className="flex items-center justify-between mb-3">
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center shadow">
+                  <div className="w-10 h-10 rounded-lg bg-blue-500 flex items-center justify-center shadow">
                     <Briefcase className="h-5 w-5 text-white" />
                   </div>
                   <div className="flex items-center gap-1 text-green-600 text-xs font-medium">
@@ -163,7 +163,7 @@ export default function EmployerDashboard() {
               <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
               <div className="relative p-4">
                 <div className="flex items-center justify-between mb-3">
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-green-500 to-green-600 flex items-center justify-center shadow">
+                  <div className="w-10 h-10 rounded-lg bg-green-500 flex items-center justify-center shadow">
                     <TrendingUp className="h-5 w-5 text-white" />
                   </div>
                   <div className="flex items-center gap-1 text-green-600 text-xs font-medium">
@@ -188,7 +188,7 @@ export default function EmployerDashboard() {
               <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
               <div className="relative p-4">
                 <div className="flex items-center justify-between mb-3">
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 flex items-center justify-center shadow">
+                  <div className="w-10 h-10 rounded-lg bg-indigo-500 flex items-center justify-center shadow">
                     <Users className="h-5 w-5 text-white" />
                   </div>
                   <div className="flex items-center gap-1 text-amber-600 text-xs font-medium">
@@ -213,7 +213,7 @@ export default function EmployerDashboard() {
               <div className="absolute inset-0 bg-gradient-to-br from-red-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
               <div className="relative p-4">
                 <div className="flex items-center justify-between mb-3">
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-red-500 to-red-600 flex items-center justify-center shadow">
+                  <div className="w-10 h-10 rounded-lg bg-yellow-500 flex items-center justify-center shadow">
                     <Clock className="h-5 w-5 text-white" />
                   </div>
                   <div className="flex items-center gap-1 text-red-600 text-xs font-medium">

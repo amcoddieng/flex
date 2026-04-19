@@ -38,20 +38,47 @@ export default function AdminPage() {
   const fetchStats = async (token: string) => {
     setLoadingStats(true);
     try {
-      // Simuler des statistiques - à remplacer avec de vraies API
-      const mockStats = {
-        totalUsers: 1250,
-        totalStudents: 850,
-        totalEmployers: 400,
-        totalJobs: 320,
-        pendingValidations: 12,
-        totalApplications: 2450,
-        activeJobs: 280,
-        thisMonthRegistrations: 45,
-      };
-      setStats(mockStats);
-    } catch (error) {
-      console.error('Error fetching stats:', error);
+      const res = await fetch('/api/admin/stats', {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      
+      if (!res.ok) {
+        let errorMsg = 'Erreur lors de la récupération des statistiques';
+        try {
+          const errorData = await res.json();
+          if (errorData.error) {
+            errorMsg = errorData.error;
+          }
+        } catch {
+          if (res.status === 401 || res.status === 403) {
+            errorMsg = 'Accès refusé';
+            router.push('/login');
+            return;
+          }
+        }
+        throw new Error(errorMsg);
+      }
+
+      const data = await res.json();
+      if (data.success) {
+        setStats(data.data);
+      } else {
+        throw new Error(data.error || 'Réponse invalide');
+      }
+    } catch (err: any) {
+      const message = err instanceof Error ? err.message : 'Erreur inconnue';
+      console.error('fetchStats error:', message);
+      // En cas d'erreur, afficher un message ou des données par défaut
+      setStats({
+        total_users: 0,
+        total_students: 0,
+        total_employers: 0,
+        total_jobs: 0,
+        active_jobs: 0,
+        pending_employers: 0,
+        total_applications: 0,
+        this_month_registrations: 0,
+      });
     } finally {
       setLoadingStats(false);
     }
@@ -68,50 +95,66 @@ export default function AdminPage() {
   const statCards = [
     {
       title: "Utilisateurs Totals",
-      value: stats?.totalUsers || 0,
+      value: stats?.total_users || 0,
       icon: Users,
       color: "bg-blue-500",
-      change: "+12%",
+      change: `+${stats?.new_users_last_7_days || 0} cette semaine`,
       changeType: "positive"
     },
     {
       title: "Étudiants",
-      value: stats?.totalStudents || 0,
+      value: stats?.total_students || 0,
       icon: Users,
       color: "bg-green-500",
-      change: "+8%",
+      change: `+${stats?.new_users_last_7_days || 0} cette semaine`,
       changeType: "positive"
     },
     {
       title: "Employeurs",
-      value: stats?.totalEmployers || 0,
+      value: stats?.total_employers || 0,
       icon: Briefcase,
       color: "bg-purple-500",
-      change: "+15%",
-      changeType: "positive"
+      change: `${stats?.pending_employers || 0} en attente`,
+      changeType: stats?.pending_employers > 0 ? "warning" : "positive"
     },
     {
       title: "Offres d'Emploi",
-      value: stats?.totalJobs || 0,
+      value: stats?.total_jobs || 0,
       icon: FileText,
       color: "bg-orange-500",
-      change: "+5%",
+      change: `${stats?.active_jobs || 0} actives`,
       changeType: "positive"
     },
     {
       title: "Validations en Attente",
-      value: stats?.pendingValidations || 0,
+      value: (stats?.pending_employers || 0) + (stats?.pending_students || 0),
       icon: CheckCircle,
       color: "bg-yellow-500",
-      change: "-2%",
-      changeType: "negative"
+      change: `${stats?.pending_employers || 0} employeurs, ${stats?.pending_students || 0} étudiants`,
+      changeType: "warning"
     },
     {
-      title: "Candidatures",
-      value: stats?.totalApplications || 0,
+      title: "Candidatures Totales",
+      value: stats?.total_applications || 0,
       icon: FileText,
+      color: "bg-indigo-500",
+      change: `${stats?.pending_applications || 0} en attente`,
+      changeType: "info"
+    },
+    {
+      title: "Offres Actives",
+      value: stats?.active_jobs || 0,
+      icon: TrendingUp,
+      color: "bg-teal-500",
+      change: `${stats?.total_jobs || 0} totales`,
+      changeType: "positive"
+    },
+    {
+      title: "Inscriptions ce Mois",
+      value: stats?.this_month_registrations || 0,
+      icon: Building,
       color: "bg-pink-500",
-      change: "+18%",
+      change: `+${stats?.new_users_last_7_days || 0} cette semaine`,
       changeType: "positive"
     }
   ];

@@ -14,9 +14,10 @@ const pool = mysql.createPool({
 // commentaire de la fonction : cette fonction permet de supprimer une candidature d'un étudiant
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const resolvedParams = await params;
     const token = getTokenFromHeader(request.headers.get('authorization'));
     if (!token) {
       return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
@@ -27,19 +28,36 @@ export async function DELETE(
       return NextResponse.json({ error: 'Accès refusé' }, { status: 403 });
     }
 
-    const applicationId = parseInt(params.id);
+    const applicationId = parseInt(resolvedParams.id);
+    console.log('Delete application - resolvedParams.id:', resolvedParams.id, 'applicationId:', applicationId);
     if (!applicationId || applicationId <= 0) {
+      console.log('Invalid application ID:', applicationId);
       return NextResponse.json({ error: 'ID de candidature invalide' }, { status: 400 });
     }
 
     const connection = await pool.getConnection();
 
     try {
+      // Obtenir le student_id à partir du user_id
+      const [studentResult] = await connection.execute(
+        'SELECT id FROM student_profile WHERE user_id = ?',
+        [parseInt(payload.userId)]
+      );
+
+      if (!Array.isArray(studentResult) || studentResult.length === 0) {
+        return NextResponse.json(
+          { error: 'Profil étudiant non trouvé' },
+          { status: 404 }
+        );
+      }
+
+      const studentId = (studentResult as any[])[0].id;
+
       // Vérifier que la candidature appartient bien à l'étudiant
       const [applicationCheck] = await connection.execute(`
         SELECT id, status FROM job_application 
         WHERE id = ? AND student_id = ?
-      `, [applicationId, parseInt(payload.userId)]);
+      `, [applicationId, studentId]);
 
       if ((applicationCheck as any[]).length === 0) {
         return NextResponse.json({ error: 'Candidature non trouvée' }, { status: 404 });
@@ -58,7 +76,7 @@ export async function DELETE(
       await connection.execute(`
         DELETE FROM job_application 
         WHERE id = ? AND student_id = ?
-      `, [applicationId, parseInt(payload.userId)]);
+      `, [applicationId, studentId]);
 
       return NextResponse.json({ 
         message: 'Candidature retirée avec succès' 

@@ -296,28 +296,28 @@ export default function StudentJobsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Offres d'emploi</h1>
-          <p className="text-slate-600">Découvrez les opportunités qui correspondent à votre profil</p>
+          <h1 className="text-2xl font-bold text-gray-900">Offres d'emploi</h1>
+          <p className="text-gray-600">Découvrez les opportunités qui correspondent à votre profil</p>
         </div>
         <div className="flex items-center gap-3">
-          <div className="text-sm text-slate-600">
+          <div className="text-sm text-gray-600">
             {filteredJobs.length} offre{filteredJobs.length > 1 ? 's' : ''} trouvée{filteredJobs.length > 1 ? 's' : ''}
           </div>
         </div>
       </div>
 
       {/* Search and Filters */}
-      <div className="bg-white rounded-xl border border-slate-200/50 p-4 shadow-sm">
+      <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
         <div className="flex flex-col lg:flex-row gap-4">
           {/* Search */}
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <input
               type="text"
               placeholder="Rechercher par poste, entreprise, lieu..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+              className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
             />
           </div>
 
@@ -347,21 +347,21 @@ export default function StudentJobsPage() {
       {loading ? (
         <div className="flex items-center justify-center py-20">
           <div className="flex flex-col items-center gap-4">
-            <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
-            <p className="text-slate-600">Chargement des offres...</p>
+            <div className="w-12 h-12 border-4 border-gray-200 border-t-gray-600 rounded-full animate-spin"></div>
+            <p className="text-gray-600">Chargement des offres...</p>
           </div>
         </div>
       ) : filteredJobs.length > 0 ? (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {filteredJobs.map((job) => (
-            <div key={job.id} className="group bg-white rounded-xl border border-slate-200/50 p-5 shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+            <div key={job.id} className="group bg-white rounded-xl border border-gray-200 p-5 shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
               {/* Header */}
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-slate-900 group-hover:text-blue-600 transition-colors mb-2">
+                  <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors mb-2">
                     {job.title}
                   </h3>
-                  <div className="flex items-center gap-2 text-sm text-slate-600">
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
                     <Building className="h-4 w-4" />
                     <span>{job.employer_company || job.company}</span>
                   </div>
@@ -373,33 +373,33 @@ export default function StudentJobsPage() {
                   className="shrink-0"
                 >
                   <Heart 
-                    className={`h-4 w-4 ${savedJobs.has(job.id) ? 'fill-red-500 text-red-500' : 'text-slate-400'}`} 
+                    className={`h-4 w-4 ${savedJobs.has(job.id) ? 'fill-red-500 text-red-500' : 'text-gray-400'}`} 
                   />
                 </Button>
               </div>
 
               {/* Job Details */}
               <div className="space-y-2 mb-4">
-                <div className="flex items-center gap-2 text-sm text-slate-600">
+                <div className="flex items-center gap-2 text-sm text-gray-600">
                   <MapPin className="h-4 w-4" />
                   <span>{job.location}</span>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-slate-600">
+                <div className="flex items-center gap-2 text-sm text-gray-600">
                   <Briefcase className="h-4 w-4" />
                   <span className="capitalize">{job.job_type}</span>
                 </div>
                 {job.salary && (
-                  <div className="flex items-center gap-2 text-sm text-slate-600">
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
                     <Banknote className="h-4 w-4" />
                     <span>{job.salary}</span>
                   </div>
                 )}
-                <div className="flex items-center gap-2 text-sm text-slate-600">
+                <div className="flex items-center gap-2 text-sm text-gray-600">
                   <Calendar className="h-4 w-4" />
                   <span>Posté {new Date(job.posted_at).toLocaleDateString('fr-FR')}</span>
                 </div>
                 {job.applicants_count !== undefined && (
-                  <div className="flex items-center gap-2 text-sm text-slate-600">
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
                     <Users className="h-4 w-4" />
                     <span>{job.applicants_count} candidat{job.applicants_count > 1 ? 's' : ''}</span>
                   </div>
@@ -408,13 +408,13 @@ export default function StudentJobsPage() {
 
               {/* Description */}
               <div className="mb-4">
-                <p className="text-sm text-slate-600 line-clamp-3">
+                <p className="text-sm text-gray-600 line-clamp-3">
                   {job.description}
                 </p>
               </div>
 
               {/* Actions */}
-              <div className="flex items-center gap-3 pt-4 border-t border-slate-100">
+              <div className="flex items-center gap-3 pt-4 border-t border-gray-100">
                 {appliedJobs.has(job.id) ? (
                   <Button
                     onClick={() => router.push('/student/applications')}
@@ -453,13 +453,13 @@ export default function StudentJobsPage() {
         </div>
       ) : (
         <div className="text-center py-20">
-          <div className="w-16 h-16 rounded-xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
-            <Briefcase className="h-8 w-8 text-slate-400" />
+          <div className="w-16 h-16 rounded-xl bg-gray-100 flex items-center justify-center mx-auto mb-4">
+            <Briefcase className="h-8 w-8 text-gray-400" />
           </div>
-          <h3 className="text-xl font-semibold text-slate-900 mb-2">
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">
             {searchTerm || selectedType !== "all" ? "Aucune offre trouvée" : "Aucune offre disponible"}
           </h3>
-          <p className="text-slate-600 mb-6">
+          <p className="text-gray-600 mb-6">
             {searchTerm || selectedType !== "all" 
               ? "Essayez de modifier vos critères de recherche" 
               : "Revenez plus tard pour découvrir de nouvelles opportunités"

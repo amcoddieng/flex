@@ -139,20 +139,32 @@ export default function StudentApplicationsPage() {
       const token = getValidToken();
       if (!token) return;
 
+      console.log('withdrawApplication: Attempting to delete application', applicationId);
+      
       const res = await fetch(`/api/student/applications/${applicationId}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` },
       });
 
+      console.log('withdrawApplication: Response status', res.status);
+      console.log('withdrawApplication: Response ok', res.ok);
+
       if (!res.ok) {
-        throw new Error('Erreur lors du retrait de la candidature');
+        const errorData = await res.json();
+        console.log('withdrawApplication: Error response', errorData);
+        throw new Error(errorData.error || 'Erreur lors du retrait de la candidature');
       }
 
       const data = await res.json();
-      if (data.success) {
+      console.log('withdrawApplication: Success response', data);
+      
+      // L'API retourne un message, pas un champ success
+      if (data.message) {
         setApplications(prev => prev.filter(app => app.id !== applicationId));
         setSelectedApplication(null);
+        console.log('withdrawApplication: Application removed successfully');
       } else {
+        console.log('withdrawApplication: No success message in response');
         throw new Error(data.error || 'Échec du retrait');
       }
     } catch (err: any) {
@@ -218,8 +230,8 @@ export default function StudentApplicationsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Mes candidatures</h1>
-          <p className="text-slate-600">Suivez l'état de vos candidatures</p>
+          <h1 className="text-2xl font-bold text-gray-900">Mes candidatures</h1>
+          <p className="text-gray-600">Suivez l'état de vos candidatures</p>
         </div>
         <div className="flex items-center gap-3">
           <Link href="/student/jobs">
@@ -232,7 +244,7 @@ export default function StudentApplicationsPage() {
       </div>
 
       {/* Status Filters */}
-      <div className="bg-white rounded-xl border border-slate-200/50 p-4 shadow-sm">
+      <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
         <div className="flex gap-2 flex-wrap">
           {statusFilters.map((filter) => (
             <Button
@@ -257,8 +269,8 @@ export default function StudentApplicationsPage() {
       {loading ? (
         <div className="flex items-center justify-center py-20">
           <div className="flex flex-col items-center gap-4">
-            <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
-            <p className="text-slate-600">Chargement des candidatures...</p>
+            <div className="w-12 h-12 border-4 border-gray-200 border-t-gray-600 rounded-full animate-spin"></div>
+            <p className="text-gray-600">Chargement des candidatures...</p>
           </div>
         </div>
       ) : filteredApplications.length > 0 ? (
@@ -268,14 +280,14 @@ export default function StudentApplicationsPage() {
             const StatusIcon = statusConfig.icon;
 
             return (
-              <div key={application.id} className="group bg-white rounded-xl border border-slate-200/50 p-5 shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+              <div key={application.id} className="group bg-white rounded-xl border border-gray-200 p-5 shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
                 {/* Header */}
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-slate-900 group-hover:text-blue-600 transition-colors mb-2">
+                    <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors mb-2">
                       {application.job?.title || 'Poste non spécifié'}
                     </h3>
-                    <div className="flex items-center gap-2 text-sm text-slate-600">
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
                       <Building className="h-4 w-4" />
                       <span>{application.job?.employer?.company_name || 'Entreprise non spécifiée'}</span>
                     </div>
@@ -288,25 +300,25 @@ export default function StudentApplicationsPage() {
 
                 {/* Job Details */}
                 <div className="space-y-2 mb-4">
-                  <div className="flex items-center gap-2 text-sm text-slate-600">
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
                     <MapPin className="h-4 w-4" />
                     <span>{application.job?.location || 'Localisation non spécifiée'}</span>
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-slate-600">
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
                     <Briefcase className="h-4 w-4" />
                     <span className="capitalize">{application.job?.job_type || 'Type non spécifié'}</span>
                   </div>
                   {application.job?.salary && (
-                    <div className="flex items-center gap-2 text-sm text-slate-600">
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
                       <DollarSign className="h-4 w-4" />
                       <span>{application.job.salary}</span>
                     </div>
                   )}
-                  <div className="flex items-center gap-2 text-sm text-slate-600">
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
                     <Calendar className="h-4 w-4" />
                     <span>Postulé le {new Date(application.applied_at).toLocaleDateString('fr-FR')}</span>
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-slate-600">
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
                     <User className="h-4 w-4" />
                     <span>Contact: {application.job?.employer?.contact_person || 'Non spécifié'}</span>
                   </div>
@@ -314,15 +326,15 @@ export default function StudentApplicationsPage() {
 
                 {/* Cover Letter Preview */}
                 {application.cover_letter && (
-                  <div className="mb-4 p-3 bg-slate-50 rounded-lg">
-                    <p className="text-sm text-slate-600 line-clamp-2">
+                  <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                    <p className="text-sm text-gray-600 line-clamp-2">
                       {application.cover_letter}
                     </p>
                   </div>
                 )}
 
                 {/* Actions */}
-                <div className="flex items-center gap-3 pt-4 border-t border-slate-100">
+                <div className="flex items-center gap-3 pt-4 border-t border-gray-100">
                   <Button
                     variant="outline"
                     size="sm"
@@ -354,13 +366,13 @@ export default function StudentApplicationsPage() {
         </div>
       ) : (
         <div className="text-center py-20">
-          <div className="w-16 h-16 rounded-xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
-            <FileText className="h-8 w-8 text-slate-400" />
+          <div className="w-16 h-16 rounded-xl bg-gray-100 flex items-center justify-center mx-auto mb-4">
+            <FileText className="h-8 w-8 text-gray-400" />
           </div>
-          <h3 className="text-xl font-semibold text-slate-900 mb-2">
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">
             {selectedStatus !== "all" ? "Aucune candidature trouvée" : "Aucune candidature"}
           </h3>
-          <p className="text-slate-600 mb-6">
+          <p className="text-gray-600 mb-6">
             {selectedStatus !== "all" 
               ? "Essayez de changer le filtre de statut" 
               : "Commencez par postuler aux offres qui vous intéressent"
@@ -389,10 +401,10 @@ export default function StudentApplicationsPage() {
       {selectedApplication && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b border-slate-100 px-6 py-4 flex items-start justify-between">
+            <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-start justify-between">
               <div>
-                <h2 className="font-bold text-slate-800 text-lg">{selectedApplication.job?.title || 'Poste non spécifié'}</h2>
-                <p className="text-sm text-slate-500">{selectedApplication.job?.employer?.company_name || 'Entreprise non spécifiée'}</p>
+                <h2 className="font-bold text-gray-800 text-lg">{selectedApplication.job?.title || 'Poste non spécifié'}</h2>
+                <p className="text-sm text-gray-500">{selectedApplication.job?.employer?.company_name || 'Entreprise non spécifiée'}</p>
               </div>
               <div className="flex items-center gap-3">
                 {(() => {

@@ -17,7 +17,17 @@ import {
   Save,
   X,
   Camera,
-  Upload
+  Upload,
+  Building,
+  Award,
+  DollarSign,
+  CheckCircle,
+  XCircle,
+  Clock,
+  Star,
+  Download,
+  CreditCard,
+  BookOpen
 } from "lucide-react";
 
 interface StudentProfile {
@@ -25,19 +35,22 @@ interface StudentProfile {
   user_id: number;
   first_name: string;
   last_name: string;
-  email: string;
   phone?: string;
-  birth_date?: string;
-  location?: string;
+  email: string;
+  university?: string;
+  department?: string;
+  year_of_study?: number;
   bio?: string;
-  education?: string;
-  experience?: string;
-  skills?: string;
-  cv_url?: string;
-  linkedin_url?: string;
-  portfolio_url?: string;
+  skills?: string[] | string;
+  availability?: any;
+  services?: any;
+  hourly_rate?: number;
+  profile_photo?: string;
+  student_card_pdf?: string;
+  validation_status?: 'PENDING' | 'VALIDATED' | 'REJECTED';
+  rejection_reason?: string;
   created_at: string;
-  updated_at: string;
+  updated_at?: string;
 }
 
 export default function StudentProfilePage() {
@@ -98,8 +111,31 @@ export default function StudentProfilePage() {
 
       const data = await res.json();
       if (data.success) {
-        setProfile(data.data);
-        setFormData(data.data);
+        // Adapter les données de l'API au format attendu par le frontend
+        const adaptedProfile = {
+          id: data.student.id,
+          user_id: data.student.userId,
+          first_name: data.student.firstName,
+          last_name: data.student.lastName,
+          email: data.student.email,
+          phone: data.student.phone,
+          university: data.student.university,
+          department: data.student.department,
+          year_of_study: data.student.yearOfStudy,
+          bio: data.student.bio,
+          skills: data.student.skills,
+          availability: data.student.availability,
+          services: data.student.services,
+          hourly_rate: data.student.hourlyRate,
+          profile_photo: data.student.profilePhoto,
+          student_card_pdf: data.student.studentCardPdf,
+          validation_status: data.student.validationStatus,
+          rejection_reason: data.student.rejectionReason,
+          created_at: data.student.createdAt
+        };
+        
+        setProfile(adaptedProfile);
+        setFormData(adaptedProfile);
       } else {
         throw new Error(data.error || 'Réponse invalide');
       }
@@ -125,13 +161,28 @@ export default function StudentProfilePage() {
       const token = getValidToken();
       if (!token) return;
 
+      // Adapter les données pour l'API
+      const apiData = {
+        firstName: formData.first_name,
+        lastName: formData.last_name,
+        phone: formData.phone,
+        university: formData.university,
+        department: formData.department,
+        yearOfStudy: formData.year_of_study,
+        bio: formData.bio,
+        skills: formData.skills,
+        availability: formData.availability,
+        services: formData.services,
+        hourlyRate: formData.hourly_rate
+      };
+
       const res = await fetch('/api/student/profile', {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(apiData),
       });
       
       if (!res.ok) {
@@ -140,10 +191,10 @@ export default function StudentProfilePage() {
 
       const data = await res.json();
       if (data.success) {
-        setProfile(data.data);
-        setFormData(data.data);
-        setEditMode(false);
         setSuccess('Profil mis à jour avec succès');
+        setEditMode(false);
+        // Rafraîchir les données du profil
+        fetchProfile();
       } else {
         throw new Error(data.error || 'Mise à jour échouée');
       }
@@ -161,6 +212,44 @@ export default function StudentProfilePage() {
     setEditMode(false);
     setError(null);
     setSuccess(null);
+  };
+
+  const handleProfilePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setError('Veuillez uploader une image');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('profile_photo', file);
+
+    try {
+      const token = getValidToken();
+      if (!token) return;
+
+      setSaving(true);
+      const res = await fetch('/api/student/upload-profile-photo', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setFormData(prev => ({ ...prev, profile_photo: data.profile_photo }));
+        setSuccess('Photo de profil mise à jour avec succès');
+      } else {
+        throw new Error(data.error || 'Upload échoué');
+      }
+    } catch (err: any) {
+      const message = err instanceof Error ? err.message : 'Erreur inconnue';
+      setError(message);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -209,8 +298,8 @@ export default function StudentProfilePage() {
     return (
       <div className="flex items-center justify-center py-20">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
-          <p className="text-slate-600">Chargement du profil...</p>
+          <div className="w-12 h-12 border-4 border-gray-200 border-t-gray-600 rounded-full animate-spin"></div>
+          <p className="text-gray-600">Chargement du profil...</p>
         </div>
       </div>
     );
@@ -221,8 +310,8 @@ export default function StudentProfilePage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Mon profil</h1>
-          <p className="text-slate-600">Gérez vos informations personnelles</p>
+          <h1 className="text-2xl font-bold text-gray-900">Mon profil</h1>
+          <p className="text-gray-600">Gérez vos informations personnelles</p>
         </div>
         <div className="flex items-center gap-3">
           {editMode ? (
@@ -278,21 +367,29 @@ export default function StudentProfilePage() {
         </div>
       )}
 
-      {/* Profile Card */}
-      <div className="bg-white rounded-xl border border-slate-200/50 shadow-sm">
+      {/* Profile Header Card */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
         <div className="p-6">
           {/* Profile Header */}
-          <div className="flex items-center gap-6 mb-8">
+          <div className="flex items-start gap-6 mb-8">
             <div className="relative">
-              <div className="w-24 h-24 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white text-2xl font-bold">
-                {profile?.first_name?.charAt(0).toUpperCase()}{profile?.last_name?.charAt(0).toUpperCase()}
-              </div>
+              {profile?.profile_photo ? (
+                <img 
+                  src={profile.profile_photo} 
+                  alt="Profile" 
+                  className="w-32 h-32 rounded-full object-cover border-4 border-gray-100"
+                />
+              ) : (
+                <div className="w-32 h-32 rounded-full bg-blue-600 flex items-center justify-center text-white text-3xl font-bold">
+                  {profile?.first_name?.charAt(0).toUpperCase()}{profile?.last_name?.charAt(0).toUpperCase()}
+                </div>
+              )}
               {editMode && (
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="absolute bottom-0 right-0 w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white hover:bg-blue-700 transition-colors"
+                  className="absolute bottom-0 right-0 w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white hover:bg-blue-700 transition-colors border-2 border-white"
                 >
-                  <Camera className="h-4 w-4" />
+                  <Camera className="h-5 w-5" />
                 </button>
               )}
               <input
@@ -300,309 +397,275 @@ export default function StudentProfilePage() {
                 type="file"
                 accept="image/*"
                 className="hidden"
-                onChange={handleFileUpload}
+                onChange={handleProfilePhotoUpload}
               />
             </div>
-            <div>
-              <h2 className="text-2xl font-bold text-slate-900">
-                {profile?.first_name} {profile?.last_name}
-              </h2>
-              <p className="text-slate-600">{profile?.email}</p>
-              {profile?.location && (
-                <div className="flex items-center gap-2 text-sm text-slate-600 mt-1">
-                  <MapPin className="h-4 w-4" />
-                  <span>{profile.location}</span>
+            <div className="flex-1">
+              <div className="flex items-center gap-3 mb-2">
+                <h2 className="text-3xl font-bold text-gray-900">
+                  {profile?.first_name} {profile?.last_name}
+                </h2>
+                {profile?.validation_status && (
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                    profile.validation_status === 'VALIDATED' 
+                      ? 'bg-green-100 text-green-700' 
+                      : profile.validation_status === 'REJECTED'
+                      ? 'bg-red-100 text-red-700'
+                      : 'bg-yellow-100 text-yellow-700'
+                  }`}>
+                    {profile.validation_status === 'VALIDATED' && (
+                      <><CheckCircle className="h-4 w-4 inline mr-1" />Validé</>
+                    )}
+                    {profile.validation_status === 'REJECTED' && (
+                      <><XCircle className="h-4 w-4 inline mr-1" />Rejeté</>
+                    )}
+                    {profile.validation_status === 'PENDING' && (
+                      <><Clock className="h-4 w-4 inline mr-1" />En attente</>
+                    )}
+                  </span>
+                )}
+              </div>
+              <p className="text-gray-600 mb-3">{profile?.email}</p>
+              
+              {/* University and Department */}
+              {(profile?.university || profile?.department) && (
+                <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
+                  {profile?.university && (
+                    <div className="flex items-center gap-2">
+                      <Building className="h-4 w-4" />
+                      <span>{profile.university}</span>
+                    </div>
+                  )}
+                  {profile?.department && (
+                    <div className="flex items-center gap-2">
+                      <BookOpen className="h-4 w-4" />
+                      <span>{profile.department}</span>
+                    </div>
+                  )}
+                  {profile?.year_of_study && (
+                    <div className="flex items-center gap-2">
+                      <GraduationCap className="h-4 w-4" />
+                      <span>{profile.year_of_study}ème année</span>
+                    </div>
+                  )}
                 </div>
               )}
+              
+              {/* Contact Info */}
+              <div className="flex items-center gap-4 text-sm text-gray-600">
+                {profile?.phone && (
+                  <div className="flex items-center gap-2">
+                    <Phone className="h-4 w-4" />
+                    <span>{profile.phone}</span>
+                  </div>
+                )}
+                {profile?.hourly_rate && (
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="h-4 w-4" />
+                    <span>{profile.hourly_rate}/heure</span>
+                  </div>
+                )}
+              </div>
+              <div className="text-right">
+                <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mb-4">
+                  <Award className="h-8 w-8" />
+                </div>
+                {profile?.student_card_pdf ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                    onClick={() => window.open(profile.student_card_pdf, '_blank')}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    Télécharger
+                  </Button>
+                ) : editMode ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    Upload
+                  </Button>
+                ) : (
+                  <p className="text-blue-100 text-sm">Non uploadée</p>
+                )}
+              </div>
             </div>
           </div>
+        </div>
 
-          {/* Profile Information */}
+        {/* Bio Section */}
+        <div className="mb-8 p-4 bg-gray-50 rounded-lg">
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Biographie</h3>
+          {editMode ? (
+            <textarea
+              value={formData.bio || ''}
+              onChange={(e) => handleInputChange('bio', e.target.value)}
+              rows={3}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+              placeholder="Parlez-vous en quelques mots..."
+            />
+          ) : (
+            <p className="text-gray-600 leading-relaxed">
+              {profile?.bio || 'Aucune biographie renseignée.'}
+            </p>
+          )}
+        </div>
+
+        {/* Skills Section */}
+        <div className="mb-8">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Compétences</h3>
+          <div className="flex flex-wrap gap-2">
+            {Array.isArray(profile?.skills) 
+              ? profile.skills.map((skill, index) => (
+                  <span key={index} className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">
+                    {skill}
+                  </span>
+                ))
+              : typeof profile?.skills === 'string' && profile.skills.trim()
+                ? profile.skills.split(',').map((skill, index) => (
+                    <span key={index} className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">
+                      {skill.trim()}
+                    </span>
+                  ))
+                : (
+                  <span className="text-gray-500 text-sm">Aucune compétence renseignée</span>
+                )
+            }
+          </div>
+        </div>
+
+        {/* Edit Mode Form */}
+        {editMode && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Personal Information */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-slate-900 mb-4">Informations personnelles</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Informations personnelles</h3>
               
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Prénom</label>
-                {editMode ? (
-                  <input
-                    type="text"
-                    value={formData.first_name || ''}
-                    onChange={(e) => handleInputChange('first_name', e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                  />
-                ) : (
-                  <div className="flex items-center gap-2 text-slate-600">
-                    <User className="h-4 w-4" />
-                    <span>{profile?.first_name}</span>
-                  </div>
-                )}
+                <label className="block text-sm font-medium text-gray-700 mb-1">Prénom</label>
+                <input
+                  type="text"
+                  value={formData.first_name || ''}
+                  onChange={(e) => handleInputChange('first_name', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Nom</label>
-                {editMode ? (
-                  <input
-                    type="text"
-                    value={formData.last_name || ''}
-                    onChange={(e) => handleInputChange('last_name', e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                  />
-                ) : (
-                  <div className="flex items-center gap-2 text-slate-600">
-                    <User className="h-4 w-4" />
-                    <span>{profile?.last_name}</span>
-                  </div>
-                )}
+                <label className="block text-sm font-medium text-gray-700 mb-1">Nom</label>
+                <input
+                  type="text"
+                  value={formData.last_name || ''}
+                  onChange={(e) => handleInputChange('last_name', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
-                {editMode ? (
-                  <input
-                    type="email"
-                    value={formData.email || ''}
-                    onChange={(e) => handleInputChange('email', e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                  />
-                ) : (
-                  <div className="flex items-center gap-2 text-slate-600">
-                    <Mail className="h-4 w-4" />
-                    <span>{profile?.email}</span>
-                  </div>
-                )}
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <input
+                  type="email"
+                  value={formData.email || ''}
+                  onChange={(e) => handleInputChange('email', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Téléphone</label>
-                {editMode ? (
-                  <input
-                    type="tel"
-                    value={formData.phone || ''}
-                    onChange={(e) => handleInputChange('phone', e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                  />
-                ) : (
-                  <div className="flex items-center gap-2 text-slate-600">
-                    <Phone className="h-4 w-4" />
-                    <span>{profile?.phone || 'Non renseigné'}</span>
-                  </div>
-                )}
+                <label className="block text-sm font-medium text-gray-700 mb-1">Téléphone</label>
+                <input
+                  type="tel"
+                  value={formData.phone || ''}
+                  onChange={(e) => handleInputChange('phone', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Date de naissance</label>
-                {editMode ? (
-                  <input
-                    type="date"
-                    value={formData.birth_date || ''}
-                    onChange={(e) => handleInputChange('birth_date', e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                  />
-                ) : (
-                  <div className="flex items-center gap-2 text-slate-600">
-                    <Calendar className="h-4 w-4" />
-                    <span>{profile?.birth_date ? new Date(profile.birth_date).toLocaleDateString('fr-FR') : 'Non renseignée'}</span>
-                  </div>
-                )}
-              </div>
             </div>
 
-            {/* Professional Information */}
+            {/* Academic Information */}
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-slate-900 mb-4">Informations professionnelles</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Informations académiques</h3>
               
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Localisation</label>
-                {editMode ? (
-                  <input
-                    type="text"
-                    value={formData.location || ''}
-                    onChange={(e) => handleInputChange('location', e.target.value)}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                  />
-                ) : (
-                  <div className="flex items-center gap-2 text-slate-600">
-                    <MapPin className="h-4 w-4" />
-                    <span>{profile?.location || 'Non renseignée'}</span>
-                  </div>
-                )}
+                <label className="block text-sm font-medium text-gray-700 mb-1">Université</label>
+                <input
+                  type="text"
+                  value={formData.university || ''}
+                  onChange={(e) => handleInputChange('university', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Formation</label>
-                {editMode ? (
-                  <textarea
-                    value={formData.education || ''}
-                    onChange={(e) => handleInputChange('education', e.target.value)}
-                    rows={3}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                  />
-                ) : (
-                  <div className="flex items-start gap-2 text-slate-600">
-                    <GraduationCap className="h-4 w-4 mt-0.5" />
-                    <span className="whitespace-pre-wrap">{profile?.education || 'Non renseignée'}</span>
-                  </div>
-                )}
+                <label className="block text-sm font-medium text-gray-700 mb-1">Département</label>
+                <input
+                  type="text"
+                  value={formData.department || ''}
+                  onChange={(e) => handleInputChange('department', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Expérience</label>
-                {editMode ? (
-                  <textarea
-                    value={formData.experience || ''}
-                    onChange={(e) => handleInputChange('experience', e.target.value)}
-                    rows={3}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                  />
-                ) : (
-                  <div className="flex items-start gap-2 text-slate-600">
-                    <Briefcase className="h-4 w-4 mt-0.5" />
-                    <span className="whitespace-pre-wrap">{profile?.experience || 'Non renseignée'}</span>
-                  </div>
-                )}
+                <label className="block text-sm font-medium text-gray-700 mb-1">Année d'étude</label>
+                <select
+                  value={formData.year_of_study || ''}
+                  onChange={(e) => handleInputChange('year_of_study', parseInt(e.target.value))}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                >
+                  <option value="">Sélectionner</option>
+                  <option value="1">1ère année</option>
+                  <option value="2">2ème année</option>
+                  <option value="3">3ème année</option>
+                  <option value="4">4ème année</option>
+                  <option value="5">5ème année</option>
+                </select>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Compétences</label>
-                {editMode ? (
-                  <textarea
-                    value={formData.skills || ''}
-                    onChange={(e) => handleInputChange('skills', e.target.value)}
-                    rows={3}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                  />
-                ) : (
-                  <div className="flex items-start gap-2 text-slate-600">
-                    <FileText className="h-4 w-4 mt-0.5" />
-                    <span className="whitespace-pre-wrap">{profile?.skills || 'Non renseignées'}</span>
-                  </div>
-                )}
+                <label className="block text-sm font-medium text-gray-700 mb-1">Taux horaire (MAD)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={formData.hourly_rate || ''}
+                  onChange={(e) => handleInputChange('hourly_rate', parseFloat(e.target.value))}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                />
               </div>
+
             </div>
-          </div>
 
-          {/* Bio */}
-          <div className="mt-6">
-            <label className="block text-sm font-medium text-slate-700 mb-1">Bio</label>
-            {editMode ? (
+            {/* Bio */}
+            <div className="space-y-4 md:col-span-2">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Biographie</h3>
               <textarea
                 value={formData.bio || ''}
                 onChange={(e) => handleInputChange('bio', e.target.value)}
                 rows={4}
-                className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                placeholder="Parlez-vous en quelques mots..."
               />
-            ) : (
-              <p className="text-slate-600 whitespace-pre-wrap">{profile?.bio || 'Aucune bio renseignée'}</p>
-            )}
-          </div>
-
-          {/* Links */}
-          <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">CV</label>
-              {editMode ? (
-                <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={formData.cv_url || ''}
-                    onChange={(e) => handleInputChange('cv_url', e.target.value)}
-                    placeholder="URL du CV"
-                    className="flex-1 px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                  />
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={saving}
-                  >
-                    <Upload className="h-4 w-4" />
-                  </Button>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".pdf"
-                    className="hidden"
-                    onChange={handleFileUpload}
-                  />
-                </div>
-              ) : (
-                <div>
-                  {profile?.cv_url ? (
-                    <a
-                      href={profile.cv_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:text-blue-700 text-sm flex items-center gap-1"
-                    >
-                      <FileText className="h-4 w-4" />
-                      Voir le CV
-                    </a>
-                  ) : (
-                    <span className="text-slate-500 text-sm">Aucun CV uploadé</span>
-                  )}
-                </div>
-              )}
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">LinkedIn</label>
-              {editMode ? (
-                <input
-                  type="url"
-                  value={formData.linkedin_url || ''}
-                  onChange={(e) => handleInputChange('linkedin_url', e.target.value)}
-                  placeholder="URL LinkedIn"
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                />
-              ) : (
-                <div>
-                  {profile?.linkedin_url ? (
-                    <a
-                      href={profile.linkedin_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:text-blue-700 text-sm"
-                    >
-                      Voir LinkedIn
-                    </a>
-                  ) : (
-                    <span className="text-slate-500 text-sm">Non renseigné</span>
-                  )}
-                </div>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Portfolio</label>
-              {editMode ? (
-                <input
-                  type="url"
-                  value={formData.portfolio_url || ''}
-                  onChange={(e) => handleInputChange('portfolio_url', e.target.value)}
-                  placeholder="URL Portfolio"
-                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                />
-              ) : (
-                <div>
-                  {profile?.portfolio_url ? (
-                    <a
-                      href={profile.portfolio_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:text-blue-700 text-sm"
-                    >
-                      Voir Portfolio
-                    </a>
-                  ) : (
-                    <span className="text-slate-500 text-sm">Non renseigné</span>
-                  )}
-                </div>
-              )}
+            {/* Skills */}
+            <div className="space-y-4 md:col-span-2">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Compétences</h3>
+              <textarea
+                value={Array.isArray(formData.skills) ? formData.skills.join(', ') : formData.skills || ''}
+                onChange={(e) => handleInputChange('skills', e.target.value)}
+                rows={3}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                placeholder="Séparez les compétences par des virgules..."
+              />
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

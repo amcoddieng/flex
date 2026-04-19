@@ -289,18 +289,18 @@ export default function StudentMessagesPage() {
   return (
     <div className="h-[calc(100vh-200px)] flex gap-4">
       {/* Conversations List */}
-      <div className="w-96 bg-white rounded-xl border border-slate-200/50 shadow-sm flex flex-col">
+      <div className="w-96 bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col">
         {/* Header */}
-        <div className="p-4 border-b border-slate-100">
-          <h2 className="text-lg font-semibold text-slate-900 mb-3">Messages</h2>
+        <div className="p-4 border-b border-gray-100">
+          <h2 className="text-lg font-semibold text-gray-900 mb-3">Messages</h2>
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <input
               type="text"
               placeholder="Rechercher une conversation..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm"
+              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm"
             />
           </div>
         </div>
@@ -309,36 +309,36 @@ export default function StudentMessagesPage() {
         <div className="flex-1 overflow-y-auto">
           {loading ? (
             <div className="flex items-center justify-center py-8">
-              <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+              <div className="w-8 h-8 border-4 border-gray-200 border-t-gray-600 rounded-full animate-spin"></div>
             </div>
           ) : filteredConversations.length > 0 ? (
-            <div className="divide-y divide-slate-100">
+            <div className="divide-y divide-gray-100">
               {filteredConversations.map((conversation) => (
                 <div
                   key={conversation.id}
                   onClick={() => selectConversation(conversation)}
-                  className={`p-4 hover:bg-slate-50 cursor-pointer transition-colors ${
+                  className={`p-4 hover:bg-gray-50 cursor-pointer transition-colors ${
                     selectedConversation?.id === conversation.id ? 'bg-blue-50' : ''
                   }`}
                 >
                   <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold shrink-0">
+                    <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold shrink-0">
                       {conversation.participant_name.charAt(0).toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-1">
-                        <h3 className="font-semibold text-slate-900 truncate">
+                        <h3 className="font-semibold text-gray-900 truncate">
                           {conversation.participant_name}
                         </h3>
-                        <span className="text-xs text-slate-500">
+                        <span className="text-xs text-gray-500">
                           {formatTime(conversation.last_message_at)}
                         </span>
                       </div>
                       {conversation.participant_company && (
-                        <p className="text-xs text-slate-600 mb-1">{conversation.participant_company}</p>
+                        <p className="text-xs text-gray-600 mb-1">{conversation.participant_company}</p>
                       )}
                       <div className="flex items-center justify-between">
-                        <p className="text-sm text-slate-600 truncate">{conversation.last_message}</p>
+                        <p className="text-sm text-gray-600 truncate">{conversation.last_message}</p>
                         {conversation.unread_count > 0 && (
                           <span className="bg-blue-600 text-white text-xs rounded-full px-2 py-0.5 min-w-[20px] text-center">
                             {conversation.unread_count}
@@ -352,11 +352,11 @@ export default function StudentMessagesPage() {
             </div>
           ) : (
             <div className="text-center py-8">
-              <MessageCircle className="h-12 w-12 text-slate-300 mx-auto mb-3" />
-              <h3 className="text-lg font-medium text-slate-900 mb-2">
+              <MessageCircle className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
                 {searchTerm ? "Aucune conversation trouvée" : "Aucun message"}
               </h3>
-              <p className="text-sm text-slate-600">
+              <p className="text-sm text-gray-600">
                 {searchTerm 
                   ? "Essayez de modifier votre recherche" 
                   : "Vos conversations avec les employeurs apparaîtront ici"
@@ -368,19 +368,19 @@ export default function StudentMessagesPage() {
       </div>
 
       {/* Chat Area */}
-      <div className="flex-1 bg-white rounded-xl border border-slate-200/50 shadow-sm flex flex-col">
+      <div className="flex-1 bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col">
         {selectedConversation ? (
           <>
             {/* Chat Header */}
-            <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+            <div className="p-4 border-b border-gray-100 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold">
+                <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold">
                   {selectedConversation.participant_name.charAt(0).toUpperCase()}
                 </div>
                 <div>
-                  <h3 className="font-semibold text-slate-900">{selectedConversation.participant_name}</h3>
+                  <h3 className="font-semibold text-gray-900">{selectedConversation.participant_name}</h3>
                   {selectedConversation.participant_company && (
-                    <p className="text-xs text-slate-600">{selectedConversation.participant_company}</p>
+                    <p className="text-xs text-gray-600">{selectedConversation.participant_company}</p>
                   )}
                 </div>
               </div>
@@ -403,15 +403,15 @@ export default function StudentMessagesPage() {
                       className={`flex mb-4 ${message.sender_type === 'STUDENT' ? 'justify-end' : 'justify-start'}`}
                     >
                       {message.sender_type === 'EMPLOYER' && (
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-pink-600 flex items-center justify-center text-white font-semibold text-xs mr-2 flex-shrink-0">
+                        <div className="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center text-white font-semibold text-xs mr-2 flex-shrink-0">
                           {message.sender_name?.charAt(0).toUpperCase() || 'E'}
                         </div>
                       )}
                       <div
                         className={`max-w-[70%] px-4 py-3 rounded-2xl shadow-sm ${
                           message.sender_type === 'STUDENT'
-                            ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg rounded-br-none'
-                            : 'bg-white text-slate-900 border border-slate-200 shadow-md rounded-bl-none'
+                            ? 'bg-blue-600 text-white shadow-lg rounded-br-none'
+                            : 'bg-white text-gray-900 border border-gray-200 shadow-md rounded-bl-none'
                         }`}
                       >
                         {message.sender_type === 'EMPLOYER' && (
@@ -423,7 +423,7 @@ export default function StudentMessagesPage() {
                           {message.content}
                         </p>
                         <div className={`flex items-center justify-between mt-2 text-xs ${
-                          message.sender_type === 'STUDENT' ? 'text-blue-100' : 'text-slate-400'
+                          message.sender_type === 'STUDENT' ? 'text-blue-100' : 'text-gray-400'
                         }`}>
                           <span>{formatTime(message.created_at)}</span>
                           {message.sender_type === 'STUDENT' && (
@@ -470,25 +470,17 @@ export default function StudentMessagesPage() {
             </div>
 
             {/* Message Input */}
-            <div className="p-4 border-t border-slate-100">
-              <div className="flex items-center gap-2">
-                <Button variant="ghost" size="sm">
-                  <Paperclip className="h-4 w-4" />
-                </Button>
-                <input
-                  type="text"
-                  placeholder="Écrivez votre message..."
+            <div className="p-4 border-t border-gray-100">
+              <div className="flex items-end gap-3">
+                <textarea
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && sendMessage()}
-                  className="flex-1 px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                  disabled={sendingMessage}
+                  placeholder="Tapez votre message..."
+                  className="flex-1 resize-none border border-gray-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  rows={1}
                 />
-                <Button variant="ghost" size="sm">
-                  <Smile className="h-4 w-4" />
-                </Button>
-                <Button 
-                  onClick={sendMessage} 
+                <Button
+                  onClick={sendMessage}
                   disabled={!newMessage.trim() || sendingMessage}
                   className="bg-blue-600 hover:bg-blue-700"
                 >
@@ -504,7 +496,7 @@ export default function StudentMessagesPage() {
         ) : (
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center">
-              <MessageCircle className="h-16 w-16 text-slate-300 mx-auto mb-4" />
+              <MessageCircle className="h-16 w-16 text-gray-300 mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-slate-900 mb-2">Sélectionnez une conversation</h3>
               <p className="text-slate-600">Choisissez une conversation pour commencer à discuter</p>
             </div>

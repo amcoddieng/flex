@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { decodeToken } from "@/lib/jwt";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ApplicationDetailModal } from "@/components/application-detail-modal";
+import { ApplicationDetailModalMinimal } from "@/components/application-detail-modal-minimal";
 import { EmployerProtection } from "@/components/employer-protection";
 import { Search, X } from "lucide-react";
 
@@ -454,7 +454,7 @@ export default function EmployerApplicationsPage() {
       </div>
 
       {/* Detail Modal */}
-      <ApplicationDetailModal
+      <ApplicationDetailModalMinimal
         open={showDetailModal}
         loading={detailLoading}
         application={selectedApp}

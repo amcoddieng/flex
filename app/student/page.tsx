@@ -4,7 +4,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { decodeToken } from "@/lib/jwt";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Briefcase, Users, TrendingUp, Calendar, Clock, Star, BarChart3, Activity, UserPlus, FileText, ChevronUp, ChevronDown, MoreVertical, Search, Bell } from "lucide-react";
+import { ArrowRight, Briefcase, Users, TrendingUp, Calendar, Clock, Star, BarChart3, Activity, UserPlus, FileText, ChevronUp, ChevronDown, MoreVertical, Search, Bell, Zap, MessageCircle, User } from "lucide-react";
 import Link from "next/link";
 
 export default function StudentDashboard() {
@@ -96,7 +96,7 @@ export default function StudentDashboard() {
   return (
     <div className="space-y-6">
       {/* Welcome Banner */}
-      <div className="bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl p-6 text-white">
+      <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold mb-2">Bienvenue sur votre tableau de bord</h1>
@@ -144,7 +144,7 @@ export default function StudentDashboard() {
               <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
               <div className="relative p-4">
                 <div className="flex items-center justify-between mb-3">
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center shadow">
+                  <div className="w-10 h-10 rounded-lg bg-blue-500 flex items-center justify-center shadow">
                     <FileText className="h-5 w-5 text-white" />
                   </div>
                   <div className="flex items-center gap-1 text-green-600 text-xs font-medium">
@@ -166,13 +166,13 @@ export default function StudentDashboard() {
 
             {/* Pending Applications */}
             <div className="group relative bg-white rounded-xl shadow hover:shadow-lg transition-all duration-300 border border-slate-200/50 overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
               <div className="relative p-4">
                 <div className="flex items-center justify-between mb-3">
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 flex items-center justify-center shadow">
+                  <div className="w-10 h-10 rounded-lg bg-yellow-500 flex items-center justify-center shadow">
                     <Clock className="h-5 w-5 text-white" />
                   </div>
-                  <div className="flex items-center gap-1 text-amber-600 text-xs font-medium">
+                  <div className="flex items-center gap-1 text-yellow-600 text-xs font-medium">
                     <ChevronUp className="h-3 w-3" />
                     <span>8%</span>
                   </div>
@@ -194,7 +194,7 @@ export default function StudentDashboard() {
               <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
               <div className="relative p-4">
                 <div className="flex items-center justify-between mb-3">
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-green-500 to-green-600 flex items-center justify-center shadow">
+                  <div className="w-10 h-10 rounded-lg bg-green-500 flex items-center justify-center shadow">
                     <Users className="h-5 w-5 text-white" />
                   </div>
                   <div className="flex items-center gap-1 text-green-600 text-xs font-medium">
@@ -217,7 +217,7 @@ export default function StudentDashboard() {
               <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
               <div className="relative p-4">
                 <div className="flex items-center justify-between mb-3">
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-purple-500 to-purple-600 flex items-center justify-center shadow">
+                  <div className="w-10 h-10 rounded-lg bg-purple-500 flex items-center justify-center shadow">
                     <Star className="h-5 w-5 text-white" />
                   </div>
                   <div className="flex items-center gap-1 text-purple-600 text-xs font-medium">
@@ -310,8 +310,8 @@ export default function StudentDashboard() {
                 </div>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center">
-                      <Star className="h-4 w-4 text-amber-600" />
+                    <div className="w-8 h-8 rounded-lg bg-yellow-100 flex items-center justify-center">
+                      <Star className="h-4 w-4 text-yellow-600" />
                     </div>
                     <div>
                       <p className="text-sm font-medium text-slate-900">Score profil</p>
@@ -396,33 +396,39 @@ export default function StudentDashboard() {
           </div>
 
           {/* Quick Actions */}
-          <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl shadow-xl p-6 text-white">
+          <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl shadow-xl p-6 text-white">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="text-lg font-bold mb-1">Actions rapides</h3>
-                <p className="text-blue-100 text-sm">Accélérez votre recherche d'emploi</p>
+                <p className="text-blue-100">Accédez rapidement aux fonctionnalités principales</p>
               </div>
-              <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center">
-                <Activity className="h-5 w-5" />
+              <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
+                <Zap className="h-6 w-6 text-white" />
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <Link href="/student/jobs" className="group">
-                <Button variant="secondary" className="w-full bg-white/10 hover:bg-white/20 border border-white/20 text-white backdrop-blur-sm transition-all duration-200 text-sm">
-                  <Search className="h-4 w-4 mr-2" />
-                  Chercher un job
+            <div className="grid grid-cols-2 gap-3">
+              <Link href="/student/jobs">
+                <Button variant="secondary" className="w-full bg-white/20 hover:bg-white/30 border border-white/30 text-white justify-start">
+                  <Briefcase className="h-4 w-4 mr-2" />
+                  Rechercher
                 </Button>
               </Link>
-              <Link href="/student/applications" className="group">
-                <Button variant="secondary" className="w-full bg-white/10 hover:bg-white/20 border border-white/20 text-white backdrop-blur-sm transition-all duration-200 text-sm">
+              <Link href="/student/applications">
+                <Button variant="secondary" className="w-full bg-white/20 hover:bg-white/30 border border-white/30 text-white justify-start">
                   <FileText className="h-4 w-4 mr-2" />
-                  Mes candidatures
+                  Candidatures
                 </Button>
               </Link>
-              <Link href="/student/profile" className="group">
-                <Button variant="secondary" className="w-full bg-white/10 hover:bg-white/20 border border-white/20 text-white backdrop-blur-sm transition-all duration-200 text-sm">
-                  <UserPlus className="h-4 w-4 mr-2" />
-                  Mon profil
+              <Link href="/student/messages">
+                <Button variant="secondary" className="w-full bg-white/20 hover:bg-white/30 border border-white/30 text-white justify-start">
+                  <MessageCircle className="h-4 w-4 mr-2" />
+                  Messages
+                </Button>
+              </Link>
+              <Link href="/student/profile">
+                <Button variant="secondary" className="w-full bg-white/20 hover:bg-white/30 border border-white/30 text-white justify-start">
+                  <User className="h-4 w-4 mr-2" />
+                  Profil
                 </Button>
               </Link>
             </div>

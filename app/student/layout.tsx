@@ -96,9 +96,9 @@ export default function StudentLayout({
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 flex">
+    <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar */}
-      <aside className={`${sidebarOpen ? 'w-64' : 'w-20'} bg-white/90 backdrop-blur-md border-r border-slate-200/50 sticky top-0 h-screen transition-all duration-300 shadow-sm`}>
+      <aside className={`${sidebarOpen ? 'w-64' : 'w-20'} bg-white border-r border-gray-200 sticky top-0 h-screen transition-all duration-300 shadow-sm`}>
         <div className="p-4">
           {/* Logo */}
           <Link href="/student" className="flex items-center gap-3 group mb-8">
@@ -107,8 +107,8 @@ export default function StudentLayout({
             </div>
             {sidebarOpen && (
               <div>
-                <h1 className="text-lg font-bold text-slate-900">FlexJob</h1>
-                <p className="text-xs text-slate-600">Étudiant</p>
+                <h1 className="text-lg font-bold text-gray-900">FlexJob</h1>
+                <p className="text-xs text-gray-600">Étudiant</p>
               </div>
             )}
           </Link>
@@ -125,11 +125,11 @@ export default function StudentLayout({
                   href={item.href}
                   className={`relative flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group ${
                     isActive 
-                      ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md' 
-                      : 'text-slate-700 hover:bg-slate-100 hover:text-blue-600'
+                      ? 'bg-gray-900 text-white' 
+                      : 'text-gray-700 hover:bg-gray-100'
                   }`}
                 >
-                  <Icon className={`h-5 w-5 ${isActive ? 'text-white' : 'text-slate-600 group-hover:text-blue-600'}`} />
+                  <Icon className={`h-5 w-5 ${isActive ? 'text-white' : 'text-gray-500'}`} />
                   {sidebarOpen && (
                     <>
                       <span className="font-medium">{item.label}</span>
@@ -153,21 +153,21 @@ export default function StudentLayout({
           {/* User Profile */}
           {sidebarOpen && (
             <div className="absolute bottom-4 left-4 right-4">
-              <div className="bg-slate-50 rounded-xl p-3 border border-slate-200/50">
+              <div className="bg-gray-50 rounded-xl p-3 border border-gray-200">
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-semibold">
+                  <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-semibold">
                     E
                   </div>
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-slate-900">Étudiant</p>
-                    <p className="text-xs text-slate-600">En ligne</p>
+                    <p className="text-sm font-medium text-gray-900">Étudiant</p>
+                    <p className="text-xs text-gray-600">En ligne</p>
                   </div>
                 </div>
                 <Button 
                   variant="outline" 
                   size="sm" 
                   onClick={handleLogout} 
-                  className="w-full gap-2 border-slate-200 hover:bg-slate-100 text-xs"
+                  className="w-full gap-2 border-gray-200 hover:bg-gray-100 text-xs"
                 >
                   <LogOut className="h-3 w-3" />
                   Déconnexion
@@ -179,25 +179,25 @@ export default function StudentLayout({
 
         {/* Sidebar Toggle Button */}
         <button
-          className="absolute -right-3 top-8 w-6 h-6 bg-white rounded-full shadow-md border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-colors"
+          className="absolute -right-3 top-8 w-6 h-6 bg-white rounded-full shadow-md border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors"
           onClick={() => setSidebarOpen(!sidebarOpen)}
         >
-          <Menu className="h-3 w-3 text-slate-600" />
+          <Menu className="h-3 w-3 text-gray-600" />
         </button>
       </aside>
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
         {/* Top Header */}
-        <header className="bg-white/90 backdrop-blur-md border-b border-slate-200/50 sticky top-0 z-40 shadow-sm">
+        <header className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
           <div className="px-6 py-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <div>
-                  <h1 className="text-xl font-bold text-slate-900">
+                  <h1 className="text-xl font-bold text-gray-900">
                     {STUDENT_MENU.find(item => item.href === pathname)?.label || "Tableau de bord"}
                   </h1>
-                  <p className="text-xs text-slate-600">Gérez votre recherche d'emploi</p>
+                  <p className="text-xs text-gray-600">Gérez votre recherche d'emploi</p>
                 </div>
               </div>
               
@@ -232,7 +232,7 @@ export default function StudentLayout({
         </main>
 
         {/* Mobile Menu */}
-        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200/50 shadow-lg">
+        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg">
           <nav className="flex items-center justify-around py-2">
             {STUDENT_MENU.map((item) => {
               const Icon = item.icon;
@@ -244,8 +244,8 @@ export default function StudentLayout({
                   href={item.href}
                   className={`flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-all duration-200 ${
                     isActive 
-                      ? 'text-blue-600' 
-                      : 'text-slate-600 hover:text-blue-600'
+                      ? 'bg-gray-900 text-white' 
+                      : 'text-gray-700 hover:bg-gray-100'
                   }`}
                 >
                   <Icon className="h-5 w-5" />
