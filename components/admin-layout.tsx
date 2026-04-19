@@ -80,11 +80,11 @@ export function AdminLayout({ children }: AdminLayoutProps) {
       href: "/admin/applications",
       icon: FileText,
     },
-    {
-      title: "Entreprises",
-      href: "/admin/companies",
-      icon: Building,
-    },
+    // {
+    //   title: "Entreprises",
+    //   href: "/admin/companies",
+    //   icon: Building,
+    // },
     {
       title: "Paramètres",
       href: "/admin/settings",
@@ -95,7 +95,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   if (!isAuthed) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600">gggjhjhjhjhjhj</div>
       </div>
     );
   }
@@ -103,7 +103,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   return (
     <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar gauche */}
-      <div className={`${sidebarOpen ? 'w-64' : 'w-20'} bg-white border-r border-gray-200 transition-all duration-300 ease-in-out flex flex-col`}>
+      <div className={`${sidebarOpen ? 'w-64' : 'w-20'} bg-white border-r border-gray-300 transition-all duration-300 ease-in-out flex flex-col`}>
         {/* Header */}
         <div className="p-4 border-b border-gray-200">
           <div className="flex items-center justify-between">

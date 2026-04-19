@@ -87,17 +87,17 @@ export default function AdminPage() {
   if (!isAuthed) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-700"></div>
       </div>
     );
   }
 
   const statCards = [
     {
-      title: "Utilisateurs Totals",
+      title: "Utilisateurs",
       value: stats?.total_users || 0,
       icon: Users,
-      color: "bg-blue-500",
+      color: "bg-gray-700",
       change: `+${stats?.new_users_last_7_days || 0} cette semaine`,
       changeType: "positive"
     },
@@ -231,7 +231,7 @@ export default function AdminPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <CheckCircle className="h-5 w-5 text-blue-600" />
+                <CheckCircle className="h-5 w-5 text-gray-700" />
                 Actions Rapides
               </CardTitle>
             </CardHeader>
@@ -261,8 +261,8 @@ export default function AdminPage() {
                   className="w-full text-left p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-blue-100 rounded-lg">
-                      <Users className="h-4 w-4 text-blue-600" />
+                    <div className="p-2 bg-gray-100 rounded-lg">
+                      <Users className="h-4 w-4 text-gray-700" />
                     </div>
                     <div>
                       <p className="font-medium text-gray-900">

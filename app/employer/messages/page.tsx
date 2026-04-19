@@ -292,7 +292,7 @@ if (!isAuthed) return <div className="p-8">Vérification...</div>;
 
   return (
     <EmployerProtection>
-      <div className="h-screen max-h-screen flex bg-slate-50 overflow-hidden">
+      <div className="h-[calc(100vh-100px)] max-h-[calc(100vh-100px)] flex bg-slate-50 overflow-hidden">
         {/* Conversations Sidebar - Style WhatsApp */}
         <div className={`bg-white border-r border-slate-200 flex flex-col h-full ${
           selectedConversation ? 'hidden sm:flex sm:w-80' : 'w-full sm:w-80'
@@ -492,7 +492,7 @@ if (!isAuthed) return <div className="p-8">Vérification...</div>;
                                   {message.sender_type === 'employer' && (
                                     <span className="flex items-center">
                                       {message.is_read ? (
-                                        <span className="text-blue-500">✓✓</span>
+                                        <span className="text-gray-700">✓✓</span>
                                       ) : (
                                         <span className="text-slate-400">✓</span>
                                       )}
@@ -543,7 +543,7 @@ if (!isAuthed) return <div className="p-8">Vérification...</div>;
                       value={newMessage}
                       onChange={(e) => setNewMessage(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && sendMessage()}
-                      className="w-full bg-slate-100 border-0 rounded-2xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                      className="w-full bg-slate-100 border-0 rounded-2xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-700 resize-none"
                       disabled={sending}
                     />
                   </div>
@@ -552,7 +552,7 @@ if (!isAuthed) return <div className="p-8">Vérification...</div>;
                   <Button 
                     onClick={sendMessage} 
                     disabled={sending || !newMessage.trim()}
-                    className="bg-green-500 hover:bg-green-600 text-white p-2 rounded-full shadow-lg transition-all duration-200 hover:scale-105"
+                    className="bg-green-500 hover:bg-blue-900 text-white p-2 rounded-full shadow-lg transition-all duration-200 hover:scale-105"
                   >
                     {sending ? (
                       <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>

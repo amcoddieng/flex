@@ -63,9 +63,9 @@ export default function EmployerLayout({
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-gray-50">
       {/* Modern Header */}
-      <header className="bg-white/90 backdrop-blur-md border-b border-slate-200/50 sticky top-0 z-40 shadow-sm">
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
             <Link href="/employer" className="flex items-center gap-2 group">
@@ -73,8 +73,8 @@ export default function EmployerLayout({
                 <span className="text-white font-bold text-sm">F</span>
               </div>
               <div>
-                <h1 className="text-lg font-bold text-slate-900">FlexJob</h1>
-                <p className="text-xs text-slate-600">Employeur</p>
+                <h1 className="text-lg font-bold text-gray-900">FlexJob</h1>
+                <p className="text-xs text-gray-600">Employeur</p>
               </div>
             </Link>
             
@@ -84,7 +84,7 @@ export default function EmployerLayout({
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="relative text-slate-700 hover:text-blue-600 transition-all duration-200 font-medium group text-sm"
+                  className="relative text-gray-700 hover:text-blue-600 transition-all duration-200 font-medium group text-sm"
                 >
                   {item.label}
                   <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-blue-600 to-purple-600 group-hover:w-full transition-all duration-200"></span>
@@ -100,10 +100,10 @@ export default function EmployerLayout({
                   )}
                 </Link>
               ))}
-              <div className="flex items-center gap-2 ml-4 pl-4 border-l border-slate-200">
+              <div className="flex items-center gap-2 ml-4 pl-4 border-l border-gray-200">
                 <div className="text-right">
-                  <p className="text-xs font-medium text-slate-900">Employeur</p>
-                  <p className="text-xs text-slate-600">En ligne</p>
+                  <p className="text-xs font-medium text-gray-900">Employeur</p>
+                  <p className="text-xs text-gray-600">En ligne</p>
                 </div>
                 <div className="w-6 h-6 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white text-xs font-semibold">
                   E
@@ -112,7 +112,7 @@ export default function EmployerLayout({
                   variant="outline" 
                   size="sm" 
                   onClick={handleLogout} 
-                  className="flex items-center gap-1 border-slate-200 hover:bg-slate-50 hover:border-slate-300 transition-all duration-200 text-xs"
+                  className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 text-xs"
                 >
                   <LogOut className="h-3 w-3" />
                   Déconnexion
@@ -122,25 +122,25 @@ export default function EmployerLayout({
 
             {/* Mobile Menu Button */}
             <button
-              className="md:hidden p-2 rounded-lg hover:bg-slate-100 transition-colors"
+              className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
               {mobileMenuOpen ? (
-                <X className="h-6 w-6 text-slate-700" />
+                <X className="h-6 w-6 text-gray-700" />
               ) : (
-                <Menu className="h-6 w-6 text-slate-700" />
+                <Menu className="h-6 w-6 text-gray-700" />
               )}
             </button>
           </div>
 
           {/* Mobile Menu */}
           {mobileMenuOpen && (
-            <nav className="md:hidden mt-4 space-y-2 border-t border-slate-200 pt-4">
+            <nav className="md:hidden mt-4 space-y-2 border-t border-gray-200 pt-4">
               {EMPLOYER_MENU.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="flex items-center justify-between px-4 py-3 rounded-xl text-slate-700 hover:bg-slate-100 hover:text-blue-600 transition-all duration-200 font-medium"
+                  className="flex items-center justify-between px-4 py-3 rounded-xl text-gray-700 hover:bg-gray-100 hover:text-blue-600 transition-all duration-200 font-medium"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   <span>{item.label}</span>

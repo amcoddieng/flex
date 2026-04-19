@@ -1,5 +1,8 @@
 "use client";
 
+// ========================================
+// SECTION 1: IMPORTS ET DÉPENDANCES
+// ========================================
 import React, { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { decodeToken } from "@/lib/jwt";
@@ -25,6 +28,9 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
+// ========================================
+// SECTION 2: INTERFACE ET TYPES
+// ========================================
 interface Job {
   id: number;
   title: string;
@@ -44,9 +50,15 @@ interface Job {
   applicants_count?: number;
 }
 
+// ========================================
+// SECTION 3: COMPOSANT PRINCIPAL - ÉTATS ET RÉFÉRENCES
+// ========================================
 export default function StudentJobsPage() {
+  // États d'authentification et chargement
   const [isAuthed, setIsAuthed] = useState(false);
   const [loading, setLoading] = useState(true);
+  
+  // États des données
   const [jobs, setJobs] = useState<Job[]>([]);
   const [filteredJobs, setFilteredJobs] = useState<Job[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -57,6 +69,7 @@ export default function StudentJobsPage() {
   const [applyingJob, setApplyingJob] = useState<number | null>(null);
   const [showApplicationModal, setShowApplicationModal] = useState(false);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+  // États pour le formulaire de candidature
   const [applicationData, setApplicationData] = useState({
     message: '',
     availability: '',
@@ -68,43 +81,54 @@ export default function StudentJobsPage() {
   });
   const [applicationError, setApplicationError] = useState<string | null>(null);
   const [applicationSuccess, setApplicationSuccess] = useState<string | null>(null);
+  
+  // Références et navigation
   const router = useRouter();
   const hasCheckedAuth = useRef(false);
 
-  const getValidToken = (): string | null => {
-    if (typeof window === 'undefined') return null;
-    const token = localStorage.getItem('token');
-    if (!token) return null;
-    const decoded = decodeToken(token);
-    if (!decoded || decoded.role !== 'STUDENT') {
-      localStorage.removeItem('token');
-      return null;
-    }
-    return token;
-  };
+// ========================================
+// SECTION 4: FONCTIONS UTILITAIRES ET AUTHENTIFICATION
+// ========================================
+// Validation et récupération du token JWT
+const getValidToken = (): string | null => {
+  if (typeof window === 'undefined') return null;
+  const token = localStorage.getItem('token');
+  if (!token) return null;
+  const decoded = decodeToken(token);
+  if (!decoded || decoded.role !== 'STUDENT') {
+    localStorage.removeItem('token');
+    return null;
+  }
+  return token;
+};
 
-  useEffect(() => {
-    if (hasCheckedAuth.current) return;
-    hasCheckedAuth.current = true;
+// ========================================
+// SECTION 5: EFFECTS ET CYCLE DE VIE
+// ========================================
+// Hook d'effet pour l'authentification et chargement initial
+useEffect(() => {
+  if (hasCheckedAuth.current) return;
+  hasCheckedAuth.current = true;
 
-    const token = getValidToken();
-    if (!token) {
-      router.push('/login');
-      return;
-    }
-    setIsAuthed(true);
-    fetchJobs();
-  }, [router]);
+  const token = getValidToken();
+  if (!token) {
+    router.push('/login');
+    return;
+  }
+  setIsAuthed(true);
+  fetchJobs();
+}, [router]);
 
-  useEffect(() => {
-    let filtered = jobs;
+// Hook d'effet pour le filtrage des offres
+useEffect(() => {
+  let filtered = jobs;
 
-    // Filter by search term
-    if (searchTerm) {
-      filtered = filtered.filter(job => 
-        job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (job.company && job.company.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (job.employer_company && job.employer_company.toLowerCase().includes(searchTerm.toLowerCase())) ||
+  // Filter by search term
+  if (searchTerm) {
+    filtered = filtered.filter(job => 
+      job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (job.company && job.company.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (job.employer_company && job.employer_company.toLowerCase().includes(searchTerm.toLowerCase())) ||
         job.location.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
@@ -347,7 +371,7 @@ export default function StudentJobsPage() {
       {loading ? (
         <div className="flex items-center justify-center py-20">
           <div className="flex flex-col items-center gap-4">
-            <div className="w-12 h-12 border-4 border-gray-200 border-t-gray-600 rounded-full animate-spin"></div>
+            <div className="w-12 h-12 border-4 border-gray-200 border-t-blue-600 rounded-full animate-spin"></div>
             <p className="text-gray-600">Chargement des offres...</p>
           </div>
         </div>
@@ -358,7 +382,7 @@ export default function StudentJobsPage() {
               {/* Header */}
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors mb-2">
+                  <h3 className="text-lg font-semibold text-gray-900 group-hover:text-gray-700 transition-colors mb-2">
                     {job.title}
                   </h3>
                   <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -427,7 +451,7 @@ export default function StudentJobsPage() {
                   <Button
                     onClick={() => openApplicationModal(job)}
                     disabled={applyingJob === job.id}
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                    className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
                   >
                     {applyingJob === job.id ? (
                       <>
@@ -484,13 +508,13 @@ export default function StudentJobsPage() {
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white/95 backdrop-blur-md rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-white/20">
             {/* Modal Header */}
-            <div className="p-6 border-b border-slate-200/50 bg-gradient-to-r from-blue-50/50 to-purple-50/50">
+            <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-purple-50">
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                     Postuler à : {selectedJob.title}
                   </h2>
-                  <p className="text-sm text-slate-600 mt-1 flex items-center gap-2">
+                  <p className="text-sm text-gray-600 mt-1 flex items-center gap-2">
                     <Building className="h-4 w-4" />
                     {selectedJob.employer_company || selectedJob.company}
                     <MapPin className="h-4 w-4 ml-2" />
@@ -499,7 +523,7 @@ export default function StudentJobsPage() {
                 </div>
                 <button
                   onClick={closeModal}
-                  className="p-2 rounded-lg text-slate-400 hover:bg-white/60 hover:text-slate-600 transition-all duration-200 backdrop-blur-sm"
+                  className="p-2 rounded-lg text-gray-400 hover:bg-white/60 hover:text-gray-600 transition-all duration-200 backdrop-blur-sm"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -525,8 +549,8 @@ export default function StudentJobsPage() {
               <div className="space-y-5">
                 {/* Message de motivation */}
                 <div className="space-y-2">
-                  <label className="block text-sm font-semibold text-slate-700 flex items-center gap-2">
-                    <FileText className="h-4 w-4 text-blue-500" />
+                  <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-gray-500" />
                     Message de motivation *
                   </label>
                   <textarea
@@ -534,14 +558,14 @@ export default function StudentJobsPage() {
                     rows={4}
                     value={applicationData.message}
                     onChange={(e) => setApplicationData(prev => ({ ...prev, message: e.target.value }))}
-                    className="w-full px-4 py-3 border border-slate-200/50 rounded-xl bg-white/60 backdrop-blur-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all duration-200 placeholder-slate-400"
+                    className="w-full px-4 py-3 border border-gray-200/50 rounded-xl bg-white/60 backdrop-blur-sm focus:ring-2 focus:ring-gray-500/50 focus:border-gray-500 transition-all duration-200 placeholder-gray-400"
                     placeholder="Expliquez pourquoi vous êtes intéressé par cette offre..."
                   />
                 </div>
 
                 {/* Disponibilité */}
                 <div className="space-y-2">
-                  <label className="block text-sm font-semibold text-slate-700 flex items-center gap-2">
+                  <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
                     <Clock className="h-4 w-4 text-green-500" />
                     Disponibilité
                   </label>
@@ -549,14 +573,14 @@ export default function StudentJobsPage() {
                     type="text"
                     value={applicationData.availability}
                     onChange={(e) => setApplicationData(prev => ({ ...prev, availability: e.target.value }))}
-                    className="w-full px-4 py-3 border border-slate-200/50 rounded-xl bg-white/60 backdrop-blur-sm focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all duration-200 placeholder-slate-400"
+                    className="w-full px-4 py-3 border border-gray-200/50 rounded-xl bg-white/60 backdrop-blur-sm focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all duration-200 placeholder-gray-400"
                     placeholder="Ex: Disponible immédiatement, flexible..."
                   />
                 </div>
 
                 {/* Expérience */}
                 <div className="space-y-2">
-                  <label className="block text-sm font-semibold text-slate-700 flex items-center gap-2">
+                  <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
                     <Briefcase className="h-4 w-4 text-purple-500" />
                     Expérience pertinente
                   </label>
@@ -572,7 +596,7 @@ export default function StudentJobsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Date de début */}
                   <div className="space-y-2">
-                    <label className="block text-sm font-semibold text-slate-700 flex items-center gap-2">
+                    <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
                       <Calendar className="h-4 w-4 text-orange-500" />
                       Date de disponibilité
                     </label>
@@ -586,7 +610,7 @@ export default function StudentJobsPage() {
 
                   {/* Date d'entretien */}
                   <div className="space-y-2">
-                    <label className="block text-sm font-semibold text-slate-700 flex items-center gap-2">
+                    <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
                       <Calendar className="h-4 w-4 text-indigo-500" />
                       Date d'entretien souhaitée
                     </label>
@@ -602,7 +626,7 @@ export default function StudentJobsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Heure d'entretien */}
                   <div className="space-y-2">
-                    <label className="block text-sm font-semibold text-slate-700 flex items-center gap-2">
+                    <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
                       <Clock className="h-4 w-4 text-pink-500" />
                       Heure d'entretien souhaitée
                     </label>
@@ -616,7 +640,7 @@ export default function StudentJobsPage() {
 
                   {/* Lieu d'entretien */}
                   <div className="space-y-2">
-                    <label className="block text-sm font-semibold text-slate-700 flex items-center gap-2">
+                    <label className="block text-sm font-semibold text-gray-700 flex items-center gap-2">
                       <MapPin className="h-4 w-4 text-teal-500" />
                       Lieu d'entretien souhaité
                     </label>

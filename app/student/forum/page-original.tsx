@@ -10,16 +10,11 @@ import {
   Reply, 
   Plus,
   Search,
-  Filter,
-  TrendingUp,
-  Pin,
-  Calendar,
   User,
   Building,
   Send,
-  ThumbsUp,
-  ThumbsDown,
-  Star,
+  Calendar,
+  Pin,
   Hash
 } from "lucide-react";
 
@@ -63,6 +58,7 @@ export default function StudentForumPage() {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [submittingReply, setSubmittingReply] = useState(false);
   const router = useRouter();
   const hasCheckedAuth = useRef(false);
 
@@ -183,6 +179,7 @@ export default function StudentForumPage() {
         setShowNewTopicModal(false);
         setNewTopic({ title: '', content: '', category: '', tags: '' });
         setSuccess('Sujet créé avec succès');
+        setTimeout(() => setSuccess(null), 3000);
       } else {
         throw new Error(data.error || 'Création échouée');
       }
@@ -190,12 +187,14 @@ export default function StudentForumPage() {
       const message = err instanceof Error ? err.message : 'Erreur inconnue';
       console.error('handleCreateTopic error:', message);
       setError(message);
+      setTimeout(() => setError(null), 3000);
     }
   };
 
-  const handleReply = async () => {
+  const handleReplySubmit = async () => {
     if (!newReply.trim() || !selectedTopic) return;
 
+    setSubmittingReply(true);
     try {
       const token = getValidToken();
       if (!token) return;
@@ -218,11 +217,15 @@ export default function StudentForumPage() {
         setReplies(prev => [...prev, data.data]);
         setNewReply('');
         setSuccess('Réponse ajoutée avec succès');
+        setTimeout(() => setSuccess(null), 3000);
       }
     } catch (err: any) {
       const message = err instanceof Error ? err.message : 'Erreur inconnue';
-      console.error('handleReply error:', message);
+      console.error('handleReplySubmit error:', message);
       setError(message);
+      setTimeout(() => setError(null), 3000);
+    } finally {
+      setSubmittingReply(false);
     }
   };
 
@@ -451,7 +454,7 @@ export default function StudentForumPage() {
                       </div>
                       <p className="text-sm text-gray-800 leading-relaxed">{selectedTopic.content}</p>
                       <div className="flex items-center justify-between mt-2 text-xs text-gray-500">
-                        <span>{new Date(selectedTopic.created_at).toLocaleString('fr-FR')}</span>
+                        <span>{formatDate(selectedTopic.created_at)}</span>
                         <div className="flex items-center gap-2">
                           <button
                             onClick={(e) => {
@@ -482,7 +485,7 @@ export default function StudentForumPage() {
                         </div>
                         <p className="text-sm text-gray-800 leading-relaxed">{reply.content}</p>
                         <div className="flex items-center justify-between mt-2 text-xs text-gray-500">
-                          <span>{new Date(reply.created_at).toLocaleString('fr-FR')}</span>
+                          <span>{formatDate(reply.created_at)}</span>
                           <div className="flex items-center gap-2">
                             <button
                               onClick={(e) => {
@@ -517,6 +520,12 @@ export default function StudentForumPage() {
                     placeholder="Tapez votre réponse..."
                     className="flex-1 resize-none border border-gray-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#25D366]/20 focus:border-[#25D366]"
                     rows={1}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleReplySubmit();
+                      }
+                    }}
                   />
                   <Button
                     onClick={handleReplySubmit}
@@ -543,167 +552,19 @@ export default function StudentForumPage() {
           )}
         </div>
       </div>
-    </div>
-  );
-};
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-slate-900 flex items-center gap-2">
-                          {topic.title}
-                          {topic.is_pinned && <Pin className="h-4 w-4 text-red-500" />}
-                        </h3>
-                        <div className="flex items-center gap-2 text-sm text-slate-600">
-                          <User className="h-3 w-3" />
-                          <span>{topic.author_name}</span>
-                          {topic.author_university && (
-                            <>
-                              <Building className="h-3 w-3" />
-                              <span>{topic.author_university}</span>
-                            </>
-                          )}
-                          <Calendar className="h-3 w-3" />
-                          <span>{formatDate(topic.created_at)}</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {topic.category && (
-                        <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">
-                          {topic.category}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <p className="text-slate-700 mb-4 line-clamp-3">{topic.content}</p>
-                  
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleLikeTopic(topic.id);
-                        }}
-                        className="flex items-center gap-1 text-slate-600 hover:text-red-500 transition-colors"
-                      >
-                        <Heart className="h-4 w-4" />
-                        <span className="text-sm">{topic.likes}</span>
-                      </button>
-                      <div className="flex items-center gap-1 text-slate-600">
-                        <Reply className="h-4 w-4" />
-                        <span className="text-sm">Répondre</span>
-                      </div>
-                    </div>
-                    
-                    {topic.tags && (
-                      <div className="flex items-center gap-2">
-                        <Hash className="h-3 w-3 text-slate-400" />
-                        <div className="flex gap-1">
-                          {topic.tags.split(',').map((tag, index) => (
-                            <span key={index} className="px-2 py-1 bg-slate-100 text-slate-600 text-xs rounded">
-                              {tag.trim()}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
 
-        {/* Topic Detail Sidebar */}
-        {selectedTopic && (
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-xl border border-slate-200/50 shadow-sm p-6 sticky top-4">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-slate-900">Discussion</h2>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSelectedTopic(null)}
-                >
-                  ×
-                </Button>
-              </div>
-              
-              <div className="space-y-4 max-h-96 overflow-y-auto">
-                {/* Topic Content */}
-                <div className="border-b border-slate-200 pb-4">
-                  <h3 className="font-semibold text-slate-900 mb-2">{selectedTopic.title}</h3>
-                  <p className="text-slate-700 text-sm leading-relaxed">{selectedTopic.content}</p>
-                  <div className="flex items-center gap-2 mt-3 text-xs text-slate-600">
-                    <User className="h-3 w-3" />
-                    <span>{selectedTopic.author_name}</span>
-                    <Calendar className="h-3 w-3" />
-                    <span>{formatDate(selectedTopic.created_at)}</span>
-                  </div>
-                </div>
-                
-                {/* Replies */}
-                <div className="space-y-3">
-                  <h4 className="font-medium text-slate-900">Réponses ({replies.length})</h4>
-                  {replies.length === 0 ? (
-                    <p className="text-slate-600 text-sm">Soyez le premier à répondre !</p>
-                  ) : (
-                    replies.map((reply) => (
-                      <div key={reply.id} className="border-b border-slate-100 pb-3">
-                        <div className="flex items-start gap-2">
-                          <div className="w-8 h-8 rounded-full bg-gradient-to-r from-green-500 to-blue-600 flex items-center justify-center text-white font-semibold text-xs">
-                            {reply.author_name?.charAt(0).toUpperCase()}
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="font-medium text-slate-900 text-sm">{reply.author_name}</span>
-                              <span className="text-xs text-slate-600">{formatDate(reply.created_at)}</span>
-                              {reply.is_helpful && (
-                                <Star className="h-3 w-3 text-yellow-500" />
-                              )}
-                            </div>
-                            <p className="text-slate-700 text-sm leading-relaxed">{reply.content}</p>
-                            <div className="flex items-center gap-3 mt-2">
-                              <button
-                                onClick={() => handleLikeReply(reply.id)}
-                                className="flex items-center gap-1 text-slate-600 hover:text-red-500 transition-colors text-xs"
-                              >
-                                <ThumbsUp className="h-3 w-3" />
-                                <span>{reply.likes}</span>
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-                
-                {/* Reply Input */}
-                <div className="pt-4 border-t border-slate-200">
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      placeholder="Écrire une réponse..."
-                      value={newReply}
-                      onChange={(e) => setNewReply(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && handleReply()}
-                      className="flex-1 px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm"
-                    />
-                    <Button
-                      onClick={handleReply}
-                      size="sm"
-                      className="gap-1"
-                    >
-                      <Send className="h-3 w-3" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
+      {/* Success/Error Messages */}
+      {success && (
+        <div className="fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg">
+          {success}
+        </div>
+      )}
+      
+      {error && (
+        <div className="fixed bottom-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg">
+          {error}
+        </div>
+      )}
 
       {/* New Topic Modal */}
       {showNewTopicModal && (

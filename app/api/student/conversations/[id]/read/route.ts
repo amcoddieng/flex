@@ -52,7 +52,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
       // Verify conversation belongs to this student
       const [conversationCheck] = await connection.execute(
-        'SELECT id FROM conversations WHERE id = ? AND student_id = ?',
+        'SELECT id FROM conversation WHERE id = ? AND student_id = ?',
         [conversationId, studentId]
       );
 

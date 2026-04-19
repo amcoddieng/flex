@@ -96,11 +96,11 @@ export default function StudentDashboard() {
   return (
     <div className="space-y-6">
       {/* Welcome Banner */}
-      <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl p-6 text-white">
+      <div className="bg-gradient-to-br from-gray-700 to-gray-800 rounded-xl p-6 text-white">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold mb-2">Bienvenue sur votre tableau de bord</h1>
-            <p className="text-blue-100">Découvrez les opportunités qui correspondent à votre profil</p>
+            <p className="text-gray-100">Découvrez les opportunités qui correspondent à votre profil</p>
           </div>
           <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center">
             <UserPlus className="h-8 w-8 text-white" />
@@ -108,13 +108,13 @@ export default function StudentDashboard() {
         </div>
         <div className="flex gap-3 mt-6">
           <Link href="/student/jobs">
-            <Button variant="secondary" className="bg-white/20 hover:bg-white/30 border border-white/30 text-white">
+            <Button variant="secondary" className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white border-0">
               <Search className="h-4 w-4 mr-2" />
               Explorer les offres
             </Button>
           </Link>
           <Link href="/student/applications">
-            <Button variant="secondary" className="bg-white/20 hover:bg-white/30 border border-white/30 text-white">
+            <Button variant="secondary" className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white border-0">
               <FileText className="h-4 w-4 mr-2" />
               Mes candidatures
             </Button>
@@ -131,8 +131,8 @@ export default function StudentDashboard() {
       {loading ? (
         <div className="flex items-center justify-center py-20">
           <div className="flex flex-col items-center gap-4">
-            <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
-            <p className="text-slate-600">Chargement...</p>
+            <div className="w-12 h-12 border-4 border-gray-200 border-t-gray-700 rounded-full animate-spin"></div>
+            <p className="text-gray-600">Chargement...</p>
           </div>
         </div>
       ) : stats ? (
@@ -140,11 +140,11 @@ export default function StudentDashboard() {
           {/* Modern Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Total Applications */}
-            <div className="group relative bg-white rounded-xl shadow hover:shadow-lg transition-all duration-300 border border-slate-200/50 overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <div className="group relative bg-white rounded-xl shadow hover:shadow-lg transition-all duration-300 border border-gray-200 overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-gray-700/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
               <div className="relative p-4">
                 <div className="flex items-center justify-between mb-3">
-                  <div className="w-10 h-10 rounded-lg bg-blue-500 flex items-center justify-center shadow">
+                  <div className="w-10 h-10 rounded-lg bg-gray-700 flex items-center justify-center shadow">
                     <FileText className="h-5 w-5 text-white" />
                   </div>
                   <div className="flex items-center gap-1 text-green-600 text-xs font-medium">
@@ -153,11 +153,11 @@ export default function StudentDashboard() {
                   </div>
                 </div>
                 <div>
-                  <p className="text-slate-600 text-xs font-medium mb-1">Candidatures envoyées</p>
-                  <p className="text-2xl font-bold text-slate-900">{stats.applications?.total || 0}</p>
+                  <p className="text-gray-600 text-xs font-medium mb-1">Candidatures envoyées</p>
+                  <p className="text-2xl font-bold text-gray-900">{stats.applications?.total || 0}</p>
                 </div>
-                <div className="mt-4 pt-4 border-t border-slate-100">
-                  <Link href="/student/applications" className="text-blue-600 text-sm font-medium inline-flex items-center gap-1 hover:gap-2 transition-all">
+                <div className="mt-4 pt-4 border-t border-gray-100">
+                  <Link href="/student/applications" className="text-gray-600 text-sm font-medium inline-flex items-center gap-1 hover:gap-2 transition-all">
                     Voir les candidatures <ArrowRight className="h-4 w-4" />
                   </Link>
                 </div>
@@ -165,7 +165,7 @@ export default function StudentDashboard() {
             </div>
 
             {/* Pending Applications */}
-            <div className="group relative bg-white rounded-xl shadow hover:shadow-lg transition-all duration-300 border border-slate-200/50 overflow-hidden">
+            <div className="group relative bg-white rounded-xl shadow hover:shadow-lg transition-all duration-300 border border-gray-200 overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
               <div className="relative p-4">
                 <div className="flex items-center justify-between mb-3">
@@ -178,10 +178,10 @@ export default function StudentDashboard() {
                   </div>
                 </div>
                 <div>
-                  <p className="text-slate-600 text-xs font-medium mb-1">En attente de réponse</p>
-                  <p className="text-2xl font-bold text-slate-900">{stats.applications?.pending || 0}</p>
+                  <p className="text-gray-600 text-xs font-medium mb-1">En attente de réponse</p>
+                  <p className="text-2xl font-bold text-gray-900">{stats.applications?.pending || 0}</p>
                 </div>
-                <div className="mt-4 pt-4 border-t border-slate-100">
+                <div className="mt-4 pt-4 border-t border-gray-100">
                   <p className="text-slate-600 text-xs">
                     {stats.applications?.total > 0 ? Math.round(((stats.applications?.pending || 0) / (stats.applications?.total || 1)) * 100) : 0}% du total
                   </p>
@@ -190,7 +190,7 @@ export default function StudentDashboard() {
             </div>
 
             {/* Interviews */}
-            <div className="group relative bg-white rounded-xl shadow hover:shadow-lg transition-all duration-300 border border-slate-200/50 overflow-hidden">
+            <div className="group relative bg-white rounded-xl shadow hover:shadow-lg transition-all duration-300 border border-gray-200 overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
               <div className="relative p-4">
                 <div className="flex items-center justify-between mb-3">

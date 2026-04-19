@@ -427,7 +427,7 @@ export default function StudentForumPage() {
     return (
       <div className="flex items-center justify-center py-20">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-gray-200 border-t-gray-600 rounded-full animate-spin"></div>
+          <div className="w-12 h-12 border-4 border-gray-200 border-t-blue-600 rounded-full animate-spin"></div>
           <p className="text-gray-600">Chargement du forum...</p>
         </div>
       </div>
@@ -435,7 +435,7 @@ export default function StudentForumPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 p-4">
+    <div className="mx-auto space-y-6 p-4">
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
@@ -444,9 +444,9 @@ export default function StudentForumPage() {
         </div>
         <Button
           onClick={() => setShowNewTopicModal(true)}
-          className="gap-2 bg-blue-600 hover:bg-blue-700"
+          className="gap-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
         >
-          <Plus className="h-4 w-4" />
+          <Plus className="h-4 w-4"/>
           Nouveau Sujet
         </Button>
       </div>
@@ -474,13 +474,13 @@ export default function StudentForumPage() {
               placeholder="Rechercher des sujets..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-700/20 focus:border-gray-700"
             />
           </div>
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+            className="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-700/20 focus:border-gray-700"
           >
             <option value="">Toutes les catégories</option>
             {CATEGORIES.map(cat => (

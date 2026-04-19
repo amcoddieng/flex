@@ -289,7 +289,9 @@ export default function StudentMessagesPage() {
   return (
     <div className="h-[calc(100vh-200px)] flex gap-4">
       {/* Conversations List */}
-      <div className="w-96 bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col">
+      <div className={`bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col ${
+        selectedConversation ? 'hidden md:flex md:w-96' : 'w-full md:w-96'
+      }`}>
         {/* Header */}
         <div className="p-4 border-b border-gray-100">
           <h2 className="text-lg font-semibold text-gray-900 mb-3">Messages</h2>
@@ -368,7 +370,9 @@ export default function StudentMessagesPage() {
       </div>
 
       {/* Chat Area */}
-      <div className="flex-1 bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col">
+      <div className={`flex-1 bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col ${
+        selectedConversation ? 'flex' : 'hidden md:flex'
+      }`}>
         {selectedConversation ? (
           <>
             {/* Chat Header */}
@@ -384,9 +388,21 @@ export default function StudentMessagesPage() {
                   )}
                 </div>
               </div>
-              <Button variant="ghost" size="sm">
-                <MoreVertical className="h-4 w-4" />
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => setSelectedConversation(null)}
+                  className="md:hidden"
+                >
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                  </svg>
+                </Button>
+                <Button variant="ghost" size="sm" className="hidden md:flex">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
 
             {/* Messages */}
@@ -444,7 +460,7 @@ export default function StudentMessagesPage() {
                         </div>
                       </div>
                       {message.sender_type === 'STUDENT' && (
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-cyan-600 flex items-center justify-center text-white font-semibold text-xs ml-2 flex-shrink-0">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-r from-gray-700 to-gray-800 flex items-center justify-center text-white font-semibold text-xs ml-2 flex-shrink-0">
                           <span>MOI</span>
                         </div>
                       )}
@@ -476,13 +492,13 @@ export default function StudentMessagesPage() {
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                   placeholder="Tapez votre message..."
-                  className="flex-1 resize-none border border-gray-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  className="flex-1 resize-none border border-gray-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-gray-700/20 focus:border-gray-700"
                   rows={1}
                 />
                 <Button
                   onClick={sendMessage}
                   disabled={!newMessage.trim() || sendingMessage}
-                  className="bg-blue-600 hover:bg-blue-700"
+                  className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
                 >
                   {sendingMessage ? (
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />

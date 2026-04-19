@@ -1,9 +1,14 @@
 "use client";
 
+// ========================================
+// SECTION 1: IMPORTS ET DÉPENDANCES
+// ========================================
+// Imports React et hooks nécessaires
 import React, { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { decodeToken } from "@/lib/jwt";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { 
   User, 
   Mail, 
@@ -18,6 +23,7 @@ import {
   X,
   Camera,
   Upload,
+  Settings,
   Building,
   Award,
   DollarSign,
@@ -30,6 +36,10 @@ import {
   BookOpen
 } from "lucide-react";
 
+// ========================================
+// SECTION 2: INTERFACE ET TYPES
+// ========================================
+// Définition du type pour les données du profil étudiant
 interface StudentProfile {
   id: number;
   user_id: number;
@@ -53,45 +63,65 @@ interface StudentProfile {
   updated_at?: string;
 }
 
+// ========================================
+// SECTION 3: COMPOSANT PRINCIPAL - ÉTATS ET RÉFÉRENCES
+// ========================================
 export default function StudentProfilePage() {
+  // États d'authentification et chargement
   const [isAuthed, setIsAuthed] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  
+  // États du profil et formulaire
   const [profile, setProfile] = useState<StudentProfile | null>(null);
   const [editMode, setEditMode] = useState(false);
-  const [formData, setFormData] = useState<Partial<StudentProfile>>({});
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [formData, setFormData] = useState<Partial<StudentProfile>>({});
+  
+  // Références et navigation
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
   const hasCheckedAuth = useRef(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const getValidToken = (): string | null => {
-    if (typeof window === 'undefined') return null;
-    const token = localStorage.getItem('token');
-    if (!token) return null;
-    const decoded = decodeToken(token);
-    if (!decoded || decoded.role !== 'STUDENT') {
-      localStorage.removeItem('token');
-      return null;
-    }
-    return token;
-  };
+  // ========================================
+// SECTION 4: FONCTIONS UTILITAIRES ET AUTHENTIFICATION
+// ========================================
+// Validation et récupération du token JWT
+const getValidToken = (): string | null => {
+  if (typeof window === 'undefined') return null;
+  const token = localStorage.getItem('token');
+  if (!token) return null;
+  const decoded = decodeToken(token);
+  if (!decoded || decoded.role !== 'STUDENT') {
+    localStorage.removeItem('token');
+    return null;
+  }
+  return token;
+};
 
-  useEffect(() => {
-    if (hasCheckedAuth.current) return;
-    hasCheckedAuth.current = true;
+// ========================================
+// SECTION 5: EFFECTS ET CYCLE DE VIE
+// ========================================
+// Hook d'effet pour l'authentification au chargement
+useEffect(() => {
+  if (hasCheckedAuth.current) return;
+  hasCheckedAuth.current = true;
 
-    const token = getValidToken();
-    if (!token) {
-      router.push('/login');
-      return;
-    }
-    setIsAuthed(true);
-    fetchProfile();
-  }, [router]);
+  const token = getValidToken();
+  if (!token) {
+    router.push('/login');
+    return;
+  }
+  setIsAuthed(true);
+  fetchProfile();
+}, [router]);
 
-  const fetchProfile = async () => {
+// ========================================
+// SECTION 6: FONCTIONS API - RÉCUPÉRATION DES DONNÉES
+// ========================================
+// Récupération des données du profil depuis l'API
+const fetchProfile = async () => {
     setLoading(true);
     setError(null);
     try {
@@ -152,7 +182,11 @@ export default function StudentProfilePage() {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSave = async () => {
+  // ========================================
+// SECTION 7: FONCTIONS DE GESTION DU PROFIL
+// ========================================
+// Sauvegarde des modifications du profil
+const handleSave = async () => {
     setSaving(true);
     setError(null);
     setSuccess(null);
@@ -207,14 +241,19 @@ export default function StudentProfilePage() {
     }
   };
 
-  const handleCancel = () => {
+// Annulation des modifications
+const handleCancel = () => {
     setFormData(profile || {});
     setEditMode(false);
     setError(null);
     setSuccess(null);
   };
 
-  const handleProfilePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+// ========================================
+// SECTION 8: FONCTIONS D'UPLOAD DE FICHIERS
+// ========================================
+// Upload de la photo de profil
+const handleProfilePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -224,7 +263,7 @@ export default function StudentProfilePage() {
     }
 
     const formData = new FormData();
-    formData.append('profile_photo', file);
+    formData.append('file', file);
 
     try {
       const token = getValidToken();
@@ -239,8 +278,50 @@ export default function StudentProfilePage() {
 
       const data = await res.json();
       if (data.success) {
-        setFormData(prev => ({ ...prev, profile_photo: data.profile_photo }));
+        setFormData(prev => ({ ...prev, profile_photo: data.profilePhoto }));
         setSuccess('Photo de profil mise à jour avec succès');
+        // Rafraîchir le profil pour obtenir la nouvelle photo
+        fetchProfile();
+      } else {
+        throw new Error(data.error || 'Upload échoué');
+      }
+    } catch (err: any) {
+      const message = err instanceof Error ? err.message : 'Erreur inconnue';
+      setError(message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleStudentCardUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/') && file.type !== 'application/pdf') {
+      setError('Veuillez uploader une image ou un PDF');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const token = getValidToken();
+      if (!token) return;
+
+      setSaving(true);
+      const res = await fetch('/api/student/upload-student-card', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setFormData(prev => ({ ...prev, student_card_pdf: data.studentCardPdf }));
+        setSuccess('Carte étudiante mise à jour avec succès');
+        // Rafraîchir le profil pour obtenir la nouvelle carte
+        fetchProfile();
       } else {
         throw new Error(data.error || 'Upload échoué');
       }
@@ -290,68 +371,47 @@ export default function StudentProfilePage() {
     }
   };
 
+  // ========================================
+// SECTION 9: RENDU JSX - COMPOSANT PRINCIPAL
+// ========================================
+  // État de chargement - vérification authentification
   if (!isAuthed) {
     return <div className="p-8">Vérification...</div>;
   }
 
+  // État de chargement - spinner
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-gray-200 border-t-gray-600 rounded-full animate-spin"></div>
+          <div className="w-12 h-12 border-4 border-gray-200 border-t-blue-600 rounded-full animate-spin"></div>
           <p className="text-gray-600">Chargement du profil...</p>
         </div>
       </div>
     );
   }
 
+  // Rendu principal du composant
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Mon profil</h1>
-          <p className="text-gray-600">Gérez vos informations personnelles</p>
-        </div>
-        <div className="flex items-center gap-3">
-          {editMode ? (
-            <>
-              <Button
-                variant="outline"
-                onClick={handleCancel}
-                disabled={saving}
-                className="gap-2"
-              >
-                <X className="h-4 w-4" />
-                Annuler
-              </Button>
-              <Button
-                onClick={handleSave}
-                disabled={saving}
-                className="gap-2"
-              >
-                {saving ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Sauvegarde...
-                  </>
-                ) : (
-                  <>
-                    <Save className="h-4 w-4" />
-                    Sauvegarder
-                  </>
-                )}
-              </Button>
-            </>
-          ) : (
-            <Button
-              onClick={() => setEditMode(true)}
-              className="gap-2"
-            >
-              <Edit2 className="h-4 w-4" />
-              Modifier
+    <div className="">
+      {/* ========================================
+          SOUS-SECTION 9.1: HEADER DU PROFIL
+          ======================================== */}
+      <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6 border border-blue-100">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-slate-900 to-blue-600 bg-clip-text text-transparent">Mon Profil</h1>
+            <p className="text-slate-600 text-sm mt-1">Gérez vos informations et préférences</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <Button variant="outline" size="sm" className="gap-2 text-xs">
+              <Settings className="h-3 w-3" />
+              Paramètres
             </Button>
-          )}
+            <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-semibold">
+              {profile?.first_name?.charAt(0)?.toUpperCase() || 'S'}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -367,306 +427,293 @@ export default function StudentProfilePage() {
         </div>
       )}
 
-      {/* Profile Header Card */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-        <div className="p-6">
-          {/* Profile Header */}
-          <div className="flex items-start gap-6 mb-8">
-            <div className="relative">
+      {/* Modern Upload Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Profile Photo */}
+        <div className="bg-white rounded-xl shadow hover:shadow-lg transition-all duration-300 border border-slate-200/50 p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-base font-semibold text-slate-900 flex items-center gap-2">
+              <Camera className="h-4 w-4 text-blue-600" />
+              Photo de profil
+            </h3>
+            <span className="text-xs text-slate-500">JPEG, PNG</span>
+          </div>
+          <div className="space-y-4">
+            <div className="relative group">
               {profile?.profile_photo ? (
-                <img 
-                  src={profile.profile_photo} 
-                  alt="Profile" 
-                  className="w-32 h-32 rounded-full object-cover border-4 border-gray-100"
-                />
+                <div className="relative overflow-hidden rounded-xl">
+                  <img
+                    src={profile.profile_photo}
+                    alt="Profile"
+                    className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                    <Camera className="h-6 w-6 text-white" />
+                  </div>
+                </div>
               ) : (
-                <div className="w-32 h-32 rounded-full bg-blue-600 flex items-center justify-center text-white text-3xl font-bold">
-                  {profile?.first_name?.charAt(0).toUpperCase()}{profile?.last_name?.charAt(0).toUpperCase()}
+                <div className="w-full h-48 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 border-2 border-dashed border-slate-300 flex flex-col items-center justify-center group hover:border-blue-400 hover:bg-blue-50/30 transition-all duration-200">
+                  <Camera className="h-10 w-10 text-slate-400 group-hover:text-blue-600 transition-colors" />
+                  <p className="text-slate-600 mt-2 text-sm font-medium">Ajouter une photo</p>
+                  <p className="text-xs text-slate-500 mt-1">Cliquez pour parcourir</p>
                 </div>
               )}
-              {editMode && (
-                <button
-                  onClick={() => fileInputRef.current?.click()}
-                  className="absolute bottom-0 right-0 w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white hover:bg-blue-700 transition-colors border-2 border-white"
-                >
-                  <Camera className="h-5 w-5" />
-                </button>
-              )}
               <input
-                ref={fileInputRef}
                 type="file"
+                hidden
+                id="upload-profile-photo"
                 accept="image/*"
-                className="hidden"
                 onChange={handleProfilePhotoUpload}
               />
             </div>
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-2">
-                <h2 className="text-3xl font-bold text-gray-900">
-                  {profile?.first_name} {profile?.last_name}
-                </h2>
-                {profile?.validation_status && (
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                    profile.validation_status === 'VALIDATED' 
-                      ? 'bg-green-100 text-green-700' 
-                      : profile.validation_status === 'REJECTED'
-                      ? 'bg-red-100 text-red-700'
-                      : 'bg-yellow-100 text-yellow-700'
-                  }`}>
-                    {profile.validation_status === 'VALIDATED' && (
-                      <><CheckCircle className="h-4 w-4 inline mr-1" />Validé</>
-                    )}
-                    {profile.validation_status === 'REJECTED' && (
-                      <><XCircle className="h-4 w-4 inline mr-1" />Rejeté</>
-                    )}
-                    {profile.validation_status === 'PENDING' && (
-                      <><Clock className="h-4 w-4 inline mr-1" />En attente</>
-                    )}
-                  </span>
-                )}
-              </div>
-              <p className="text-gray-600 mb-3">{profile?.email}</p>
-              
-              {/* University and Department */}
-              {(profile?.university || profile?.department) && (
-                <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
-                  {profile?.university && (
-                    <div className="flex items-center gap-2">
-                      <Building className="h-4 w-4" />
-                      <span>{profile.university}</span>
-                    </div>
-                  )}
-                  {profile?.department && (
-                    <div className="flex items-center gap-2">
-                      <BookOpen className="h-4 w-4" />
-                      <span>{profile.department}</span>
-                    </div>
-                  )}
-                  {profile?.year_of_study && (
-                    <div className="flex items-center gap-2">
-                      <GraduationCap className="h-4 w-4" />
-                      <span>{profile.year_of_study}ème année</span>
-                    </div>
-                  )}
-                </div>
-              )}
-              
-              {/* Contact Info */}
-              <div className="flex items-center gap-4 text-sm text-gray-600">
-                {profile?.phone && (
-                  <div className="flex items-center gap-2">
-                    <Phone className="h-4 w-4" />
-                    <span>{profile.phone}</span>
-                  </div>
-                )}
-                {profile?.hourly_rate && (
-                  <div className="flex items-center gap-2">
-                    <DollarSign className="h-4 w-4" />
-                    <span>{profile.hourly_rate}/heure</span>
-                  </div>
-                )}
-              </div>
-              <div className="text-right">
-                <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mb-4">
-                  <Award className="h-8 w-8" />
-                </div>
-                {profile?.student_card_pdf ? (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="bg-white/10 border-white/20 text-white hover:bg-white/20"
-                    onClick={() => window.open(profile.student_card_pdf, '_blank')}
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    Télécharger
-                  </Button>
-                ) : editMode ? (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="bg-white/10 border-white/20 text-white hover:bg-white/20"
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    <Upload className="h-4 w-4 mr-2" />
-                    Upload
-                  </Button>
-                ) : (
-                  <p className="text-blue-100 text-sm">Non uploadée</p>
-                )}
-              </div>
-            </div>
+            <Button 
+              onClick={() => document.getElementById("upload-profile-photo")?.click()}
+              className="w-full gap-2 text-sm"
+              variant="outline"
+              disabled={false}
+            >
+              <Upload className="h-4 w-4" />
+              {profile?.profile_photo ? "Changer la photo" : "Ajouter une photo"}
+            </Button>
           </div>
         </div>
 
-        {/* Bio Section */}
-        <div className="mb-8 p-4 bg-gray-50 rounded-lg">
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">Biographie</h3>
-          {editMode ? (
-            <textarea
-              value={formData.bio || ''}
-              onChange={(e) => handleInputChange('bio', e.target.value)}
-              rows={3}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-              placeholder="Parlez-vous en quelques mots..."
-            />
-          ) : (
-            <p className="text-gray-600 leading-relaxed">
-              {profile?.bio || 'Aucune biographie renseignée.'}
-            </p>
+        {/* Student Card */}
+        <div className="bg-white rounded-xl shadow hover:shadow-lg transition-all duration-300 border border-slate-200/50 p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-base font-semibold text-slate-900 flex items-center gap-2">
+              <CreditCard className="h-4 w-4 text-green-600" />
+              Carte étudiante
+            </h3>
+            <span className="text-xs text-slate-500">PDF, JPEG</span>
+          </div>
+          <div className="space-y-4">
+            <div className="relative group">
+              {profile?.student_card_pdf ? (
+                <div className="relative overflow-hidden rounded-xl">
+                  {profile?.student_card_pdf.toLowerCase().endsWith('.pdf') ? (
+                    // PDF - Afficher un aperçu avec lien
+                    <div 
+                      className="w-full h-48 bg-gradient-to-br from-red-50 to-orange-100 border-2 border-red-200 rounded-xl flex flex-col items-center justify-center group-hover:scale-105 transition-transform duration-300 cursor-pointer"
+                      onClick={() => window.open(profile.student_card_pdf, '_blank')}
+                    >
+                      <div className="text-center">
+                        <FileText className="h-12 w-12 text-red-600 mx-auto mb-2" />
+                        <p className="text-red-800 font-medium">Carte étudiante (PDF)</p>
+                        <p className="text-red-600 text-xs">Cliquez pour ouvrir</p>
+                      </div>
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                        <div className="text-center text-white">
+                          <FileText className="h-8 w-8 mx-auto mb-1" />
+                          <p className="text-xs">Ouvrir dans un nouvel onglet</p>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    // Image - Afficher l'image directement
+                    <div className="relative group">
+                      <img
+                        src={profile.student_card_pdf}
+                        alt="Carte étudiante"
+                        className="w-full h-48 object-cover rounded-xl group-hover:scale-105 transition-transform duration-300"
+                      />
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                        <div className="text-center text-white">
+                          <CreditCard className="h-8 w-8 mx-auto mb-1" />
+                          <p className="text-xs">Cliquez pour agrandir</p>
+                        </div>
+                      </div>
+                      <div 
+                        className="absolute inset-0 cursor-pointer"
+                        onClick={() => window.open(profile.student_card_pdf, '_blank')}
+                      />
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="w-full h-48 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 border-2 border-dashed border-slate-300 flex flex-col items-center justify-center group hover:border-green-400 hover:bg-green-50/30 transition-all duration-200">
+                  <CreditCard className="h-10 w-10 text-slate-400 group-hover:text-green-600 transition-colors" />
+                  <p className="text-slate-600 mt-2 text-sm font-medium">Ajouter votre carte</p>
+                  <p className="text-xs text-slate-500 mt-1">Carte d'identité étudiante</p>
+                </div>
+              )}
+              <input
+                type="file"
+                hidden
+                id="upload-student-card"
+                accept="image/*,.pdf"
+                onChange={handleStudentCardUpload}
+              />
+            </div>
+            <Button 
+              onClick={() => document.getElementById("upload-student-card")?.click()}
+              className="w-full gap-2 text-sm"
+              variant="outline"
+              disabled={false}
+            >
+              <Upload className="h-4 w-4" />
+              {profile?.student_card_pdf ? "Changer la carte" : "Ajouter une carte"}
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Profile Information */}
+      <div className="bg-white rounded-xl shadow hover:shadow-lg transition-all duration-300 border border-slate-200/50 p-6 w-full">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-base font-semibold text-slate-900 flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+              <User className="h-4 w-4 text-white" />
+            </div>
+            Informations du profil
+          </h3>
+          {!editMode && (
+            <Button 
+              onClick={() => setEditMode(true)}
+              className="gap-2 text-sm"
+              variant="outline"
+            >
+              <Edit2 className="h-3 w-3" />
+              Modifier
+            </Button>
           )}
         </div>
 
-        {/* Skills Section */}
-        <div className="mb-8">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Compétences</h3>
-          <div className="flex flex-wrap gap-2">
-            {Array.isArray(profile?.skills) 
-              ? profile.skills.map((skill, index) => (
-                  <span key={index} className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">
-                    {skill}
-                  </span>
-                ))
-              : typeof profile?.skills === 'string' && profile.skills.trim()
-                ? profile.skills.split(',').map((skill, index) => (
-                    <span key={index} className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">
-                      {skill.trim()}
-                    </span>
-                  ))
-                : (
-                  <span className="text-gray-500 text-sm">Aucune compétence renseignée</span>
-                )
-            }
-          </div>
-        </div>
-
-        {/* Edit Mode Form */}
-        {editMode && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Personal Information */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Informations personnelles</h3>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Prénom</label>
-                <input
-                  type="text"
-                  value={formData.first_name || ''}
-                  onChange={(e) => handleInputChange('first_name', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                />
+        {!editMode ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="group p-4 rounded-lg border border-slate-200/50 hover:border-blue-200 hover:bg-blue-50/30 transition-all duration-200">
+              <div className="flex items-center gap-2 mb-2">
+                <Mail className="h-4 w-4 text-blue-600" />
+                <span className="text-sm font-medium text-slate-700">Email</span>
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Nom</label>
-                <input
-                  type="text"
-                  value={formData.last_name || ''}
-                  onChange={(e) => handleInputChange('last_name', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                <input
-                  type="email"
-                  value={formData.email || ''}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Téléphone</label>
-                <input
-                  type="tel"
-                  value={formData.phone || ''}
-                  onChange={(e) => handleInputChange('phone', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                />
-              </div>
-
+              <p className="text-slate-900 font-medium">{profile?.email}</p>
             </div>
 
-            {/* Academic Information */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Informations académiques</h3>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Université</label>
-                <input
-                  type="text"
-                  value={formData.university || ''}
-                  onChange={(e) => handleInputChange('university', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                />
+            <div className="group p-4 rounded-lg border border-slate-200/50 hover:border-blue-200 hover:bg-blue-50/30 transition-all duration-200">
+              <div className="flex items-center gap-2 mb-2">
+                <Building className="h-4 w-4 text-blue-600" />
+                <span className="text-sm font-medium text-slate-700">Université</span>
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Département</label>
-                <input
-                  type="text"
-                  value={formData.department || ''}
-                  onChange={(e) => handleInputChange('department', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Année d'étude</label>
-                <select
-                  value={formData.year_of_study || ''}
-                  onChange={(e) => handleInputChange('year_of_study', parseInt(e.target.value))}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                >
-                  <option value="">Sélectionner</option>
-                  <option value="1">1ère année</option>
-                  <option value="2">2ème année</option>
-                  <option value="3">3ème année</option>
-                  <option value="4">4ème année</option>
-                  <option value="5">5ème année</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Taux horaire (MAD)</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={formData.hourly_rate || ''}
-                  onChange={(e) => handleInputChange('hourly_rate', parseFloat(e.target.value))}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                />
-              </div>
-
+              <p className="text-slate-900 font-medium">{profile?.university || 'Non spécifié'}</p>
             </div>
 
-            {/* Bio */}
-            <div className="space-y-4 md:col-span-2">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Biographie</h3>
-              <textarea
-                value={formData.bio || ''}
-                onChange={(e) => handleInputChange('bio', e.target.value)}
-                rows={4}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                placeholder="Parlez-vous en quelques mots..."
-              />
+            <div className="group p-4 rounded-lg border border-slate-200/50 hover:border-blue-200 hover:bg-blue-50/30 transition-all duration-200">
+              <div className="flex items-center gap-2 mb-2">
+                <User className="h-4 w-4 text-blue-600" />
+                <span className="text-sm font-medium text-slate-700">Nom complet</span>
+              </div>
+              <p className="text-slate-900 font-medium">{profile?.first_name} {profile?.last_name}</p>
             </div>
 
-            {/* Skills */}
-            <div className="space-y-4 md:col-span-2">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Compétences</h3>
-              <textarea
-                value={Array.isArray(formData.skills) ? formData.skills.join(', ') : formData.skills || ''}
-                onChange={(e) => handleInputChange('skills', e.target.value)}
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                placeholder="Séparez les compétences par des virgules..."
-              />
+            <div className="group p-4 rounded-lg border border-slate-200/50 hover:border-blue-200 hover:bg-blue-50/30 transition-all duration-200">
+              <div className="flex items-center gap-2 mb-2">
+                <Phone className="h-4 w-4 text-blue-600" />
+                <span className="text-sm font-medium text-slate-700">Téléphone</span>
+              </div>
+              <p className="text-slate-900 font-medium">{profile?.phone || 'Non spécifié'}</p>
+            </div>
+
+            <div className="group p-4 rounded-lg border border-slate-200/50 hover:border-blue-200 hover:bg-blue-50/30 transition-all duration-200">
+              <div className="flex items-center gap-2 mb-2">
+                <MapPin className="h-4 w-4 text-blue-600" />
+                <span className="text-sm font-medium text-slate-700">Département</span>
+              </div>
+              <p className="text-slate-900 font-medium">{profile?.department || 'Non spécifié'}</p>
+            </div>
+
+            <div className="group p-4 rounded-lg border border-slate-200/50 hover:border-blue-200 hover:bg-blue-50/30 transition-all duration-200">
+              <div className="flex items-center gap-2 mb-2">
+                <DollarSign className="h-4 w-4 text-blue-600" />
+                <span className="text-sm font-medium text-slate-700">Taux horaire</span>
+              </div>
+              <p className="text-slate-900 font-medium">{profile?.hourly_rate || 'Non spécifié'} MAD/heure</p>
             </div>
           </div>
+        ) : (
+          <form onSubmit={handleSave} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-slate-700 flex items-center gap-2">
+                  <User className="h-3 w-3" />
+                  Prénom
+                </label>
+                <Input
+                  value={formData.first_name || ""}
+                  onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+                  placeholder="Prénom"
+                  className="rounded-lg border-slate-200 focus:border-blue-500 focus:ring-blue-500/20 text-sm"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-slate-700 flex items-center gap-2">
+                  <User className="h-3 w-3" />
+                  Nom
+                </label>
+                <Input
+                  value={formData.last_name || ""}
+                  onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+                  placeholder="Nom"
+                  className="rounded-lg border-slate-200 focus:border-blue-500 focus:ring-blue-500/20 text-sm"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-slate-700 flex items-center gap-2">
+                  <Mail className="h-3 w-3" />
+                  Email
+                </label>
+                <Input
+                  value={formData.email || ""}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  placeholder="Email"
+                  className="rounded-lg border-slate-200 focus:border-blue-500 focus:ring-blue-500/20 text-sm"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-slate-700 flex items-center gap-2">
+                  <Phone className="h-3 w-3" />
+                  Téléphone
+                </label>
+                <Input
+                  value={formData.phone || ""}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  placeholder="Numéro de téléphone"
+                  className="rounded-lg border-slate-200 focus:border-blue-500 focus:ring-blue-500/20 text-sm"
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 mt-6">
+              <Button
+                type="button"
+                onClick={() => setEditMode(false)}
+                variant="outline"
+                className="gap-2"
+              >
+                <X className="h-4 w-4" />
+                Annuler
+              </Button>
+              <Button
+                type="submit"
+                disabled={saving}
+                className="gap-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+              >
+                {saving ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Sauvegarde...
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4" />
+                    Sauvegarder
+                  </>
+                )}
+              </Button>
+            </div>
+          </form>
         )}
       </div>
-    </div>
-  );
-}
+    </div>)}

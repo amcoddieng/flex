@@ -233,7 +233,7 @@ export default function StudentApplicationsPage() {
           <h1 className="text-2xl font-bold text-gray-900">Mes candidatures</h1>
           <p className="text-gray-600">Suivez l'état de vos candidatures</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 ">
           <Link href="/student/jobs">
             <Button variant="outline" className="gap-2">
               <Briefcase className="h-4 w-4" />
@@ -252,7 +252,7 @@ export default function StudentApplicationsPage() {
               variant={selectedStatus === filter.value ? "default" : "outline"}
               size="sm"
               onClick={() => setSelectedStatus(filter.value)}
-              className={selectedStatus === filter.value ? "bg-blue-600 hover:bg-blue-700" : ""}
+              className={selectedStatus === filter.value ? "bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700" : ""}
             >
               {filter.label}
             </Button>
@@ -269,7 +269,7 @@ export default function StudentApplicationsPage() {
       {loading ? (
         <div className="flex items-center justify-center py-20">
           <div className="flex flex-col items-center gap-4">
-            <div className="w-12 h-12 border-4 border-gray-200 border-t-gray-600 rounded-full animate-spin"></div>
+            <div className="w-12 h-12 border-4 border-gray-200 border-t-gray-700 rounded-full animate-spin"></div>
             <p className="text-gray-600">Chargement des candidatures...</p>
           </div>
         </div>
@@ -284,7 +284,7 @@ export default function StudentApplicationsPage() {
                 {/* Header */}
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors mb-2">
+                    <h3 className="text-lg font-semibold text-gray-900 group-hover:text-gray-700 transition-colors mb-2">
                       {application.job?.title || 'Poste non spécifié'}
                     </h3>
                     <div className="flex items-center gap-2 text-sm text-gray-600">

@@ -87,7 +87,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex">
       {/* Left Side - Branding with enhanced animations */}
-      <div className="hidden lg:flex lg:w-1/2 bg-primary relative overflow-hidden">
+      <div className="hidden lg:flex lg:w-1/2 bg-gray-50 relative overflow-hidden">
         {/* Animated Background Effects */}
         <div className="absolute inset-0">
           <div className="absolute top-20 left-10 w-72 h-72 bg-primary-foreground/10 rounded-full blur-3xl animate-pulse" />
@@ -171,7 +171,7 @@ export default function LoginPage() {
       </div>
 
       {/* Right Side - Form with enhanced animations */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-background relative overflow-hidden">
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-white relative overflow-hidden">
         {/* Background decoration */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute -top-32 -right-32 w-64 h-64 bg-primary/5 rounded-full blur-3xl" />
@@ -186,12 +186,12 @@ export default function LoginPage() {
               isVisible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-10"
             }`}
           >
-            <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary shadow-xl shadow-primary/25">
-              <Briefcase className="h-8 w-8 text-primary-foreground" />
+            <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-blue-600 shadow-xl shadow-blue-600/25">
+              <Briefcase className="h-8 w-8 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold">FlexJob</h1>
-              <p className="text-sm text-muted-foreground">Senegal</p>
+              <h1 className="text-2xl font-bold text-gray-900">FlexJob</h1>
+              <p className="text-sm text-gray-600">Senegal</p>
             </div>
           </Link>
 
