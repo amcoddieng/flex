@@ -35,6 +35,16 @@ export async function GET(request: NextRequest) {
     try {
       console.log('🔍 Récupération profil étudiant pour userId:', userId);
 
+      // Vérifier d'abord si l'utilisateur existe
+      const [userCheck] = await connection.execute(`
+        SELECT id, role FROM user WHERE id = ?
+      `, [userId]);
+      
+      console.log('🔍 Utilisateur trouvé dans la base:', (userCheck as any[]).length > 0);
+      if ((userCheck as any[]).length > 0) {
+        console.log('🔍 Rôle utilisateur:', (userCheck as any[])[0].role);
+      }
+
       // Récupérer les informations complètes du profil étudiant
       const [studentRows] = await connection.execute(`
         SELECT 
@@ -195,6 +205,7 @@ export async function GET(request: NextRequest) {
 
       console.log('✅ Profil étudiant récupéré avec succès');
       console.log('📊 Statistiques:', formattedStudent.statistics);
+      console.log('🔍 ValidationStatus retourné:', formattedStudent.validationStatus);
 
       return NextResponse.json({
         success: true,

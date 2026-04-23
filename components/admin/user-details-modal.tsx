@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Mail, Phone, Calendar, User, Building, BookOpen, Award, Shield, Ban, CheckCircle, Trash2, Lock, Unlock } from "lucide-react";
+import { X, Mail, Phone, Calendar, User, Building, BookOpen, Award, Shield, Ban, CheckCircle, Trash2, Lock, Unlock, Eye, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AdminModal } from "@/components/ui/admin-modal";
 import { Badge } from "@/components/ui/badge";
@@ -101,32 +101,105 @@ export function UserDetailsModal({ user, isOpen, onClose, onStatusChange }: User
       maxWidth="6xl"
     >
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Informations principales */}
+            {/* Photo de profil et informations principales */}
             <div className="lg:col-span-2 space-y-6">
-              {/* Informations générales */}
+              {/* Carte profil avec photo */}
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-start gap-6">
+                    {/* Photo de profil */}
+                    <div className="flex-shrink-0">
+                      <div className="relative">
+                        {user.img ? (
+                          <img
+                            src={user.img}
+                            alt={`Photo de profil de ${user.first_name} ${user.last_name}`}
+                            className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg"
+                          />
+                        ) : (
+                          <div className="w-24 h-24 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white text-2xl font-bold shadow-lg">
+                            {user.first_name?.[0]?.toUpperCase() || user.email[0]?.toUpperCase()}
+                          </div>
+                        )}
+                        {/* Badge de statut */}
+                        <div className="absolute -bottom-1 -right-1">
+                          <div className={`w-6 h-6 rounded-full border-2 border-white ${
+                            user.blocked ? 'bg-red-500' : 'bg-green-500'
+                          }`}></div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Informations principales */}
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-4">
+                        <h3 className="text-xl font-bold text-gray-900">
+                          {user.first_name} {user.last_name}
+                        </h3>
+                        <Badge className={getRoleColor(user.role)}>
+                          {getRoleLabel(user.role)}
+                        </Badge>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="flex items-center gap-2">
+                          <Mail className="h-4 w-4 text-gray-400" />
+                          <div>
+                            <span className="text-sm text-gray-500">Email</span>
+                            <p className="text-gray-900">{user.email}</p>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-2">
+                          <Phone className="h-4 w-4 text-gray-400" />
+                          <div>
+                            <span className="text-sm text-gray-500">Téléphone</span>
+                            <p className="text-gray-900">{user.phone || 'Non spécifié'}</p>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4 text-gray-400" />
+                          <div>
+                            <span className="text-sm text-gray-500">Date d'inscription</span>
+                            <p className="text-gray-900">
+                              {new Date(user.created_at).toLocaleDateString('fr-FR')}
+                            </p>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center gap-2">
+                          <Shield className="h-4 w-4 text-gray-400" />
+                          <div>
+                            <span className="text-sm text-gray-500">Statut du compte</span>
+                            <div className="mt-1">
+                              <Badge className={user.blocked ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}>
+                                {user.blocked ? 'Bloqué' : 'Actif'}
+                              </Badge>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Informations complètes */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <User className="h-5 w-5" />
-                    Informations générales
+                    Informations complètes
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <span className="text-sm text-gray-500">Nom complet</span>
-                      <p className="font-medium text-gray-900">
-                        {user.first_name} {user.last_name}
-                      </p>
+                      <span className="text-sm text-gray-500">ID Utilisateur</span>
+                      <p className="font-medium text-gray-900">#{user.id}</p>
                     </div>
-                    <div>
-                      <span className="text-sm text-gray-500">Email</span>
-                      <p className="text-gray-900">{user.email}</p>
-                    </div>
-                    <div>
-                      <span className="text-sm text-gray-500">Téléphone</span>
-                      <p className="text-gray-900">{user.phone || 'Non spécifié'}</p>
-                    </div>
+                    
                     <div>
                       <span className="text-sm text-gray-500">Rôle</span>
                       <div className="mt-1">
@@ -135,20 +208,7 @@ export function UserDetailsModal({ user, isOpen, onClose, onStatusChange }: User
                         </Badge>
                       </div>
                     </div>
-                    <div>
-                      <span className="text-sm text-gray-500">Date d'inscription</span>
-                      <p className="text-gray-900">
-                        {new Date(user.created_at).toLocaleDateString('fr-FR')}
-                      </p>
-                    </div>
-                    <div>
-                      <span className="text-sm text-gray-500">Statut du compte</span>
-                      <div className="mt-1">
-                        <Badge className={user.blocked ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'}>
-                          {user.blocked ? 'Bloqué' : 'Actif'}
-                        </Badge>
-                      </div>
-                    </div>
+                    
                     {user.role === 'STUDENT' && (
                       <div>
                         <span className="text-sm text-gray-500">Validation du profil</span>
@@ -159,6 +219,7 @@ export function UserDetailsModal({ user, isOpen, onClose, onStatusChange }: User
                         </div>
                       </div>
                     )}
+                    
                     {user.role === 'EMPLOYER' && (
                       <div>
                         <span className="text-sm text-gray-500">Validation du profil</span>
@@ -169,6 +230,13 @@ export function UserDetailsModal({ user, isOpen, onClose, onStatusChange }: User
                         </div>
                       </div>
                     )}
+                    
+                    <div>
+                      <span className="text-sm text-gray-500">Dernière activité</span>
+                      <p className="text-gray-900">
+                        {user.last_login ? new Date(user.last_login).toLocaleDateString('fr-FR') : 'Non disponible'}
+                      </p>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -179,7 +247,7 @@ export function UserDetailsModal({ user, isOpen, onClose, onStatusChange }: User
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <BookOpen className="h-5 w-5" />
-                      Profil étudiant
+                      Profil étudiant complet
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
@@ -201,11 +269,46 @@ export function UserDetailsModal({ user, isOpen, onClose, onStatusChange }: User
                         <p className="text-gray-900">{user.student_profile?.hourly_rate || user.hourly_rate ? `${user.student_profile?.hourly_rate || user.hourly_rate} $/h` : 'Non spécifié'}</p>
                       </div>
                       <div>
-                        <span className="text-sm text-gray-500">Carte étudiante</span>
-                        <p className="text-gray-900">
-                          {user.student_profile?.student_card_pdf || user.student_card_pdf ? 'Disponible' : 'Non fournie'}
-                        </p>
+                        <span className="text-sm text-gray-500">Bio</span>
+                        <p className="text-gray-900">{user.student_profile?.bio || user.bio || 'Non spécifié'}</p>
                       </div>
+                      <div>
+                        <span className="text-sm text-gray-500">Email étudiant</span>
+                        <p className="text-gray-900">{user.student_profile?.email || user.email || 'Non spécifié'}</p>
+                      </div>
+                    </div>
+                    
+                    {/* Carte étudiante */}
+                    <div className="border-t pt-4">
+                      <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+                        <Award className="h-4 w-4" />
+                        Carte étudiante
+                      </h4>
+                      {user.student_profile?.student_card_pdf || user.student_card_pdf ? (
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2 text-green-600">
+                            <CheckCircle className="h-4 w-4" />
+                            <span className="text-sm">Carte étudiante fournie</span>
+                          </div>
+                          <div className="bg-gray-50 rounded-lg p-4">
+                            <div className="flex items-center justify-between">
+                              <div className="text-sm text-gray-600">
+                                <p>Fichier: {user.student_profile?.student_card_pdf || user.student_card_pdf}</p>
+                                <p>Taille: Document PDF</p>
+                              </div>
+                              <Button variant="outline" size="sm">
+                                <Eye className="h-4 w-4 mr-2" />
+                                Voir
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 text-red-600">
+                          <XCircle className="h-4 w-4" />
+                          <span className="text-sm">Carte étudiante non fournie</span>
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>

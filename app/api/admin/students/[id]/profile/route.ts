@@ -52,6 +52,7 @@ export async function GET(
           sp.bio,
           sp.hourly_rate,
           sp.student_card_pdf,
+          sp.profile_photo,
           sp.validation_status,
           sp.rejection_reason,
           u.email as user_email,

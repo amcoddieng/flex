@@ -94,14 +94,14 @@ export default function EmployerDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50/30">
-      {/* Modern Header */}
-      <div className="bg-white/80 backdrop-blur-md border-b border-slate-200/50 sticky top-0 z-40">
-        <div className="px-4 sm:px-6 py-3">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+    <div className="w-full h-full">
+      {/* Page Header */}
+      <div className="bg-white border-b border-slate-200 sticky top-0 z-30">
+        <div className="px-6 py-4">
+          <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-slate-900 to-blue-600 bg-clip-text text-transparent">Tableau de bord</h1>
-              <p className="text-slate-600 text-xs sm:text-sm">Gérez vos offres d'emploi et suivez vos candidatures</p>
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-slate-900 to-blue-600 bg-clip-text text-transparent">Tableau de bord</h1>
+              <p className="text-slate-600 text-sm">Gérez vos offres d'emploi et suivez vos candidatures</p>
             </div>
             <div className="flex items-center gap-3">
               <div className="text-right hidden sm:block">
@@ -117,7 +117,7 @@ export default function EmployerDashboard() {
       </div>
 
       {error && (
-        <div className="mx-4 sm:mx-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+        <div className="mx-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
           {error}
         </div>
       )}
@@ -130,27 +130,36 @@ export default function EmployerDashboard() {
           </div>
         </div>
       ) : stats ? (
-        <div className="px-4 sm:px-6 py-4 space-y-6">
-          {/* Modern Stats Cards */}
+        <div className="px-6 py-6 space-y-6">
+          {/* =========================================== */}
+          {/* SECTION 1: CARDS DE STATISTIQUES PRINCIPALES */}
+          {/* =========================================== */}
+          {/* Grid responsive pour les 4 cartes de statistiques principales */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Total Offers */}
+            
+            {/* CARTE 1: TOTAL DES OFFRES PUBLIÉES */}
+            {/* Affiche le nombre total d'offres créées par l'employeur */}
             <div className="group relative bg-white rounded-xl shadow hover:shadow-lg transition-all duration-300 border border-slate-200/50 overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
               <div className="relative p-3 sm:p-4">
                 <div className="flex items-center justify-between mb-3">
+                  {/* Icône principale de la carte */}
                   <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-blue-500 flex items-center justify-center shadow">
                     <Briefcase className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                   </div>
+                  {/* Indicateur de croissance */}
                   <div className="flex items-center gap-1 text-green-600 text-xs font-medium">
                     <ChevronUp className="h-3 w-3" />
                     <span>12%</span>
                   </div>
                 </div>
                 <div>
+                  {/* Titre et valeur principale */}
                   <p className="text-slate-600 text-xs font-medium mb-1">Offres publiées</p>
                   <p className="text-xl sm:text-2xl font-bold text-slate-900">{stats.total_jobs || 0}</p>
                 </div>
                 <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-slate-100">
+                  {/* Lien vers la page des offres */}
                   <Link href="/employer/jobs" className="text-blue-600 text-sm font-medium inline-flex items-center gap-1 hover:gap-2 transition-all">
                     Voir les offres <ArrowRight className="h-4 w-4" />
                   </Link>
@@ -158,20 +167,24 @@ export default function EmployerDashboard() {
               </div>
             </div>
 
-            {/* Active Offers */}
+            {/* CARTE 2: OFFRES ACTIVES */}
+            {/* Affiche le nombre d'offres actuellement actives/en ligne */}
             <div className="group relative bg-white rounded-xl shadow hover:shadow-lg transition-all duration-300 border border-slate-200/50 overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
               <div className="relative p-3 sm:p-4">
                 <div className="flex items-center justify-between mb-3">
+                  {/* Icône principale de la carte */}
                   <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-green-500 flex items-center justify-center shadow">
                     <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                   </div>
+                  {/* Indicateur de croissance */}
                   <div className="flex items-center gap-1 text-green-600 text-xs font-medium">
                     <ChevronUp className="h-3 w-3" />
                     <span>8%</span>
                   </div>
                 </div>
                 <div>
+                  {/* Titre et valeur principale */}
                   <p className="text-slate-600 text-xs font-medium mb-1">Offres actives</p>
                   <p className="text-xl sm:text-2xl font-bold text-slate-900">{stats.active_jobs || 0}</p>
                 </div>
@@ -183,24 +196,29 @@ export default function EmployerDashboard() {
               </div>
             </div>
 
-            {/* Total Applications */}
+            {/* CARTE 3: TOTAL DES CANDIDATURES REÇUES */}
+            {/* Affiche le nombre total de candidatures pour toutes les offres de l'employeur */}
             <div className="group relative bg-white rounded-xl shadow hover:shadow-lg transition-all duration-300 border border-slate-200/50 overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
               <div className="relative p-3 sm:p-4">
                 <div className="flex items-center justify-between mb-3">
+                  {/* Icône principale de la carte */}
                   <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-indigo-500 flex items-center justify-center shadow">
                     <Users className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                   </div>
+                  {/* Indicateur de croissance */}
                   <div className="flex items-center gap-1 text-amber-600 text-xs font-medium">
                     <ChevronUp className="h-3 w-3" />
                     <span>24%</span>
                   </div>
                 </div>
                 <div>
+                  {/* Titre et valeur principale */}
                   <p className="text-slate-600 text-xs font-medium mb-1">Candidatures reçues</p>
                   <p className="text-2xl font-bold text-slate-900">{stats.total_applications || 0}</p>
                 </div>
                 <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-slate-100">
+                  {/* Lien vers la page des candidatures */}
                   <Link href="/employer/applications" className="text-blue-600 text-sm font-medium inline-flex items-center gap-1 hover:gap-2 transition-all">
                     Voir candidatures <ArrowRight className="h-4 w-4" />
                   </Link>
@@ -208,75 +226,97 @@ export default function EmployerDashboard() {
               </div>
             </div>
 
-            {/* Pending Applications */}
+            {/* CARTE 4: CANDIDATURES EN ATTENTE */}
+            {/* Affiche le nombre de candidatures nécessitant une action de l'employeur */}
             <div className="group relative bg-white rounded-xl shadow hover:shadow-lg transition-all duration-300 border border-slate-200/50 overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-br from-red-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
               <div className="relative p-3 sm:p-4">
                 <div className="flex items-center justify-between mb-3">
+                  {/* Icône principale de la carte */}
                   <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-yellow-500 flex items-center justify-center shadow">
                     <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                   </div>
+                  {/* Indicateur de tendance (baisse ici) */}
                   <div className="flex items-center gap-1 text-red-600 text-xs font-medium">
                     <ChevronDown className="h-3 w-3" />
                     <span>5%</span>
                   </div>
                 </div>
                 <div>
+                  {/* Titre et valeur principale */}
                   <p className="text-slate-600 text-xs font-medium mb-1">En attente</p>
                   <p className="text-xl sm:text-2xl font-bold text-slate-900">{stats.pending_applications || 0}</p>
                 </div>
                 <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-slate-100">
+                  {/* Message d'action */}
                   <p className="text-slate-600 text-xs">À traiter rapidement</p>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Charts Section */}
+          {/* =========================================== */}
+{/* SECTION 2: GRAPHIQUES ET MÉTRIQUES */}
+{/* =========================================== */}
+{/* Grid responsive pour les 2 graphiques principaux */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* Activity Chart */}
+            
+            {/* GRAPHIQUE 1: ACTIVITÉ RÉCENTE */}
+            {/* Affiche un histogramme des candidatures par semaine */}
             <div className="bg-white rounded-xl shadow hover:shadow-lg transition-all duration-300 border border-slate-200/50 p-3 sm:p-4">
+              {/* Header du graphique avec titre et légende */}
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h3 className="text-sm sm:text-base font-semibold text-slate-900">Activité récente</h3>
                   <p className="text-xs text-slate-600 mt-1">Candidatures par semaine</p>
                 </div>
+                {/* Légende du graphique */}
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-blue-500"></div>
                   <span className="text-xs text-slate-600 hidden sm:block">Cette semaine</span>
                 </div>
               </div>
+              {/* Histogramme avec barres animées */}
               <div className="h-40 sm:h-48 flex items-end justify-between gap-1 sm:gap-2">
                 {[65, 80, 45, 90, 70, 85, 60].map((height, i) => (
                   <div key={i} className="flex-1 flex flex-col items-center gap-1 sm:gap-2">
+                    {/* Barre individuelle avec gradient et hover effect */}
                     <div 
                       className="w-full bg-gradient-to-t from-blue-500 to-blue-400 rounded-t-lg transition-all duration-500 hover:from-blue-600 hover:to-blue-500"
                       style={{ height: `${height}%` }}
                     ></div>
+                    {/* Étiquette des jours (L1, L2, etc.) */}
                     <span className="text-xs text-slate-500 hidden sm:block">L{8-i}</span>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Performance Metrics */}
+            {/* GRAPHIQUE 2: MÉTRIQUES DE PERFORMANCE */}
+            {/* Affiche les indicateurs de performance clés */}
             <div className="bg-white rounded-xl shadow hover:shadow-lg transition-all duration-300 border border-slate-200/50 p-3 sm:p-4">
+              {/* Header avec titre et bouton d'export */}
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h3 className="text-sm sm:text-base font-semibold text-slate-900">Performance</h3>
                   <p className="text-xs text-slate-600 mt-1">Métriques clés</p>
                 </div>
+                {/* Bouton d'export des données */}
                 <Button variant="outline" size="sm" className="gap-2 text-xs hidden sm:flex">
                   <BarChart3 className="h-3 w-3" />
                   Exporter
                 </Button>
               </div>
+              {/* Liste des métriques avec icônes et valeurs */}
               <div className="space-y-3">
+                {/* MÉTRIQUE 1: TAUX DE CONVERSION */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 sm:gap-3">
+                    {/* Icône de la métrique */}
                     <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-blue-100 flex items-center justify-center">
                       <UserPlus className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600" />
                     </div>
+                    {/* Nom et description de la métrique */}
                     <div className="min-w-0">
                       <p className="text-xs sm:text-sm font-medium text-slate-900 truncate">Taux de conversion</p>
                       <p className="text-xs text-slate-600 truncate">Candidatures → Entretiens</p>
@@ -287,31 +327,40 @@ export default function EmployerDashboard() {
                     <p className="text-xs text-green-600">+3.2%</p>
                   </div>
                 </div>
+                {/* MÉTRIQUE 2: TEMPS MOYEN DE RÉPONSE */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 sm:gap-3">
+                    {/* Icône de la métrique */}
                     <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-green-100 flex items-center justify-center">
                       <Activity className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" />
                     </div>
+                    {/* Nom et description de la métrique */}
                     <div className="min-w-0">
                       <p className="text-xs sm:text-sm font-medium text-slate-900 truncate">Temps moyen</p>
                       <p className="text-xs text-slate-600 truncate">Réponse aux candidats</p>
                     </div>
                   </div>
+                  {/* Valeur et tendance */}
                   <div className="text-right">
                     <p className="text-xl font-bold text-slate-900">2.5j</p>
                     <p className="text-xs text-green-600">-0.8j</p>
                   </div>
                 </div>
+                
+                {/* MÉTRIQUE 3: SATISFACTION DES CANDIDATS */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 sm:gap-3">
+                    {/* Icône de la métrique */}
                     <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-amber-100 flex items-center justify-center">
                       <Star className="h-3 w-3 sm:h-4 sm:w-4 text-amber-600" />
                     </div>
+                    {/* Nom et description de la métrique */}
                     <div className="min-w-0">
                       <p className="text-xs sm:text-sm font-medium text-slate-900 truncate">Satisfaction</p>
                       <p className="text-xs text-slate-600 truncate">Note des candidats</p>
                     </div>
                   </div>
+                  {/* Valeur et tendance */}
                   <div className="text-right">
                     <p className="text-lg sm:text-xl font-bold text-slate-900">4.8</p>
                     <p className="text-xs text-amber-600">+0.2</p>

@@ -48,6 +48,7 @@ export async function GET(
           ep.email,
           ep.address,
           ep.description,
+          ep.img,
           ep.validation_status,
           u.email as user_email,
           u.created_at,

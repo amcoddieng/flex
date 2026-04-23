@@ -32,7 +32,12 @@ type StudentProfile = {
   year_of_study?: number;
   bio?: string;
   hourly_rate?: number;
+  profile_photo?: string;
+  student_card_pdf?: string;
   validation_status?: string;
+  rejection_reason?: string;
+  last_login?: string;
+  img?: string; // Pour compatibilité avec le modal
 };
 
 type EmployerProfile = {
@@ -46,7 +51,10 @@ type EmployerProfile = {
   email?: string;
   address?: string;
   description?: string;
+  img?: string;
   validation_status?: string;
+  last_login?: string;
+  profile_photo?: string; // Pour compatibilité avec le modal
 };
 
 type UserProfile = StudentProfile | EmployerProfile | null;
@@ -183,8 +191,10 @@ export default function AdminUsersPage() {
       first_name: profiles[user.id]?.first_name || user.email.split('@')[0],
       last_name: profiles[user.id]?.last_name || '',
       phone: profiles[user.id]?.phone || '',
+      img: profiles[user.id]?.img || profiles[user.id]?.profile_photo || null,
       blocked: user.blocked || false // Par défaut, considérer comme non bloqué
     };
+    console.log('User with profile data:', userWithProfile); // Debug pour voir les données
     setSelectedUser(userWithProfile);
     setIsModalOpen(true);
   };

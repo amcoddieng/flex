@@ -132,6 +132,10 @@ export default function JobDetailPage() {
         return;
       }
 
+      // Vérifier quel utilisateur est connecté
+      const decoded = decodeToken(token);
+      console.log('🔍 Utilisateur connecté:', decoded);
+
       // Vérifier le statut de validation du profil étudiant
       const profileRes = await fetch('/api/student/profile', {
         method: 'GET',
@@ -143,16 +147,33 @@ export default function JobDetailPage() {
 
       const profileData = await profileRes.json();
       
-      if (profileData.student && profileData.student.validation_status !== 'VALIDATED') {
-        if (profileData.student.validation_status === 'PENDING') {
+      console.log('🔍 Structure complète des données:', JSON.stringify(profileData, null, 2));
+      
+      // Vérification simplifiée et robuste
+      if (!profileData.success || !profileData.student) {
+        setError('Erreur lors de la récupération de votre profil');
+        return;
+      }
+
+      const validationStatus = profileData.student.validationStatus;
+      console.log('🔍 Validation status:', validationStatus);
+      console.log('🔍 Type de validationStatus:', typeof validationStatus);
+      console.log('🔍 validationStatus === "VALIDATED":', validationStatus === "VALIDATED");
+      console.log('🔍 validationStatus !== "VALIDATED":', validationStatus !== "VALIDATED");
+      
+      // Vérification du statut de validation
+      if (validationStatus !== 'VALIDATED') {
+        if (validationStatus === 'PENDING') {
           setError('Votre profil est en attente de validation. Vous ne pouvez postuler qu\'une fois votre profil validé.');
-        } else if (profileData.student.validation_status === 'REJECTED') {
+        } else if (validationStatus === 'REJECTED') {
           setError('Votre profil a été rejeté. Veuillez contacter l\'administrateur pour plus d\'informations.');
         } else {
           setError('Votre profil n\'est pas validé. Veuillez compléter votre profil et attendre la validation.');
         }
         return;
       }
+
+      console.log('✅ Profil validé - candidature autorisée');
       
       console.log('Token trouvé:', token ? 'oui' : 'non');
 

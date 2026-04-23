@@ -269,8 +269,15 @@ useEffect(() => {
       });
 
       const profileData = await profileRes.json();
-      
-      if (profileData.student && profileData.student.validation_status !== 'VALIDATED') {
+      // Accès direct (l'objet est à la racine)
+// console.log('Validation status:', profileData.validationStatus);
+// // Affichera: "VALIDATED"
+//       console.log('Profile data:', profileData.student?.validation_status);
+// console.log('Type de profileData:', typeof profileData);
+// console.log('Contenu complet:', profileData);
+// console.log('Clés de l\'objet:', Object.keys(profileData));
+// console.log('Validation status:', profileData.student.validationStatus);
+      if (profileData.student && profileData.student.validationStatus !== 'VALIDATED') {
         if (profileData.student.validation_status === 'PENDING') {
           setApplicationError('Votre profil est en attente de validation. Vous ne pouvez postuler qu\'une fois votre profil validé.');
         } else if (profileData.student.validation_status === 'REJECTED') {
