@@ -283,7 +283,7 @@ export default function EmployerMessagesPage() {
   const filteredConversations = conversations.filter(conv =>
     conv.offer_title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     `${conv.first_name} ${conv.last_name}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    conv.student_email.toLowerCase().includes(searchQuery.toLowerCase())
+    (conv.student_email && conv.student_email.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   const totalUnreadCount = conversations.reduce((acc, conv) => acc + conv.unread_count, 0);
@@ -303,7 +303,7 @@ if (!isAuthed) return <div className="p-8">Vérification...</div>;
               <MessageCircle className="h-5 w-5 text-[#075e54]" />
               <h2 className="text-lg font-semibold text-slate-900">Messages</h2>
               {totalUnreadCount > 0 && (
-                <span className="bg-green-500 text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center font-bold">
+                <span className="bg-blue-500 text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center font-bold">
                   {totalUnreadCount > 99 ? '99+' : totalUnreadCount}
                 </span>
               )}
@@ -316,7 +316,7 @@ if (!isAuthed) return <div className="p-8">Vérification...</div>;
                 placeholder="Rechercher une conversation..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 text-sm bg-slate-50 border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="pl-10 text-sm bg-slate-50 border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
           </div>
@@ -392,18 +392,18 @@ if (!isAuthed) return <div className="p-8">Vérification...</div>;
         }`}>
           {selectedConversation ? (
             <>
-              {/* Chat Header - Style WhatsApp */}
-              <div className="bg-[#075e54] text-white p-4 shadow-md">
+              {/* Chat Header - Style du site */}
+              <div className="bg-blue-600 text-white p-4 shadow-md">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-r from-green-400 to-green-600 flex items-center justify-center text-white font-semibold shadow-md">
+                    <div className="w-10 h-10 rounded-full bg-black flex items-center justify-center text-white font-semibold shadow-md">
                       {selectedConversation.first_name.charAt(0).toUpperCase()}
                     </div>
                     <div className="min-w-0">
                       <h3 className="font-semibold text-white truncate text-base">
                         {selectedConversation.first_name} {selectedConversation.last_name}
                       </h3>
-                      <div className="flex items-center gap-2 text-green-100 text-xs">
+                      <div className="flex items-center gap-2 text-blue-100 text-xs">
                         <Briefcase className="h-3 w-3" />
                         <span className="truncate">{selectedConversation.offer_title}</span>
                       </div>
@@ -415,7 +415,7 @@ if (!isAuthed) return <div className="p-8">Vérification...</div>;
                       variant="outline" 
                       size="sm" 
                       onClick={() => setSelectedConversation(null)}
-                      className="sm:hidden text-white border-white hover:bg-white hover:text-[#075e54]"
+                      className="sm:hidden text-white border-white hover:bg-white hover:text-blue-600"
                     >
                       <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -425,7 +425,7 @@ if (!isAuthed) return <div className="p-8">Vérification...</div>;
                       variant="outline" 
                       size="sm" 
                       onClick={() => setSelectedConversation(null)}
-                      className="hidden sm:flex text-white border-white hover:bg-white hover:text-[#075e54]"
+                      className="hidden sm:flex text-white border-white hover:bg-white hover:text-blue-600"
                     >
                       <X className="h-4 w-4" />
                     </Button>
@@ -433,8 +433,8 @@ if (!isAuthed) return <div className="p-8">Vérification...</div>;
                 </div>
               </div>
 
-              {/* Messages Area - Style WhatsApp avec scroll interne */}
-              <div className="flex-1 overflow-y-auto bg-gradient-to-b from-[#e5ddd5] to-[#dcf8c6] p-4 h-full">
+              {/* Messages Area - Style du site */}
+              <div className="flex-1 overflow-y-auto bg-gray-50 p-4 h-full">
                 {messagesLoading ? (
                   <div className="text-center py-8">
                     <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
@@ -469,7 +469,7 @@ if (!isAuthed) return <div className="p-8">Vérification...</div>;
                               {/* Avatar pour les messages reçus */}
                               {message.sender_type === 'student' && (
                                 <div className="flex items-end mr-2">
-                                  <div className="w-8 h-8 rounded-full bg-gradient-to-r from-green-400 to-green-600 flex items-center justify-center text-white text-xs font-semibold shadow-md">
+                                  <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-400 to-blue-600 flex items-center justify-center text-white text-xs font-semibold shadow-md">
                                     {message.sender_name.charAt(0).toUpperCase()}
                                   </div>
                                 </div>
@@ -478,12 +478,12 @@ if (!isAuthed) return <div className="p-8">Vérification...</div>;
                               {/* Bulle de message */}
                               <div className={`max-w-lg px-4 py-2 rounded-2xl shadow-md ${
                                 message.sender_type === 'employer'
-                                  ? 'bg-[#dcf8c6] text-slate-900 rounded-br-none'
+                                  ? 'bg-blue-600 text-white rounded-br-none'
                                   : 'bg-white text-slate-900 rounded-bl-none border border-slate-200'
                                 }`}>
                                 <p className="text-sm break-words leading-relaxed">{message.message}</p>
                                 <div className={`flex items-center justify-between mt-1 text-xs ${
-                                  message.sender_type === 'employer' ? 'text-slate-500' : 'text-slate-400'
+                                  message.sender_type === 'employer' ? 'text-blue-100' : 'text-slate-400'
                                 }`}>
                                   <span className="flex items-center gap-1">
                                     <Clock className="h-3 w-3" />
@@ -492,9 +492,9 @@ if (!isAuthed) return <div className="p-8">Vérification...</div>;
                                   {message.sender_type === 'employer' && (
                                     <span className="flex items-center">
                                       {message.is_read ? (
-                                        <span className="text-gray-700">✓✓</span>
+                                        <span className="text-blue-200">✓✓</span>
                                       ) : (
-                                        <span className="text-slate-400">✓</span>
+                                        <span className="text-blue-300">✓</span>
                                       )}
                                     </span>
                                   )}
@@ -505,7 +505,7 @@ if (!isAuthed) return <div className="p-8">Vérification...</div>;
                               {message.sender_type === 'employer' && (
                                 <div className="flex items-start ml-2">
                                   <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-white text-xs font-semibold shadow-md">
-                                    {message.sender_name.charAt(0).toUpperCase()}
+                                    {message.sender_name ? message.sender_name.charAt(0).toUpperCase() : 'E'}
                                   </div>
                                 </div>
                               )}
@@ -543,7 +543,7 @@ if (!isAuthed) return <div className="p-8">Vérification...</div>;
                       value={newMessage}
                       onChange={(e) => setNewMessage(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && sendMessage()}
-                      className="w-full bg-slate-100 border-0 rounded-2xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-700 resize-none"
+                      className="w-full bg-slate-100 border-0 rounded-2xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                       disabled={sending}
                     />
                   </div>
@@ -552,7 +552,7 @@ if (!isAuthed) return <div className="p-8">Vérification...</div>;
                   <Button 
                     onClick={sendMessage} 
                     disabled={sending || !newMessage.trim()}
-                    className="bg-green-500 hover:bg-blue-900 text-white p-2 rounded-full shadow-lg transition-all duration-200 hover:scale-105"
+                    className="bg-blue-500 hover:bg-blue-900 text-white p-2 rounded-full shadow-lg transition-all duration-200 hover:scale-105"
                   >
                     {sending ? (
                       <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>

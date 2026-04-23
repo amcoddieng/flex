@@ -278,9 +278,9 @@ useEffect(() => {
 // console.log('Clés de l\'objet:', Object.keys(profileData));
 // console.log('Validation status:', profileData.student.validationStatus);
       if (profileData.student && profileData.student.validationStatus !== 'VALIDATED') {
-        if (profileData.student.validation_status === 'PENDING') {
+        if (profileData.student.validationStatus === 'PENDING') {
           setApplicationError('Votre profil est en attente de validation. Vous ne pouvez postuler qu\'une fois votre profil validé.');
-        } else if (profileData.student.validation_status === 'REJECTED') {
+        } else if (profileData.student.validationStatus === 'REJECTED') {
           setApplicationError('Votre profil a été rejeté. Veuillez contacter l\'administrateur pour plus d\'informations.');
         } else {
           setApplicationError('Votre profil n\'est pas validé. Veuillez compléter votre profil et attendre la validation.');
