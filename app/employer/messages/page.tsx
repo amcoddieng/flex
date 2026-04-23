@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { EmployerProtection } from "@/components/employer-protection";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
+import { useSocket } from "@/hooks/useSocket";
 import { 
   MessageCircle, 
   Search, 
@@ -62,6 +63,19 @@ export default function EmployerMessagesPage() {
   // Importer le hook depuis le layout parent via contexte ou le recréer ici
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   const { unreadCount: messageUnreadCount, refreshUnreadCount } = useUnreadMessages(token);
+  
+  // WebSocket hook
+  const {
+    isConnected: isSocketConnected,
+    error: socketError,
+    newMessage: socketNewMessage,
+    messageNotification,
+    messagesRead,
+    sendMessage: sendSocketMessage,
+    markAsRead: markMessagesAsRead,
+    startTyping,
+    stopTyping
+  } = useSocket({ token: token || '', autoConnect: !!token });
 
   const getValidToken = (): string | null => {
     if (typeof window === 'undefined') return null;
@@ -89,20 +103,42 @@ export default function EmployerMessagesPage() {
     fetchConversations();
   }, [router]);
 
-  useEffect(() => {
-    if (!selectedConversation) return;
-    
-    // Rafraîchir les messages toutes les 10 secondes
-    const interval = setInterval(() => {
-      fetchMessages(selectedConversation.id);
-    }, 10000);
-
-    return () => clearInterval(interval);
-  }, [selectedConversation]);
-
+  
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // WebSocket effects
+  useEffect(() => {
+    if (socketNewMessage && selectedConversation && socketNewMessage.conversation_id === selectedConversation.id) {
+      // Adapter le format du message WebSocket au format local
+      const adaptedMessage: Message = {
+        id: socketNewMessage.id,
+        sender_type: socketNewMessage.sender_type as 'student' | 'employer',
+        sender_id: socketNewMessage.sender_id,
+        sender_name: socketNewMessage.sender_name,
+        message: socketNewMessage.content,
+        is_read: socketNewMessage.is_read,
+        created_at: socketNewMessage.created_at
+      };
+      setMessages(prev => [...prev, adaptedMessage]);
+      scrollToBottom();
+    }
+  }, [socketNewMessage, selectedConversation]);
+
+  useEffect(() => {
+    if (messageNotification && (!selectedConversation || messageNotification.conversationId !== selectedConversation.id)) {
+      // Rafraîchir les conversations pour mettre à jour le dernier message et le compteur non lu
+      fetchConversations();
+    }
+  }, [messageNotification, selectedConversation]);
+
+  useEffect(() => {
+    if (messagesRead && selectedConversation && messagesRead.conversationId === selectedConversation.id) {
+      // Mettre à jour l'état de lecture des messages
+      setMessages(prev => prev.map(msg => ({ ...msg, is_read: true })));
+    }
+  }, [messagesRead, selectedConversation]);
 
   // Effet pour gérer l'ouverture automatique depuis l'URL - version simplifiée
   useEffect(() => {
@@ -238,35 +274,52 @@ export default function EmployerMessagesPage() {
     if (!newMessage.trim() || !selectedConversation) return;
 
     setSending(true);
-    try {
-      const token = getValidToken();
-      if (!token) return;
-
-      const res = await fetch(`/api/employer/conversations/${selectedConversation.id}/messages`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ message: newMessage.trim() }),
-      });
-
-      if (!res.ok) throw new Error("Erreur lors de l'envoi du message");
-
-      const data = await res.json();
-      setMessages(prev => [...prev, data.data]);
+    
+    // Utiliser WebSocket si disponible, sinon fallback HTTP
+    if (isSocketConnected) {
+      sendSocketMessage(selectedConversation.id, newMessage.trim());
       setNewMessage("");
       
-      // Mettre à jour la dernière conversation dans la liste
+      // Mettre à jour optimistement la conversation
       setConversations(prev => prev.map(conv => 
         conv.id === selectedConversation.id 
-          ? { ...conv, last_message: data.data.message, last_message_time: data.data.created_at }
+          ? { ...conv, last_message: newMessage.trim(), last_message_time: new Date().toISOString() }
           : conv
       ));
-    } catch (err: any) {
-      console.error('Error sending message:', err);
-    } finally {
+      
       setSending(false);
+    } else {
+      // Fallback HTTP
+      try {
+        const token = getValidToken();
+        if (!token) return;
+
+        const res = await fetch(`/api/employer/conversations/${selectedConversation.id}/messages`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({ message: newMessage.trim() }),
+        });
+
+        if (!res.ok) throw new Error("Erreur lors de l'envoi du message");
+
+        const data = await res.json();
+        setMessages(prev => [...prev, data.data]);
+        setNewMessage("");
+        
+        // Mettre à jour la dernière conversation dans la liste
+        setConversations(prev => prev.map(conv => 
+          conv.id === selectedConversation.id 
+            ? { ...conv, last_message: data.data.message, last_message_time: data.data.created_at }
+            : conv
+        ));
+      } catch (err: any) {
+        console.error('Error sending message:', err);
+      } finally {
+        setSending(false);
+      }
     }
   };
 
@@ -274,6 +327,12 @@ export default function EmployerMessagesPage() {
     setSelectedConversation(conversation);
     fetchMessages(conversation.id);
     refreshUnreadCount();
+    
+    // Marquer les messages comme lus via WebSocket si disponible
+    if (isSocketConnected) {
+      markMessagesAsRead(conversation.id);
+    }
+    
     // Marquer comme lu (mettre à jour le compteur non lu)
     setConversations(prev => prev.map(conv => 
       conv.id === conversation.id ? { ...conv, unread_count: 0 } : conv
@@ -302,11 +361,21 @@ if (!isAuthed) return <div className="p-8">Vérification...</div>;
             <div className="flex items-center gap-3 mb-4">
               <MessageCircle className="h-5 w-5 text-[#075e54]" />
               <h2 className="text-lg font-semibold text-slate-900">Messages</h2>
-              {totalUnreadCount > 0 && (
-                <span className="bg-blue-500 text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center font-bold">
-                  {totalUnreadCount > 99 ? '99+' : totalUnreadCount}
-                </span>
-              )}
+              <div className="ml-auto flex items-center gap-2">
+                <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs ${
+                  isSocketConnected ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                }`}>
+                  <div className={`w-2 h-2 rounded-full ${
+                    isSocketConnected ? 'bg-green-500' : 'bg-red-500'
+                  }`}></div>
+                  <span>{isSocketConnected ? 'En ligne' : 'Hors ligne'}</span>
+                </div>
+                {totalUnreadCount > 0 && (
+                  <span className="bg-blue-500 text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center font-bold">
+                    {totalUnreadCount > 99 ? '99+' : totalUnreadCount}
+                  </span>
+                )}
+              </div>
             </div>
             
             {/* Search */}

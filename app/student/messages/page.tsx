@@ -19,6 +19,7 @@ import {
   MoreVertical
 } from "lucide-react";
 import Link from "next/link";
+import { useSocket } from "@/hooks/useSocket";
 
 interface Message {
   id: number;
@@ -59,7 +60,6 @@ export default function StudentMessagesPage() {
   const router = useRouter();
   const hasCheckedAuth = useRef(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const getValidToken = (): string | null => {
     if (typeof window === 'undefined') return null;
@@ -72,6 +72,19 @@ export default function StudentMessagesPage() {
     }
     return token;
   };
+  
+  // WebSocket hook
+  const {
+    isConnected: isSocketConnected,
+    error: socketError,
+    newMessage: socketNewMessage,
+    messageNotification,
+    messagesRead,
+    sendMessage: sendSocketMessage,
+    markAsRead: markMessagesAsReadSocket,
+    startTyping,
+    stopTyping
+  } = useSocket({ token: getValidToken() || '', autoConnect: !!getValidToken() });
 
   useEffect(() => {
     if (hasCheckedAuth.current) return;
@@ -90,36 +103,48 @@ export default function StudentMessagesPage() {
     scrollToBottom();
   }, [messages]);
 
-  // Auto-refresh messages when conversation is selected
+  // WebSocket effects
   useEffect(() => {
-    if (!selectedConversation) return;
-    
-    // Clear any existing interval
-    if (refreshIntervalRef.current) {
-      clearInterval(refreshIntervalRef.current);
+    if (socketNewMessage && selectedConversation && socketNewMessage.conversation_id === selectedConversation.id) {
+      // Adapter le format du message WebSocket au format local
+      const adaptedMessage: Message = {
+        id: socketNewMessage.id,
+        sender_id: socketNewMessage.sender_id,
+        receiver_id: socketNewMessage.sender_type === 'student' ? selectedConversation.participant_id : socketNewMessage.sender_id,
+        content: socketNewMessage.content,
+        created_at: socketNewMessage.created_at,
+        is_read: socketNewMessage.is_read,
+        sender_type: socketNewMessage.sender_type.toUpperCase() as 'STUDENT' | 'EMPLOYER',
+        receiver_type: socketNewMessage.sender_type === 'student' ? 'EMPLOYER' : 'STUDENT',
+        sender_name: socketNewMessage.sender_name
+      };
+      setMessages(prev => [...prev, adaptedMessage]);
+      scrollToBottom();
+      
+      // Mettre à jour la conversation dans la liste
+      setConversations(prev =>
+        prev.map(conv =>
+          conv.id === selectedConversation.id
+            ? { ...conv, last_message: socketNewMessage.content, last_message_at: socketNewMessage.created_at }
+            : conv
+        )
+      );
     }
-    
-    // Set up new interval for refreshing messages
-    refreshIntervalRef.current = setInterval(() => {
-      fetchMessages(selectedConversation.id);
-    }, 10000); // Refresh every 10 seconds
-    
-    // Cleanup on unmount or conversation change
-    return () => {
-      if (refreshIntervalRef.current) {
-        clearInterval(refreshIntervalRef.current);
-      }
-    };
-  }, [selectedConversation?.id]);
+  }, [socketNewMessage, selectedConversation]);
 
-  // Cleanup on unmount
   useEffect(() => {
-    return () => {
-      if (refreshIntervalRef.current) {
-        clearInterval(refreshIntervalRef.current);
-      }
-    };
-  }, []);
+    if (messageNotification && (!selectedConversation || messageNotification.conversationId !== selectedConversation.id)) {
+      // Rafraîchir les conversations pour mettre à jour le dernier message et le compteur non lu
+      fetchConversations();
+    }
+  }, [messageNotification, selectedConversation]);
+
+  useEffect(() => {
+    if (messagesRead && selectedConversation && messagesRead.conversationId === selectedConversation.id) {
+      // Mettre à jour l'état de lecture des messages
+      setMessages(prev => prev.map(msg => ({ ...msg, is_read: true })));
+    }
+  }, [messagesRead, selectedConversation]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -214,50 +239,66 @@ export default function StudentMessagesPage() {
     if (!newMessage.trim() || !selectedConversation || sendingMessage) return;
 
     setSendingMessage(true);
-    try {
-      const token = getValidToken();
-      if (!token) return;
-
-      const res = await fetch(`/api/student/conversations/${selectedConversation.id}/messages`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ content: newMessage.trim() }),
-      });
-      
-      if (!res.ok) {
-        throw new Error('Erreur lors de l\'envoi du message');
-      }
-
-      const data = await res.json();
-      if (data.success) {
-        setMessages(prev => [...prev, data.data]);
-        setNewMessage("");
-        
-        // Update conversation last message
-        setConversations(prev =>
-          prev.map(conv =>
-            conv.id === selectedConversation.id
-              ? { ...conv, last_message: newMessage.trim(), last_message_at: new Date().toISOString() }
-              : conv
-          )
-        );
-      } else {
-        throw new Error(data.error || 'Envoi échoué');
-      }
-    } catch (err: any) {
-      console.error('sendMessage error:', err);
-      alert(err.message || 'Erreur lors de l\'envoi du message');
-    } finally {
+    
+    // Utiliser WebSocket si disponible, sinon fallback HTTP
+    if (isSocketConnected) {
+      sendSocketMessage(selectedConversation.id, newMessage.trim());
+      setNewMessage("");
       setSendingMessage(false);
+      
+      // La mise à jour de la conversation se fera via l'événement WebSocket
+    } else {
+      // Fallback HTTP
+      try {
+        const token = getValidToken();
+        if (!token) return;
+
+        const res = await fetch(`/api/student/conversations/${selectedConversation.id}/messages`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ content: newMessage.trim() }),
+        });
+        
+        if (!res.ok) {
+          throw new Error('Erreur lors de l\'envoi du message');
+        }
+
+        const data = await res.json();
+        if (data.success) {
+          setMessages(prev => [...prev, data.data]);
+          setNewMessage("");
+          
+          // Update conversation last message
+          setConversations(prev =>
+            prev.map(conv =>
+              conv.id === selectedConversation.id
+                ? { ...conv, last_message: newMessage.trim(), last_message_at: new Date().toISOString() }
+                : conv
+            )
+          );
+        } else {
+          throw new Error(data.error || 'Envoi échoué');
+        }
+      } catch (err: any) {
+        console.error('sendMessage error:', err);
+        alert(err.message || 'Erreur lors de l\'envoi du message');
+      } finally {
+        setSendingMessage(false);
+      }
     }
   };
 
   const selectConversation = (conversation: Conversation) => {
     setSelectedConversation(conversation);
     fetchMessages(conversation.id);
+    
+    // Marquer les messages comme lus via WebSocket si disponible
+    if (isSocketConnected) {
+      markMessagesAsReadSocket(conversation.id);
+    }
   };
 
   const formatTime = (dateString: string) => {
@@ -294,7 +335,19 @@ export default function StudentMessagesPage() {
       }`}>
         {/* Header */}
         <div className="p-4 border-b border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-900 mb-3">Messages</h2>
+          <div className="flex items-center gap-3 mb-3">
+            <h2 className="text-lg font-semibold text-gray-900">Messages</h2>
+            <div className="ml-auto flex items-center gap-2">
+              <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs ${
+                isSocketConnected ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+              }`}>
+                <div className={`w-2 h-2 rounded-full ${
+                  isSocketConnected ? 'bg-green-500' : 'bg-red-500'
+                }`}></div>
+                <span>{isSocketConnected ? 'En ligne' : 'Hors ligne'}</span>
+              </div>
+            </div>
+          </div>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <input
