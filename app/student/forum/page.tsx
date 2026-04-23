@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { decodeToken } from "@/lib/jwt";
 import { Button } from "@/components/ui/button";
 import { 
@@ -315,7 +316,7 @@ export default function StudentForumPage() {
       const token = getValidToken();
       if (!token) return;
 
-      const res = await fetch(`/api/student/forum/replies/${replyId}/replies`, {
+      const res = await fetch(`/api/student/forum/replies/${replyId}/comment-replies`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -537,7 +538,9 @@ export default function StudentForumPage() {
 
               {/* Post Content */}
               <div className="p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-3">{topic.title}</h2>
+                <Link href={`/student/forum/${topic.id}`}>
+                  <h2 className="text-xl font-semibold text-gray-900 mb-3 hover:text-blue-600 cursor-pointer transition-colors">{topic.title}</h2>
+                </Link>
                 <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{topic.content}</p>
                 
                 {topic.tags && (
