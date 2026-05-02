@@ -80,6 +80,7 @@ export default function StudentForumPage() {
   const [commentReplies, setCommentReplies] = useState<CommentReply[]>([]);
   const [expandedComments, setExpandedComments] = useState<Set<number>>(new Set());
   const [expandedReplies, setExpandedReplies] = useState<Set<number>>(new Set());
+  const [visibleComments, setVisibleComments] = useState<Set<number>>(new Set());
   const [newCommentReply, setNewCommentReply] = useState<Record<number, string>>({});
   const [showNewTopicModal, setShowNewTopicModal] = useState(false);
   const [newTopic, setNewTopic] = useState({ title: '', content: '', category: '', tags: '' });
@@ -369,6 +370,20 @@ export default function StudentForumPage() {
     // Reset expanded states when opening a new topic
     setExpandedComments(new Set());
     setExpandedReplies(new Set());
+    // Show comments by default when opening a topic
+    setVisibleComments(prev => new Set(prev).add(topic.id));
+  };
+
+  const toggleCommentsVisibility = (topicId: number) => {
+    setVisibleComments(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(topicId)) {
+        newSet.delete(topicId);
+      } else {
+        newSet.add(topicId);
+      }
+      return newSet;
+    });
   };
 
   const toggleExpandedComments = (topicId: number) => {
@@ -565,19 +580,19 @@ export default function StudentForumPage() {
                     <span className="text-sm">{topic.likes}</span>
                   </button>
                   <button
-                    onClick={() => handleTopicClick(topic)}
+                    onClick={() => selectedTopic?.id === topic.id ? toggleCommentsVisibility(topic.id) : handleTopicClick(topic)}
                     className="flex items-center gap-2 text-gray-600 hover:text-blue-500 transition-colors"
                   >
                     <MessageSquare className="h-5 w-5" />
                     <span className="text-sm">
-                      {selectedTopic?.id === topic.id ? 'Masquer' : 'Commenter'}
+                      {selectedTopic?.id === topic.id && visibleComments.has(topic.id) ? 'Masquer' : selectedTopic?.id === topic.id ? 'Commenter' : 'Commenter'}
                     </span>
                   </button>
                 </div>
               </div>
 
               {/* Comments Section */}
-              {selectedTopic?.id === topic.id && (
+              {selectedTopic?.id === topic.id && visibleComments.has(topic.id) && (
                 <div className="border-t border-gray-100">
                   {/* Comments List */}
                   <div className="p-6 space-y-4">
