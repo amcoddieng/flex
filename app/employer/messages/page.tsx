@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { decodeToken } from "@/lib/jwt";
 import { Button } from "@/components/ui/button";
@@ -60,11 +60,14 @@ export default function EmployerMessagesPage() {
   const hasCheckedAuth = useRef(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
+  // État pour éviter les mismatchs serveur/client
+  const [isMounted, setIsMounted] = useState(false);
+  const [token, setToken] = useState<string | null>(null);
+  
   // Importer le hook depuis le layout parent via contexte ou le recréer ici
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   const { unreadCount: messageUnreadCount, refreshUnreadCount } = useUnreadMessages(token);
   
-  // WebSocket hook
+  // WebSocket hook - seulement après montage
   const {
     isConnected: isSocketConnected,
     error: socketError,
@@ -75,7 +78,7 @@ export default function EmployerMessagesPage() {
     markAsRead: markMessagesAsRead,
     startTyping,
     stopTyping
-  } = useSocket({ token: token || '', autoConnect: !!token });
+  } = useSocket({ token: token || '', autoConnect: isMounted && !!token });
 
   const getValidToken = (): string | null => {
     if (typeof window === 'undefined') return null;
@@ -89,11 +92,17 @@ export default function EmployerMessagesPage() {
     return token;
   };
 
+  // Effet d'initialisation pour éviter les mismatchs
   useEffect(() => {
-    if (hasCheckedAuth.current) return;
+    setIsMounted(true);
+    const storedToken = getValidToken();
+    setToken(storedToken);
+  }, []);
+
+  useEffect(() => {
+    if (hasCheckedAuth.current || !isMounted) return;
     hasCheckedAuth.current = true;
 
-    const token = getValidToken();
     if (!token) {
       router.push('/login');
       return;
@@ -101,7 +110,7 @@ export default function EmployerMessagesPage() {
 
     setIsAuthed(true);
     fetchConversations();
-  }, [router]);
+  }, [router, token, isMounted]);
 
   
   useEffect(() => {
@@ -140,8 +149,10 @@ export default function EmployerMessagesPage() {
     }
   }, [messagesRead, selectedConversation]);
 
-  // Effet pour gérer l'ouverture automatique depuis l'URL - version simplifiée
+  // Effet pour gérer l'ouverture automatique depuis l'URL - version SSR-safe
   useEffect(() => {
+    if (!isMounted || !searchParams) return;
+    
     const conversationId = searchParams.get('conversation');
     if (!conversationId || selectedConversation) return;
     
@@ -185,57 +196,69 @@ export default function EmployerMessagesPage() {
       
       return () => clearTimeout(timeoutId);
     }
-  }, [searchParams.get('conversation'), selectedConversation, conversations.length]);
+  }, [searchParams?.get('conversation'), selectedConversation, conversations.length, isMounted, router]);
 
-  // Helper pour formater la date
-  const formatMessageDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const messageDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  // Helper pour formater la date - version SSR-safe
+  const formatMessageDate = useCallback((dateString: string) => {
+    if (!isMounted) return '';
     
-    if (messageDate.getTime() === today.getTime()) {
-      return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-    } else if (messageDate.getTime() === today.getTime() - 86400000) {
-      return 'Hier';
-    } else {
-      return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+    try {
+      const date = new Date(dateString);
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const messageDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      
+      if (messageDate.getTime() === today.getTime()) {
+        return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+      } else if (messageDate.getTime() === today.getTime() - 86400000) {
+        return 'Hier';
+      } else {
+        return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+      }
+    } catch (error) {
+      return '';
     }
-  };
+  }, [isMounted]);
 
-  // Grouper les messages par date
-  const groupMessagesByDate = (messages: Message[]) => {
+  // Grouper les messages par date - version SSR-safe
+  const groupMessagesByDate = useCallback((messages: Message[]) => {
+    if (!isMounted) return {};
+    
     const groups: { [date: string]: Message[] } = {};
     
     messages.forEach(message => {
-      const date = new Date(message.created_at);
-      const dateKey = new Date(date.getFullYear(), date.getMonth(), date.getDate()).toDateString();
-      
-      if (!groups[dateKey]) {
-        groups[dateKey] = [];
+      try {
+        const date = new Date(message.created_at);
+        const dateKey = new Date(date.getFullYear(), date.getMonth(), date.getDate()).toDateString();
+        
+        if (!groups[dateKey]) {
+          groups[dateKey] = [];
+        }
+        groups[dateKey].push(message);
+      } catch (error) {
+        // Ignorer les dates invalides
       }
-      groups[dateKey].push(message);
     });
     
     return groups;
-  };
+  }, [isMounted]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const fetchConversations = async () => {
+  const fetchConversations = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const token = getValidToken();
-      if (!token) {
+      const validToken = getValidToken();
+      if (!validToken) {
         router.push('/login');
         return;
       }
 
       const res = await fetch("/api/employer/conversations", {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${validToken}` },
       });
 
       if (!res.ok) throw new Error("Erreur lors de la récupération des conversations");
@@ -247,16 +270,16 @@ export default function EmployerMessagesPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [getValidToken, router]);
 
-  const fetchMessages = async (conversationId: number) => {
+  const fetchMessages = useCallback(async (conversationId: number) => {
     setMessagesLoading(true);
     try {
-      const token = getValidToken();
-      if (!token) return;
+      const validToken = getValidToken();
+      if (!validToken) return;
 
       const res = await fetch(`/api/employer/conversations/${conversationId}/messages`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${validToken}` },
       });
 
       if (!res.ok) throw new Error("Erreur lors de la récupération des messages");
@@ -268,9 +291,9 @@ export default function EmployerMessagesPage() {
     } finally {
       setMessagesLoading(false);
     }
-  };
+  }, [getValidToken]);
 
-  const sendMessage = async () => {
+  const sendMessage = useCallback(async () => {
     if (!newMessage.trim() || !selectedConversation) return;
 
     setSending(true);
@@ -280,7 +303,7 @@ export default function EmployerMessagesPage() {
       sendSocketMessage(selectedConversation.id, newMessage.trim());
       setNewMessage("");
       
-      // Mettre à jour optimistement la conversation
+      // Mettre à jour optimistiquement la conversation
       setConversations(prev => prev.map(conv => 
         conv.id === selectedConversation.id 
           ? { ...conv, last_message: newMessage.trim(), last_message_time: new Date().toISOString() }
@@ -291,14 +314,14 @@ export default function EmployerMessagesPage() {
     } else {
       // Fallback HTTP
       try {
-        const token = getValidToken();
-        if (!token) return;
+        const validToken = getValidToken();
+        if (!validToken) return;
 
         const res = await fetch(`/api/employer/conversations/${selectedConversation.id}/messages`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
+            'Authorization': `Bearer ${validToken}`,
           },
           body: JSON.stringify({ message: newMessage.trim() }),
         });
@@ -321,9 +344,9 @@ export default function EmployerMessagesPage() {
         setSending(false);
       }
     }
-  };
+  }, [newMessage, selectedConversation, isSocketConnected, sendSocketMessage, getValidToken]);
 
-  const selectConversation = (conversation: Conversation) => {
+  const selectConversation = useCallback((conversation: Conversation) => {
     setSelectedConversation(conversation);
     fetchMessages(conversation.id);
     refreshUnreadCount();
@@ -337,15 +360,21 @@ export default function EmployerMessagesPage() {
     setConversations(prev => prev.map(conv => 
       conv.id === conversation.id ? { ...conv, unread_count: 0 } : conv
     ));
-  };
+  }, [refreshUnreadCount, isSocketConnected, markMessagesAsRead]);
 
-  const filteredConversations = conversations.filter(conv =>
-    conv.offer_title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    `${conv.first_name} ${conv.last_name}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (conv.student_email && conv.student_email.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  // Memoïzation des conversations filtrées pour éviter les re-rendus
+  const filteredConversations = useMemo(() => {
+    if (!isMounted) return [];
+    return conversations.filter(conv =>
+      conv.offer_title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      `${conv.first_name} ${conv.last_name}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (conv.student_email && conv.student_email.toLowerCase().includes(searchQuery.toLowerCase()))
+    );
+  }, [conversations, searchQuery, isMounted]);
 
-  const totalUnreadCount = conversations.reduce((acc, conv) => acc + conv.unread_count, 0);
+  const totalUnreadCount = useMemo(() => {
+    return conversations.reduce((acc, conv) => acc + conv.unread_count, 0);
+  }, [conversations]);
 
 if (!isAuthed) return <div className="p-8">Vérification...</div>;
 
@@ -425,7 +454,7 @@ if (!isAuthed) return <div className="p-8">Vérification...</div>;
                             {conversation.first_name} {conversation.last_name}
                           </h3>
                           <span className="text-xs text-slate-500">
-                            {new Date(conversation.last_message_time || conversation.created_at).toLocaleDateString('fr-FR')}
+                            {isMounted ? new Date(conversation.last_message_time || conversation.created_at).toLocaleDateString('fr-FR') : ''}
                           </span>
                         </div>
                         
@@ -462,45 +491,44 @@ if (!isAuthed) return <div className="p-8">Vérification...</div>;
           {selectedConversation ? (
             <>
               {/* Chat Header - Style du site */}
-              <div className="bg-blue-600 text-white p-4 shadow-md">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-black flex items-center justify-center text-white font-semibold shadow-md">
-                      {selectedConversation.first_name.charAt(0).toUpperCase()}
-                    </div>
-                    <div className="min-w-0">
-                      <h3 className="font-semibold text-white truncate text-base">
-                        {selectedConversation.first_name} {selectedConversation.last_name}
-                      </h3>
-                      <div className="flex items-center gap-2 text-blue-100 text-xs">
-                        <Briefcase className="h-3 w-3" />
-                        <span className="truncate">{selectedConversation.offer_title}</span>
-                      </div>
-                    </div>
+              <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-gray-600 flex items-center justify-center text-white font-semibold">
+                    {selectedConversation.first_name.charAt(0).toUpperCase()}
                   </div>
-                  
-                  <div className="flex items-center gap-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => setSelectedConversation(null)}
-                      className="sm:hidden text-white border-white hover:bg-white hover:text-blue-600"
-                    >
-                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                      </svg>
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={() => setSelectedConversation(null)}
-                      className="hidden sm:flex text-white border-white hover:bg-white hover:text-blue-600"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
+                  <div className="min-w-0">
+                    <h3 className="font-semibold text-gray-900 truncate text-base">
+                      {selectedConversation.first_name} {selectedConversation.last_name}
+                    </h3>
+                    <div className="flex items-center gap-2 text-gray-600 text-xs">
+                      <Briefcase className="h-3 w-3" />
+                      <span className="truncate">{selectedConversation.offer_title}</span>
+                    </div>
                   </div>
                 </div>
-              </div>
+                  
+                <div className="flex items-center gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setSelectedConversation(null)}
+                    className="sm:hidden border-gray-200 hover:bg-gray-100"
+                  >
+                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setSelectedConversation(null)}
+                    className="hidden sm:flex border-gray-200 hover:bg-gray-100"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                  </div>
+                </div>
+              
 
               {/* Messages Area - Style du site */}
               <div className="flex-1 overflow-y-auto bg-gray-50 p-4 h-full">
@@ -518,11 +546,11 @@ if (!isAuthed) return <div className="p-8">Vérification...</div>;
                           <div className="flex items-center justify-center my-4">
                             <div className="bg-slate-300 h-px flex-1"></div>
                             <span className="px-3 py-1 text-xs text-slate-600 bg-white rounded-full shadow-sm">
-                              {new Date(dateKey).toLocaleDateString('fr-FR', { 
+                              {isMounted ? new Date(dateKey).toLocaleDateString('fr-FR', { 
                                 weekday: 'long', 
                                 day: 'numeric', 
                                 month: 'long' 
-                              })}
+                              }) : ''}
                             </span>
                             <div className="bg-slate-300 h-px flex-1"></div>
                           </div>
@@ -538,21 +566,21 @@ if (!isAuthed) return <div className="p-8">Vérification...</div>;
                               {/* Avatar pour les messages reçus */}
                               {message.sender_type === 'student' && (
                                 <div className="flex items-end mr-2">
-                                  <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-400 to-blue-600 flex items-center justify-center text-white text-xs font-semibold shadow-md">
-                                    {message.sender_name.charAt(0).toUpperCase()}
+                                  <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-white font-semibold text-xs mr-2 flex-shrink-0">
+                                    {message.sender_name?.charAt(0).toUpperCase() || 'S'}
                                   </div>
                                 </div>
                               )}
                               
                               {/* Bulle de message */}
-                              <div className={`max-w-lg px-4 py-2 rounded-2xl shadow-md ${
+                              <div className={`max-w-lg px-4 py-3 rounded-2xl shadow-md ${
                                 message.sender_type === 'employer'
-                                  ? 'bg-blue-600 text-white rounded-br-none'
-                                  : 'bg-white text-slate-900 rounded-bl-none border border-slate-200'
+                                  ? 'bg-white-900 text-black shadow-lg rounded-br-none'
+                                  : 'bg-white text-gray-900 border border-gray-200 shadow-md rounded-bl-none'
                                 }`}>
                                 <p className="text-sm break-words leading-relaxed">{message.message}</p>
-                                <div className={`flex items-center justify-between mt-1 text-xs ${
-                                  message.sender_type === 'employer' ? 'text-blue-100' : 'text-slate-400'
+                                <div className={`flex items-center justify-between mt-2 text-xs ${
+                                  message.sender_type === 'employer' ? 'text-blue-100' : 'text-gray-400'
                                 }`}>
                                   <span className="flex items-center gap-1">
                                     <Clock className="h-3 w-3" />
@@ -573,8 +601,8 @@ if (!isAuthed) return <div className="p-8">Vérification...</div>;
                               {/* Avatar pour les messages envoyés */}
                               {message.sender_type === 'employer' && (
                                 <div className="flex items-start ml-2">
-                                  <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-white text-xs font-semibold shadow-md">
-                                    {message.sender_name ? message.sender_name.charAt(0).toUpperCase() : 'E'}
+                                  <div className="w-8 h-8 rounded-full bg-gradient-to-r from-gray-700 to-gray-800 flex items-center justify-center text-white font-semibold text-xs flex-shrink-0">
+                                    <span>MOI</span>
                                   </div>
                                 </div>
                               )}
