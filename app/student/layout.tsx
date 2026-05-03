@@ -18,7 +18,9 @@ import {
   Bell,
   Search,
   Calendar,
-  TrendingUp
+  TrendingUp,
+  Users,
+  Rocket
 } from "lucide-react";
 import Link from "next/link";
 import LogoutButton from "@/components/auth/LogoutButton";
@@ -87,6 +89,11 @@ export default function StudentLayout({
       label: "Forum", 
       href: "/student/forum", 
       icon: MessageCircle 
+    },
+      { 
+      label: "Projets", 
+      href: "/student/projects", 
+      icon: Rocket 
     },
     { 
       label: "Profil", 

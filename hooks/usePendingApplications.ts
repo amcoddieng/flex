@@ -7,6 +7,25 @@ export function usePendingApplications(token: string | null) {
     if (!token) return;
     
     try {
+      // Vérifier le rôle de l'utilisateur avant de faire l'appel API
+      const profileRes = await fetch('/api/student/profile', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!profileRes.ok) {
+        console.error('Error fetching user profile:', profileRes.status);
+        return;
+      }
+
+      const profileData = await profileRes.json();
+      const userRole = profileData.data?.student ? 'student' : 'employer';
+
+      // Ne charger les applications que si l'utilisateur est un employeur
+      if (userRole !== 'employer') {
+        setPendingCount(0);
+        return;
+      }
+
       const res = await fetch('/api/employer/applications', {
         headers: { Authorization: `Bearer ${token}` },
       });

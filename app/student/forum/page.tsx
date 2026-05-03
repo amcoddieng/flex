@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { decodeToken } from "@/lib/jwt";
 import { Button } from "@/components/ui/button";
+import { LikeButton } from "@/components/LikeButton";
 import { 
   MessageSquare, 
   Heart, 
@@ -89,6 +90,7 @@ export default function StudentForumPage() {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   
   const router = useRouter();
   const hasCheckedAuth = useRef(false);
@@ -265,49 +267,8 @@ export default function StudentForumPage() {
     }
   };
 
-  const handleLikeTopic = async (topicId: number) => {
-    try {
-      const token = getValidToken();
-      if (!token) return;
+  // Les anciennes fonctions handleLike sont supprimées - remplacées par le composant LikeButton
 
-      const res = await fetch(`/api/student/forum/topics/${topicId}/like`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-      
-      if (res.ok) {
-        setTopics(prev => prev.map(topic => 
-          topic.id === topicId 
-            ? { ...topic, likes: topic.likes + 1 }
-            : topic
-        ));
-      }
-    } catch (err) {
-      console.error('handleLikeTopic error:', err);
-    }
-  };
-
-  const handleLikeReply = async (replyId: number) => {
-    try {
-      const token = getValidToken();
-      if (!token) return;
-
-      const res = await fetch(`/api/student/forum/replies/${replyId}/like`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-      
-      if (res.ok) {
-        setReplies(prev => prev.map(reply => 
-          reply.id === replyId 
-            ? { ...reply, likes: reply.likes + 1 }
-            : reply
-        ));
-      }
-    } catch (err) {
-      console.error('handleLikeReply error:', err);
-    }
-  };
 
   const handleCommentReply = async (replyId: number) => {
     const content = newCommentReply[replyId];
@@ -342,27 +303,6 @@ export default function StudentForumPage() {
     }
   };
 
-  const handleLikeReplyReply = async (replyId: number) => {
-    try {
-      const token = getValidToken();
-      if (!token) return;
-
-      const res = await fetch(`/api/student/forum/comment-replies/${replyId}/like`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-      
-      if (res.ok) {
-        setCommentReplies(prev => prev.map(reply => 
-          reply.id === replyId 
-            ? { ...reply, likes: reply.likes + 1 }
-            : reply
-        ));
-      }
-    } catch (err) {
-      console.error('handleLikeReplyReply error:', err);
-    }
-  };
 
   const handleTopicClick = async (topic: ForumTopic) => {
     setSelectedTopic(topic);
@@ -414,11 +354,17 @@ export default function StudentForumPage() {
 
   // Effects
   useEffect(() => {
+    // Récupérer le token depuis localStorage
+    const storedToken = localStorage.getItem('token');
+    setToken(storedToken);
+  }, []);
+
+  useEffect(() => {
     if (hasCheckedAuth.current) return;
     hasCheckedAuth.current = true;
 
-    const token = getValidToken();
-    if (!token) {
+    const validToken = getValidToken();
+    if (!validToken) {
       router.push('/login');
       return;
     }
@@ -572,13 +518,13 @@ export default function StudentForumPage() {
               {/* Post Actions */}
               <div className="px-6 py-3 border-t border-gray-100">
                 <div className="flex items-center gap-6">
-                  <button
-                    onClick={() => handleLikeTopic(topic.id)}
-                    className="flex items-center gap-2 text-gray-600 hover:text-red-500 transition-colors"
-                  >
-                    <Heart className="h-5 w-5" />
-                    <span className="text-sm">{topic.likes}</span>
-                  </button>
+                  <LikeButton
+                    targetType="topic"
+                    targetId={topic.id}
+                    token={token}
+                    variant="heart"
+                    size="md"
+                  />
                   <button
                     onClick={() => selectedTopic?.id === topic.id ? toggleCommentsVisibility(topic.id) : handleTopicClick(topic)}
                     className="flex items-center gap-2 text-gray-600 hover:text-blue-500 transition-colors"
@@ -616,13 +562,14 @@ export default function StudentForumPage() {
                                 </div>
                                 <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap">{reply.content}</p>
                                 <div className="flex items-center gap-4 mt-2">
-                                  <button
-                                    onClick={() => handleLikeReply(reply.id)}
-                                    className="flex items-center gap-1 text-gray-600 hover:text-red-500 transition-colors text-xs"
-                                  >
-                                    <ThumbsUp className="h-3 w-3" />
-                                    <span>{reply.likes}</span>
-                                  </button>
+                                  <LikeButton
+                                    targetType="reply"
+                                    targetId={reply.id}
+                                    token={token}
+                                    variant="thumbsup"
+                                    size="sm"
+                                    className="text-xs"
+                                  />
                                   <button
                                     onClick={() => toggleExpandedReplies(reply.id)}
                                     className="text-blue-600 hover:text-blue-700 text-xs font-medium"
@@ -648,13 +595,14 @@ export default function StudentForumPage() {
                                             <span className="text-gray-500 text-xs">{formatDate(commentReply.created_at)}</span>
                                           </div>
                                           <p className="text-gray-700 text-xs leading-relaxed whitespace-pre-wrap">{commentReply.content}</p>
-                                          <button
-                                            onClick={() => handleLikeReplyReply(commentReply.id)}
-                                            className="flex items-center gap-1 text-gray-600 hover:text-red-500 transition-colors text-xs mt-1"
-                                          >
-                                            <ThumbsUp className="h-2 w-2" />
-                                            <span>{commentReply.likes}</span>
-                                          </button>
+                                          <LikeButton
+                                            targetType="comment_reply"
+                                            targetId={commentReply.id}
+                                            token={token}
+                                            variant="thumbsup"
+                                            size="sm"
+                                            className="text-xs mt-1"
+                                          />
                                         </div>
                                       </div>
                                     ))}

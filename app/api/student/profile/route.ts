@@ -207,9 +207,15 @@ export async function GET(request: NextRequest) {
       console.log('📊 Statistiques:', formattedStudent.statistics);
       console.log('🔍 ValidationStatus retourné:', formattedStudent.validationStatus);
 
+      console.log('🔍 Données finales envoyées:', JSON.stringify(formattedStudent, null, 2));
+      console.log('🔍 Vérification présence student:', !!formattedStudent);
+      console.log('🔍 Type de formattedStudent:', typeof formattedStudent);
+
       return NextResponse.json({
         success: true,
-        student: formattedStudent
+        data: {
+          student: formattedStudent
+        }
       });
 
     } finally {
