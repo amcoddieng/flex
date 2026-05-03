@@ -24,6 +24,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import LogoutButton from "@/components/auth/LogoutButton";
+import { NotificationsDropdown } from "@/components/student/NotificationsDropdown";
+import { useNotifications } from "@/hooks/student/useNotifications";
 
 export default function StudentLayout({
   children,
@@ -41,6 +43,7 @@ export default function StudentLayout({
   const decoded = token ? decodeToken(token) : null;
   const { unreadCount, refreshUnreadCount } = useUnreadMessages(token);
   const { pendingCount } = usePendingApplications(token);
+  const { unreadCount: notificationCount } = useNotifications(decoded?.userId ? Number(decoded.userId) : undefined);
 
   useEffect(() => {
     if (hasCheckedAuth.current) return;
@@ -214,6 +217,7 @@ export default function StudentLayout({
             </div>
             
             <div className="flex items-center gap-4">
+              <NotificationsDropdown userId={decoded?.userId ? Number(decoded.userId) : undefined} />
               <div className="text-sm text-gray-600">
                 Étudiant
               </div>
