@@ -399,7 +399,7 @@ export function StudentManagementModal({
                 Actions du compte
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Card className="p-4">
                   <div className="text-center">
@@ -440,6 +440,7 @@ export function StudentManagementModal({
                       {formData.blocked ? 'Débloquer' : 'Bloquer'}
                     </Button>
                   </div>
+                </Card>
 
                 <Card className="p-4 border-red-200">
                   <div className="text-center">
@@ -464,11 +465,12 @@ export function StudentManagementModal({
                       Supprimer
                     </Button>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                </Card>
+              </div>
+            </CardContent>
+          </Card>
         </div>
-      )}
+      )})
     </AdminModal>
   );
 }
