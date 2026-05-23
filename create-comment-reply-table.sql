@@ -2,7 +2,7 @@
 -- Cette table permet aux étudiants de répondre aux commentaires (forum_reply)
 
 CREATE TABLE comment_reply (
-    id INT PRIMARY KEY AUTO_INCREMENT,
+    id SERIAL PRIMARY KEY,
     reply_id INT NOT NULL,                    -- FK vers forum_reply (le commentaire auquel on répond)
     author_id INT NOT NULL,                   -- FK vers student_profile (l'auteur de la réponse)
     author_name VARCHAR(255) NOT NULL,         -- Nom de l'auteur (redondant pour performance)

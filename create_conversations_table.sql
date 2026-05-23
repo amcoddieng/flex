@@ -1,6 +1,6 @@
 -- Création de la table conversations
 CREATE TABLE IF NOT EXISTS conversations (
-    id INT PRIMARY KEY AUTO_INCREMENT,
+    id SERIAL PRIMARY KEY,
     student_id INT NOT NULL,
     participant_id INT NOT NULL,
     participant_type ENUM('STUDENT', 'EMPLOYER') NOT NULL,
@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS conversations (
 
 -- Création de la table messages
 CREATE TABLE IF NOT EXISTS messages (
-    id INT PRIMARY KEY AUTO_INCREMENT,
+    id SERIAL PRIMARY KEY,
     conversation_id INT NOT NULL,
     sender_id INT NOT NULL,
     receiver_id INT NOT NULL,

@@ -1,19 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import mysql from 'mysql2/promise';
+import { Pool } from 'pg';
 import bcrypt from 'bcryptjs';
 import { generateToken } from '@/lib/jwt';
 
-const pool = mysql.createPool({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME ,
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  max: 10,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 20000,
 });
 
 export async function POST(request: NextRequest) {
+  let client;
+  
   try {
     const body = await request.json();
     const { email, password } = body;
@@ -22,89 +21,87 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Email et mot de passe requis' }, { status: 400 });
     }
 
-    const connection = await pool.getConnection();
     try {
-      const [rows] = await connection.execute(
-        'SELECT id, email, password, role FROM user WHERE email = ?',
-        [email]
-      );
+      client = await pool.connect();
+    } catch (connectError) {
+      console.error('Database connection failed:', connectError);
+      return NextResponse.json({ error: 'Failed to connect to the database.' }, { status: 500 });
+    }
+    
+    const result = await client.query(
+      'SELECT id, email, password, role FROM "user" WHERE email = $1',
+      [email]
+    );
 
-      if (!Array.isArray(rows) || rows.length === 0) {
-        return NextResponse.json({ error: 'Utilisateur non trouvé' }, { status: 404 });
-      }
+    if (result.rows.length === 0) {
+      return NextResponse.json({ error: 'Utilisateur non trouvé' }, { status: 404 });
+    }
 
-      const user = (rows as any)[0];
-      const match = await bcrypt.compare(password, user.password);
+    const user = result.rows[0];
+    const match = await bcrypt.compare(password, user.password);
 
-      if (!match) {
-        return NextResponse.json({ error: 'Mot de passe incorrect' }, { status: 401 });
-      }
+    if (!match) {
+      return NextResponse.json({ error: 'Mot de passe incorrect' }, { status: 401 });
+    }
 
-      // Fetch user profile based on role to get name, first/last and avatar
-      let profileData: any = { name: null, avatar: null, firstName: null, lastName: null };
+    let profileData: any = { name: null, avatar: null, firstName: null, lastName: null };
 
-      try {
-        if (user.role === 'STUDENT') {
-          const [studentProfile] = await connection.execute(
-            'SELECT first_name, last_name, profile_photo FROM student_profile WHERE user_id = ?',
-            [user.id]
-          );
-          if ((studentProfile as any[]).length > 0) {
-            // afficher dans le console pour debug
-            console.log('studentProfile:', studentProfile);
-            const profile = (studentProfile as any[])[0];
-            profileData.firstName = profile.first_name || null;
-            profileData.lastName = profile.last_name || null;
-            profileData.name = `${profileData.firstName || ''} ${profileData.lastName || ''}`.trim();
-            profileData.avatar = profile.profile_photo;
-          }
-        } else if (user.role === 'employer') {
-          const [employerProfile] = await connection.execute(
-            'SELECT companyName, companyLogo FROM employer_profile WHERE user_id = ?',
-            [user.id]
-          );
-          if ((employerProfile as any[]).length > 0) {
-            const profile = (employerProfile as any[])[0];
-            // For employers, place companyName into firstName for token convenience
-            profileData.firstName = profile.companyName || null;
-            profileData.lastName = null;
-            profileData.name = profileData.firstName ;
-            profileData.avatar = profile.companyLogo;
-          }
+    try {
+      if (user.role === 'STUDENT') {
+        const studentProfileResult = await client.query(
+          'SELECT first_name, last_name, profile_photo FROM student_profile WHERE user_id = $1',
+          [user.id]
+        );
+        
+        if (studentProfileResult.rows.length > 0) {
+          const profile = studentProfileResult.rows[0];
+          profileData.firstName = profile.first_name || null;
+          profileData.lastName = profile.last_name || null;
+          profileData.name = `${profileData.firstName || ''} ${profileData.lastName || ''}`.trim();
+          profileData.avatar = profile.profile_photo;
         }
-      } catch (err) {
-        console.error('Error fetching profile data:', err);
-        // Continue with fallback data
+      } else if (user.role === 'employer') {
+        const employerProfileResult = await client.query(
+          'SELECT companyName, companyLogo FROM employer_profile WHERE user_id = $1',
+          [user.id]
+        );
+        
+        if (employerProfileResult.rows.length > 0) {
+          const profile = employerProfileResult.rows[0];
+          profileData.firstName = profile.companyname || null;
+          profileData.name = profileData.firstName;
+          profileData.avatar = profile.companylogo;
+        }
       }
+    } catch (err) {
+      console.error('Error fetching profile data:', err);
+    }
 
-      // Generate JWT token including firstName/lastName when available
-      const token = generateToken({
+    const token = generateToken({
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+      firstName: profileData.firstName,
+      lastName: profileData.lastName,
+      name: profileData.name
+    });
+
+    return NextResponse.json(
+      {
+        success: true,
+        token,
+        role: user.role,
         userId: user.id,
         email: user.email,
-        role: user.role,
-        firstName: profileData.firstName,
-        lastName: profileData.lastName,
-        name: profileData.name
-      });
-
-      return NextResponse.json(
-        {
-          success: true,
-          token,
-          role: user.role,
-          userId: user.id,
-          email: user.email,
-          name: profileData.name,
-          avatar: profileData.avatar,
-        },
-        { status: 200 }
-      );
-    } finally {
-      connection.release();
-    }
+        name: profileData.name,
+        avatar: profileData.avatar,
+      },
+      { status: 200 }
+    );
   } catch (error: any) {
     console.error('Erreur login:', error);
-    const message = process.env.NODE_ENV === 'production' ? 'Erreur lors de la connexion' : (error?.message || String(error));
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: 'Erreur lors de la connexion' }, { status: 500 });
+  } finally {
+    client?.release();
   }
 }

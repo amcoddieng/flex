@@ -1,4 +1,4 @@
-const mysql = require('mysql2/promise');
+const mysql = require('./lib/db');
 
 async function checkConversationTable() {
   const connection = await mysql.createPool({

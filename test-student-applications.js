@@ -1,7 +1,7 @@
 // Script pour tester si un étudiant a des candidatures
 // Exécuter avec: node test-student-applications.js
 
-const mysql = require('mysql2/promise');
+const mysql = require('./lib/db');
 
 async function testStudentApplications() {
   const connection = await mysql.createConnection({

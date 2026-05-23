@@ -6,7 +6,7 @@ console.log('DB_PASSWORD:', process.env.DB_PASSWORD ? '***' : 'NON DEFINI');
 console.log('DB_NAME:', process.env.DB_NAME);
 
 // Test de connexion avec les mêmes paramètres que les API admin
-const mysql = require('mysql2/promise');
+const mysql = require('./lib/db');
 
 async function testAdminConnection() {
   try {

@@ -1,5 +1,5 @@
 // Script pour vérifier les bases de données disponibles
-const mysql = require('mysql2/promise');
+const mysql = require('./lib/db');
 
 async function checkDatabases() {
   const connection = await mysql.createConnection({

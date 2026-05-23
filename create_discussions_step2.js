@@ -14,7 +14,7 @@ async function createSecondTable() {
     // Création de la deuxième table
     const createTableSQL = `
       CREATE TABLE IF NOT EXISTS project_discussion_comments (
-          id INT AUTO_INCREMENT PRIMARY KEY,
+          id SERIAL PRIMARY KEY,
           discussion_id INT NOT NULL,
           author_id INT NOT NULL,
           content TEXT NOT NULL,

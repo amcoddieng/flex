@@ -1,7 +1,7 @@
 // SCRIPT DE TEST POUR LE SYSTÈME DE LIKES
 // Exécutez ce script pour tester l'implémentation complète
 
-const mysql = require('mysql2/promise');
+const mysql = require('./lib/db');
 
 // Configuration de la base de données
 const pool = mysql.createPool({
@@ -22,7 +22,7 @@ async function testLikesSystem() {
     console.log('1. Création de la table likes...');
     await pool.execute(`
       CREATE TABLE IF NOT EXISTS likes (
-        id INT PRIMARY KEY AUTO_INCREMENT,
+        id SERIAL PRIMARY KEY,
         user_id INT NOT NULL,
         target_type ENUM('topic', 'reply', 'comment_reply') NOT NULL,
         target_id INT NOT NULL,
@@ -58,7 +58,7 @@ async function testLikesSystem() {
     try {
       await pool.execute(`
         CREATE TABLE IF NOT EXISTS comment_reply (
-          id INT PRIMARY KEY AUTO_INCREMENT,
+          id SERIAL PRIMARY KEY,
           reply_id INT NOT NULL,
           author_id INT,
           author_name VARCHAR(255),

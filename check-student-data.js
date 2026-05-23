@@ -1,7 +1,7 @@
 // Script pour vérifier les données de l'étudiant Amadou Dieng (ID: 15)
 // Exécuter avec: node check-student-data.js
 
-const mysql = require('mysql2/promise');
+const mysql = require('./lib/db');
 
 async function checkStudentData() {
   const connection = await mysql.createConnection({

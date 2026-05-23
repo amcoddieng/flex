@@ -6,7 +6,7 @@ USE job_platform;
 
 -- Table des conversations
 CREATE TABLE IF NOT EXISTS conversation (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     student_id INT NOT NULL,
     employer_id INT NOT NULL,
     offer_id INT NOT NULL,
@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS conversation (
 
 -- Table des messages
 CREATE TABLE IF NOT EXISTS message (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     conversation_id INT NOT NULL,
     sender_type ENUM('student', 'employer') NOT NULL,
     sender_id INT NOT NULL,

@@ -2,7 +2,7 @@
 
 -- Table pour les discussions de projet
 CREATE TABLE IF NOT EXISTS project_discussions (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id SERIAL PRIMARY KEY,
     project_id INT NOT NULL,
     author_id INT NOT NULL,
     title VARCHAR(255) NOT NULL,

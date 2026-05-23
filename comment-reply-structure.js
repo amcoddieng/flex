@@ -10,7 +10,7 @@ const commentReplyStructure = () => {
     
     columns: {
       id: {
-        type: 'INT PRIMARY KEY AUTO_INCREMENT',
+        type: 'SERIAL PRIMARY KEY',
         description: 'Identifiant unique de la réponse'
       },
       

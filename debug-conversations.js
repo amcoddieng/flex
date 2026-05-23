@@ -1,4 +1,4 @@
-const mysql = require('mysql2/promise');
+const mysql = require('./lib/db');
 
 // Configuration de connexion à adapter
 const pool = mysql.createPool({

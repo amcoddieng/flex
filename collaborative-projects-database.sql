@@ -4,7 +4,7 @@
 
 -- 1. Table des projets collaboratifs
 CREATE TABLE collaborative_projects (
-    id INT PRIMARY KEY AUTO_INCREMENT,
+    id SERIAL PRIMARY KEY,
     creator_id INT NOT NULL,
     title VARCHAR(255) NOT NULL,
     description TEXT NOT NULL,
@@ -30,7 +30,7 @@ CREATE TABLE collaborative_projects (
 
 -- 2. Table des candidatures aux projets
 CREATE TABLE project_applications (
-    id INT PRIMARY KEY AUTO_INCREMENT,
+    id SERIAL PRIMARY KEY,
     project_id INT NOT NULL,
     applicant_id INT NOT NULL,
     message TEXT,
@@ -51,7 +51,7 @@ CREATE TABLE project_applications (
 
 -- 3. Table des membres du projet (candidats acceptés)
 CREATE TABLE project_members (
-    id INT PRIMARY KEY AUTO_INCREMENT,
+    id SERIAL PRIMARY KEY,
     project_id INT NOT NULL,
     member_id INT NOT NULL,
     role VARCHAR(100) DEFAULT 'member', -- ex: "leader", "communication", "design"
@@ -67,7 +67,7 @@ CREATE TABLE project_members (
 
 -- 4. Table des messages du projet (chat interne)
 CREATE TABLE project_messages (
-    id INT PRIMARY KEY AUTO_INCREMENT,
+    id SERIAL PRIMARY KEY,
     project_id INT NOT NULL,
     sender_id INT NOT NULL,
     content TEXT NOT NULL,
@@ -84,7 +84,7 @@ CREATE TABLE project_messages (
 
 -- 5. Table des tâches du projet
 CREATE TABLE project_tasks (
-    id INT PRIMARY KEY AUTO_INCREMENT,
+    id SERIAL PRIMARY KEY,
     project_id INT NOT NULL,
     title VARCHAR(255) NOT NULL,
     description TEXT,
@@ -106,7 +106,7 @@ CREATE TABLE project_tasks (
 
 -- 6. Table des feedbacks/réputations
 CREATE TABLE project_feedbacks (
-    id INT PRIMARY KEY AUTO_INCREMENT,
+    id SERIAL PRIMARY KEY,
     project_id INT NOT NULL,
     reviewer_id INT NOT NULL,
     reviewed_id INT NOT NULL,
@@ -125,7 +125,7 @@ CREATE TABLE project_feedbacks (
 
 -- 7. Table des compétences des étudiants (pour les recommandations)
 CREATE TABLE student_skills (
-    id INT PRIMARY KEY AUTO_INCREMENT,
+    id SERIAL PRIMARY KEY,
     student_id INT NOT NULL,
     skill_name VARCHAR(100) NOT NULL,
     level ENUM('beginner', 'intermediate', 'advanced') DEFAULT 'intermediate',

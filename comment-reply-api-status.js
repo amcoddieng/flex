@@ -60,7 +60,7 @@ const checkCommentReplyAPI = () => {
       name: 'comment_reply',
       purpose: 'Stocker les réponses aux commentaires',
       requiredColumns: [
-        'id INT PRIMARY KEY AUTO_INCREMENT',
+        'id SERIAL PRIMARY KEY',
         'reply_id INT', // FK vers forum_reply
         'author_id INT', // FK vers student_profile
         'author_name VARCHAR(255)',

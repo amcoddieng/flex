@@ -7,7 +7,7 @@ console.log('DB_NAME:', process.env.DB_NAME || 'NON DÉFINI');
 console.log('JWT_SECRET:', process.env.JWT_SECRET ? '***' : 'NON DÉFINI');
 
 // Test de connexion simple
-const mysql = require('mysql2/promise');
+const mysql = require('./lib/db');
 
 async function testConnection() {
   try {
