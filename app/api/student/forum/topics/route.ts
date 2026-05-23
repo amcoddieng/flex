@@ -1,16 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import mysql from 'mysql2/promise';
+import mysql from '@/lib/db';
 import { verifyToken, getTokenFromHeader } from '@/lib/jwt';
 
-const pool = mysql.createPool({
-  host: process.env.DB_HOST ,
-  user: process.env.DB_USER ,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME ,
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-});
+const pool = mysql.createPool();
 
 export async function GET(request: NextRequest) {
   try {
@@ -143,11 +135,12 @@ export async function POST(request: NextRequest) {
           is_pinned, 
           created_at
         ) VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, NOW())
+        RETURNING id
         `,
         [studentId, authorName, null, null, category, title, content]
       );
 
-      const topicId = (result as any).insertId;
+      const topicId = (result as any[])[0]?.id;
 
       // Get the created topic
       const [newTopic] = await connection.execute(
@@ -192,3 +185,4 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+

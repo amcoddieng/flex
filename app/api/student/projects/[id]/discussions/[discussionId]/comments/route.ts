@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { pool } from '@/lib/db';
+import mysql from '@/lib/db';
 import { verifyToken, getTokenFromHeader } from '@/lib/jwt';
-
+const pool = mysql.createPool();
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string; discussionId: string }> }

@@ -1,16 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import mysql from 'mysql2/promise';
+import mysql from '@/lib/db';
 import bcrypt from 'bcryptjs';
 
-const pool = mysql.createPool({
-  host:'localhost',
-  user:'dieng',
-  password:'Papa1997',
-  database:'job_platform',
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-});
+const pool = mysql.createPool();
 
 // GET - Récupérer tous les utilisateurs
 export async function GET(request: NextRequest) {
@@ -90,3 +82,4 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+

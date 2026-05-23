@@ -1,16 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import mysql from 'mysql2/promise';
+import mysql from '@/lib/db';
 import { verifyToken } from '@/lib/jwt';
 
-const pool = mysql.createPool({
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'job_platform',
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-});
+const pool = mysql.createPool();
 
 const verifyAdmin = (request: NextRequest) => {
   const authHeader = request.headers.get('Authorization');
@@ -285,3 +277,4 @@ export async function PUT(
     );
   }
 }
+

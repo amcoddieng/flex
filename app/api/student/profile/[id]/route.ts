@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import mysql from 'mysql2/promise';
+import mysql from '@/lib/db';
 import { verifyToken, getTokenFromHeader } from '@/lib/jwt';
 
 const pool = mysql.createPool({

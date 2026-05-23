@@ -1,16 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import mysql from 'mysql2/promise';
+import mysql from '@/lib/db';
 import { verifyToken, getTokenFromHeader } from '@/lib/jwt';
 
-const pool = mysql.createPool({
-  host: process.env.DB_HOST ,
-  user: process.env.DB_USER ,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME ,
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-});
+const pool = mysql.createPool();
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -161,11 +153,12 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
           is_helpful, 
           created_at
         ) VALUES (?, ?, ?, ?, 0, 0, NOW())
+        RETURNING id
         `,
         [topicId, studentId, authorName, content.trim()]
       );
 
-      const replyId = (result as any).insertId;
+      const replyId = (result as any[])[0]?.id;
 
       // Get the created reply
       const [newReply] = await connection.execute(

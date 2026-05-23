@@ -1,16 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import mysql from 'mysql2/promise';
+import mysql from '@/lib/db';
 import { verifyToken, getTokenFromHeader } from '@/lib/jwt';
 
-const pool = mysql.createPool({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: 'job_platform',
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-});
+const pool = mysql.createPool();
 
 export async function GET(
   request: NextRequest,
@@ -172,11 +164,12 @@ export async function POST(
           likes, 
           created_at
         ) VALUES (?, ?, ?, ?, 0, NOW())
+        RETURNING id
         `,
         [replyId, studentId, authorName, content.trim()]
       );
 
-      const commentReplyId = (result as any).insertId;
+      const commentReplyId = (result as any[])[0]?.id;
 
       // Get the created comment reply
       const [newCommentReply] = await connection.execute(
