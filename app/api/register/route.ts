@@ -1,15 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import mysql from 'mysql2/promise';
+import { Pool } from 'pg';
 import bcrypt from 'bcryptjs';
 
-const pool = mysql.createPool({
-  host: process.env.DB_HOST ,
-  user: process.env.DB_USER ,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME ,
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
+const pool = new Pool({
+  connectionString: process.env.POSTGRES_URL || process.env.DATABASE_URL,
+  max: 10,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 20000,
 });
 
 export async function POST(request: NextRequest) {
@@ -35,41 +32,41 @@ export async function POST(request: NextRequest) {
     // Hash du mot de passe
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const connection = await pool.getConnection();
+    const client = await pool.connect();
 
     try {
       // Début de la transaction
-      await connection.beginTransaction();
+      await client.query('BEGIN');
 
       // Créer l'utilisateur (id auto-incrémenté)
-      const [userResult] = await connection.execute(
-        'INSERT INTO user (email, password, role, created_at) VALUES (?, ?, ?, NOW())',
+      const userResult = await client.query(
+        'INSERT INTO "user" (email, password, role, created_at) VALUES ($1, $2, $3, NOW()) RETURNING id',
         [email, hashedPassword, role]
       );
-      const userId = (userResult as any).insertId;
+      const userId = userResult.rows[0]?.id;
 
       // Créer le profil selon le rôle
       if (role === 'STUDENT') {
-        await connection.execute(
-          'INSERT INTO student_profile (user_id, first_name, last_name, created_at) VALUES (?, ?, ?, NOW())',
+        await client.query(
+          'INSERT INTO student_profile (user_id, first_name, last_name, created_at) VALUES ($1, $2, $3, NOW())',
           [userId, firstName || '', lastName || '']
         );
       } else if (role === 'EMPLOYER') {
-        const [employerProfileResult] = await connection.execute(
-          'INSERT INTO employer_profile (user_id, created_at) VALUES (?, NOW())',
+        const employerProfileResult = await client.query(
+          'INSERT INTO employer_profile (user_id, created_at) VALUES ($1, NOW()) RETURNING id',
           [userId]
         );
-        const employerProfileId = (employerProfileResult as any).insertId;
+        const employerProfileId = employerProfileResult.rows[0]?.id;
 
         // Créer le panier pour l'employeur
-        await connection.execute(
-          'INSERT INTO employer_cart (employer_id) VALUES (?)',
+        await client.query(
+          'INSERT INTO employer_cart (employer_id) VALUES ($1)',
           [employerProfileId]
         );
       }
 
       // Commit de la transaction
-      await connection.commit();
+      await client.query('COMMIT');
 
       return NextResponse.json(
         {
@@ -80,16 +77,16 @@ export async function POST(request: NextRequest) {
         { status: 201 }
       );
     } catch (error) {
-      await connection.rollback();
+      await client.query('ROLLBACK');
       throw error;
     } finally {
-      connection.release();
+      client.release();
     }
   } catch (error: any) {
     console.error('Erreur lors de l\'inscription:', error);
 
     // Gestion de l'email déjà existant
-    if (error.code === 'ER_DUP_ENTRY') {
+    if (error.code === 'ER_DUP_ENTRY' || error.code === '23505') {
       return NextResponse.json(
         { error: 'Cet email est déjà utilisé' },
         { status: 409 }
@@ -97,7 +94,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { error: 'Erreur lors de l\'inscription' },
+      { error: 'Erreur lors de l\'inscription dd', details: error.message },
       { status: 500 }
     );
   }

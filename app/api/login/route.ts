@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs';
 import { generateToken } from '@/lib/jwt';
 
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: process.env.POSTGRES_URL || process.env.DATABASE_URL,
   max: 10,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 20000,
@@ -12,8 +12,8 @@ const pool = new Pool({
 
 export async function POST(request: NextRequest) {
   let client;
-  
   try {
+    console.log(process.env.DATABASE_URL); // Debug: Check if the connection string is loaded
     const body = await request.json();
     const { email, password } = body;
 
@@ -60,17 +60,17 @@ export async function POST(request: NextRequest) {
           profileData.name = `${profileData.firstName || ''} ${profileData.lastName || ''}`.trim();
           profileData.avatar = profile.profile_photo;
         }
-      } else if (user.role === 'employer') {
+      } else if (user.role === 'EMPLOYER') {
         const employerProfileResult = await client.query(
-          'SELECT companyName, companyLogo FROM employer_profile WHERE user_id = $1',
+          'SELECT company_name, company_logo FROM employer_profile WHERE user_id = $1',
           [user.id]
         );
         
         if (employerProfileResult.rows.length > 0) {
           const profile = employerProfileResult.rows[0];
-          profileData.firstName = profile.companyname || null;
+          profileData.firstName = profile.company_name || null;
           profileData.name = profileData.firstName;
-          profileData.avatar = profile.companylogo;
+          profileData.avatar = profile.company_logo;
         }
       }
     } catch (err) {
@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
     );
   } catch (error: any) {
     console.error('Erreur login:', error);
-    return NextResponse.json({ error: 'Erreur lors de la connexion' }, { status: 500 });
+    return NextResponse.json({ error: error.message }, { status: 500 });
   } finally {
     client?.release();
   }
