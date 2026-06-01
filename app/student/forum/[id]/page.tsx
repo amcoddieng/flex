@@ -57,7 +57,7 @@ interface CommentReply {
   content: string;
   likes: number;
   created_at: string;
-}
+} 
 
 interface Toast {
   type: 'success' | 'error';
@@ -737,15 +737,42 @@ export default function ForumTopicPage() {
               </p>
             </div>
             
-            {topic.tags && (
-              <div className="flex flex-wrap gap-2 mt-4">
-                {topic.tags.split(',').map((tag, index) => (
-                  <span key={index} className="px-3 py-1 bg-gray-100 text-gray-600 text-sm rounded-full">
-                    #{tag.trim()}
-                  </span>
-                ))}
-              </div>
-            )}
+{/* Tags - Version robuste qui gère différents formats */}
+{topic.tags && (
+  <div className="flex flex-wrap gap-2 mt-4">
+    {(() => {
+      // Gérer différents formats de tags
+      let tagsArray: string[] = [];
+      
+      if (typeof topic.tags === 'string') {
+        // Si c'est une chaîne (format actuel)
+        tagsArray = topic.tags.split(',');
+      } else if (Array.isArray(topic.tags)) {
+        // Si c'est déjà un tableau
+        tagsArray = topic.tags;
+      } else if (typeof topic.tags === 'object' && topic.tags !== null) {
+        // Si c'est un objet JSON
+        try {
+          const tagsValue = JSON.parse(JSON.stringify(topic.tags));
+          if (Array.isArray(tagsValue)) {
+            tagsArray = tagsValue;
+          } else if (typeof tagsValue === 'string') {
+            tagsArray = tagsValue.split(',');
+          }
+        } catch (e) {
+          console.error('Erreur parsing des tags:', e);
+          tagsArray = [];
+        }
+      }
+      
+      return tagsArray.map((tag, index) => (
+        <span key={index} className="px-3 py-1 bg-gray-100 text-gray-600 text-sm rounded-full">
+          #{typeof tag === 'string' ? tag.trim() : String(tag).trim()}
+        </span>
+      ));
+    })()}
+  </div>
+)}
 
             {/* Topic Actions */}
             <div className="flex items-center gap-4 mt-6 pt-4 border-t border-gray-100">

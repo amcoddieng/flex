@@ -4,7 +4,8 @@ import bcrypt from 'bcryptjs';
 import { generateToken } from '@/lib/jwt';
 
 const pool = new Pool({
-  connectionString: process.env.POSTGRES_URL || process.env.DATABASE_URL,
+
+  connectionString:"postgresql://neondb_owner:npg_Zg9dfD8xEKvN@ep-tiny-salad-al5cdk5z.c-3.eu-central-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require",
   max: 10,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 20000,

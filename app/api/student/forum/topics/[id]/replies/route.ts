@@ -175,10 +175,10 @@ export async function POST(
     console.log(`✅ Nouvelle réponse créée pour le sujet ${topicId} (ID: ${newReply.id})`);
 
     // Optionnel: Mettre à jour la date du sujet
-    await pool.query(
-      'UPDATE forum_topic SET updated_at = NOW() WHERE id = $1',
-      [topicId]
-    );
+    // await pool.query(
+    //   'UPDATE forum_topic SET updated_at = NOW() WHERE id = $1',
+    //   [topicId]
+    // );
 
     return NextResponse.json({
       success: true,

@@ -43,7 +43,6 @@ export async function GET(
         ft.likes,
         ft.is_pinned,
         ft.created_at,
-        ft.updated_at,
         ft.author_name as ft_author_name,
         sp.first_name,
         sp.last_name,
@@ -62,7 +61,7 @@ export async function GET(
     if (topicResult.rows.length === 0) {
       return NextResponse.json({ error: 'Sujet non trouvé' }, { status: 404 });
     }
-
+ 
     const topic = topicResult.rows[0];
 
     // Récupérer les réponses du sujet

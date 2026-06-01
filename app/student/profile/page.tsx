@@ -137,38 +137,41 @@ const fetchProfile = async () => {
       });
       
       if (!res.ok) {
-        throw new Error('Erreur lors de la récupération du profil' );
+        throw new Error('Erreur lors de la récupération du profil');
       }
 
-      const data = await res.json();
-      if (data.success) {
-        // Adapter les données de l'API au format attendu par le frontend
+      const response = await res.json(); // Changé de data à response
+      
+      // CORRECTION : Accéder à response.data.student au lieu de data.student
+      if (response.success && response.data?.student) {
+        const student = response.data.student; // Extraire le student de la bonne structure
+        
         const adaptedProfile = {
-          id: data.student.id,
-          user_id: data.student.userId,
-          first_name: data.student.firstName,
-          last_name: data.student.lastName,
-          email: data.student.email,
-          phone: data.student.phone,
-          university: data.student.university,
-          department: data.student.department,
-          year_of_study: data.student.yearOfStudy,
-          bio: data.student.bio,
-          skills: data.student.skills,
-          availability: data.student.availability,
-          services: data.student.services,
-          hourly_rate: data.student.hourlyRate,
-          profile_photo: data.student.profilePhoto,
-          student_card_pdf: data.student.studentCardPdf,
-          validation_status: data.student.validationStatus,
-          rejection_reason: data.student.rejectionReason,
-          created_at: data.student.createdAt
+          id: student.id,
+          user_id: student.userId,
+          first_name: student.firstName,
+          last_name: student.lastName,
+          email: student.email,
+          phone: student.phone,
+          university: student.university,
+          department: student.department,
+          year_of_study: student.yearOfStudy,
+          bio: student.bio,
+          skills: student.skills,
+          availability: student.availability,
+          services: student.services,
+          hourly_rate: student.hourlyRate,
+          profile_photo: student.profilePhoto,
+          student_card_pdf: student.studentCardPdf,
+          validation_status: student.validationStatus,
+          rejection_reason: student.rejectionReason,
+          created_at: student.createdAt
         };
         
         setProfile(adaptedProfile);
         setFormData(adaptedProfile);
       } else {
-        throw new Error(data.error || 'Réponse invalide');
+        throw new Error(response.error || 'Réponse invalide');
       }
     } catch (err: any) {
       const message = err instanceof Error ? err.message : 'Erreur inconnue';
