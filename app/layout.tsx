@@ -1,7 +1,9 @@
 import React from "react"
 import type { Metadata } from 'next'
 import { Analytics } from '@vercel/analytics/next'
+// @ts-ignore: side-effect import without type declarations
 import './globals.css'
+// @ts-ignore: side-effect import without type declarations
 import '../styles/animations.css'
 
 export const metadata: Metadata = {

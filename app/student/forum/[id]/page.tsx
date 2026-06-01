@@ -281,7 +281,7 @@ ReplyItem.displayName = 'ReplyItem';
 export default function ForumTopicPage() {
   const params = useParams();
   const router = useRouter();
-  const topicId = params.id as string;
+  const topicId = params?.id as string;
 
   // State
   const [topic, setTopic] = useState<ForumTopic | null>(null);
@@ -312,7 +312,7 @@ export default function ForumTopicPage() {
       localStorage.removeItem('token');
       return null;
     }
-    setCurrentUserId(decoded.userId);
+    setCurrentUserId(Number(decoded.userId));
     return token;
   }, []);
   // Format date - corrigé
