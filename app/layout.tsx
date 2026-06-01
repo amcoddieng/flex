@@ -1,5 +1,6 @@
 import React from "react"
 import type { Metadata } from 'next'
+import { Html } from 'next/document'
 import { Analytics } from '@vercel/analytics/next'
 // @ts-ignore: side-effect import without type declarations
 import './globals.css'
@@ -35,11 +36,11 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
+    <Html lang="en">
       <body className="font-sans antialiased">
         {children}
         <Analytics />
       </body>
-    </html>
+    </Html>
   )
 }

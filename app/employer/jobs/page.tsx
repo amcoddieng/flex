@@ -72,7 +72,7 @@ export default function EmployerJobsPage() {
   
   const router = useRouter();
   const hasCheckedAuth = useRef(false);
-  const debounceTimer = useRef<NodeJS.Timeout>();
+  const debounceTimer = useRef<NodeJS.Timeout | undefined>(undefined);
 
   // Hook pour vérifier la validation du profil employeur
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
