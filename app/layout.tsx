@@ -1,10 +1,8 @@
 import React from "react"
 import type { Metadata } from 'next'
-import { Html } from 'next/document'
 import { Analytics } from '@vercel/analytics/next'
-// @ts-ignore: side-effect import without type declarations
+
 import './globals.css'
-// @ts-ignore: side-effect import without type declarations
 import '../styles/animations.css'
 
 export const metadata: Metadata = {
@@ -32,15 +30,15 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode
-}>) {
+}) {
   return (
-    <Html lang="en">
+    <html lang="en">
       <body className="font-sans antialiased">
         {children}
         <Analytics />
       </body>
-    </Html>
+    </html>
   )
 }
