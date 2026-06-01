@@ -41,7 +41,7 @@ export async function GET(request: NextRequest, { params }: RequestParams) {
     try {
       // Récupérer les infos utilisateur
       const [userResult]: any = await connection.execute(
-        'SELECT id, email, role, created_at FROM user WHERE id = ?',
+        'SELECT id, email, role, created_at FROM user WHERE id = $1',
         [userId]
       );
 
@@ -60,7 +60,7 @@ export async function GET(request: NextRequest, { params }: RequestParams) {
       // Récupérer le profil selon le rôle
       if (user.role === 'STUDENT') {
         const [studentResult]: any = await connection.execute(
-          'SELECT id, user_id, first_name, last_name, phone, email, university, department, year_of_study, bio, hourly_rate, validation_status FROM student_profile WHERE user_id = ?',
+          'SELECT id, user_id, first_name, last_name, phone, email, university, department, year_of_study, bio, hourly_rate, validation_status FROM student_profile WHERE user_id = $1',
           [userId]
         );
         const studentRows = Array.isArray(studentResult) ? studentResult : [];
@@ -69,7 +69,7 @@ export async function GET(request: NextRequest, { params }: RequestParams) {
         }
       } else if (user.role === 'EMPLOYER') {
         const [employerResult]: any = await connection.execute(
-          'SELECT id, user_id, company_name, contact_person, phone, email, address, description, validation_status FROM employer_profile WHERE user_id = ?',
+          'SELECT id, user_id, company_name, contact_person, phone, email, address, description, validation_status FROM employer_profile WHERE user_id = $1',
           [userId]
         );
         const employerRows = Array.isArray(employerResult) ? employerResult : [];
@@ -121,7 +121,7 @@ export async function PUT(request: NextRequest, { params }: RequestParams) {
     try {
       // Récupérer l'utilisateur et son rôle
       const [userResult]: any = await connection.execute(
-        'SELECT id, role FROM user WHERE id = ?',
+        'SELECT id, role FROM user WHERE id = $1',
         [userId]
       );
 
@@ -142,7 +142,7 @@ export async function PUT(request: NextRequest, { params }: RequestParams) {
         
         // Vérifier si le profil existe
         const [profileCheckResult]: any = await connection.execute(
-          'SELECT id FROM student_profile WHERE user_id = ?',
+          'SELECT id FROM student_profile WHERE user_id = $1',
           [userId]
         );
         
@@ -151,7 +151,7 @@ export async function PUT(request: NextRequest, { params }: RequestParams) {
         if (!Array.isArray(profileCheck) || profileCheck.length === 0) {
           // Créer le profil s'il n'existe pas
           await connection.execute(
-            'INSERT INTO student_profile (user_id, first_name, last_name, phone, university, department, year_of_study, bio, hourly_rate) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            'INSERT INTO student_profile (user_id, first_name, last_name, phone, university, department, year_of_study, bio, hourly_rate) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)',
             [userId, first_name || null, last_name || null, phone || null, university || null, department || null, year_of_study || null, bio || null, hourly_rate || null]
           );
         } else {

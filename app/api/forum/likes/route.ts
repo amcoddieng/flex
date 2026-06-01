@@ -1,8 +1,14 @@
+// app/api/forum/likes/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import mysql from '@/lib/db';
+import { Pool } from 'pg';
 import { verifyToken, getTokenFromHeader } from '@/lib/jwt';
 
-const pool = mysql.createPool();
+const pool = new Pool({
+  connectionString: process.env.POSTGRES_URL || process.env.DATABASE_URL,
+  max: 10,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 20000,
+});
 
 // Fonction utilitaire pour déterminer le type de cible et l'ID
 const parseTarget = (targetString: string) => {
@@ -23,27 +29,27 @@ const parseTarget = (targetString: string) => {
 
 // Vérifier que la cible existe
 const verifyTargetExists = async (targetType: string, targetId: number): Promise<boolean> => {
-  const connection = await pool.getConnection();
   try {
     let query = '';
     switch (targetType) {
       case 'topic':
-        query = 'SELECT id FROM forum_topic WHERE id = ?';
+        query = 'SELECT id FROM forum_topic WHERE id = $1';
         break;
       case 'reply':
-        query = 'SELECT id FROM forum_reply WHERE id = ?';
+        query = 'SELECT id FROM forum_reply WHERE id = $1';
         break;
       case 'comment_reply':
-        query = 'SELECT id FROM comment_reply WHERE id = ?';
+        query = 'SELECT id FROM comment_reply WHERE id = $1';
         break;
       default:
         return false;
     }
     
-    const [rows] = await connection.execute(query, [targetId]);
-    return (rows as any[]).length > 0;
-  } finally {
-    connection.release();
+    const result = await pool.query(query, [targetId]);
+    return result.rows.length > 0;
+  } catch (error) {
+    console.error('Erreur verification target:', error);
+    return false;
   }
 };
 
@@ -81,45 +87,44 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Cible introuvable' }, { status: 404 });
     }
 
-    const connection = await pool.getConnection();
     try {
       // Vérifier si l'utilisateur a déjà liké
-      const [likeRows] = await connection.execute(
-        'SELECT id FROM likes WHERE user_id = ? AND target_type = ? AND target_id = ?',
+      const likeResult = await pool.query(
+        'SELECT id FROM likes WHERE user_id = $1 AND target_type = $2 AND target_id = $3',
         [userId, targetType, targetId]
       );
       
-      const isLiked = (likeRows as any[]).length > 0;
+      const isLiked = likeResult.rows.length > 0;
 
       // Récupérer le total des likes
       let countQuery = '';
       switch (targetType) {
         case 'topic':
-          countQuery = 'SELECT likes FROM forum_topic WHERE id = ?';
+          countQuery = 'SELECT likes FROM forum_topic WHERE id = $1';
           break;
         case 'reply':
-          countQuery = 'SELECT likes FROM forum_reply WHERE id = ?';
+          countQuery = 'SELECT likes FROM forum_reply WHERE id = $1';
           break;
         case 'comment_reply':
-          countQuery = 'SELECT likes FROM comment_reply WHERE id = ?';
+          countQuery = 'SELECT likes FROM comment_reply WHERE id = $1';
           break;
       }
 
-      const [countRows] = await connection.execute(countQuery, [targetId]);
-      const totalLikes = (countRows as any[])[0]?.likes || 0;
+      const countResult = await pool.query(countQuery, [targetId]);
+      const totalLikes = parseInt(countResult.rows[0]?.likes) || 0;
 
       // Récupérer les utilisateurs récents qui ont liké (optionnel)
-      const [recentRows] = await connection.execute(
+      const recentResult = await pool.query(
         `SELECT u.email, u.role 
          FROM likes l 
-         JOIN user u ON l.user_id = u.id 
-         WHERE l.target_type = ? AND l.target_id = ? 
+         JOIN "user" u ON l.user_id = u.id 
+         WHERE l.target_type = $1 AND l.target_id = $2 
          ORDER BY l.created_at DESC 
          LIMIT 3`,
         [targetType, targetId]
       );
 
-      const recentLikes = (recentRows as any[]).map(row => ({
+      const recentLikes = recentResult.rows.map(row => ({
         name: row.email,
         role: row.role
       }));
@@ -133,8 +138,8 @@ export async function GET(request: NextRequest) {
         }
       });
 
-    } finally {
-      connection.release();
+    } catch (error: any) {
+      throw error;
     }
 
   } catch (error: any) {
@@ -180,69 +185,102 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Cible introuvable' }, { status: 404 });
     }
 
-    // Vérifier que l'utilisateur ne like pas son propre contenu
-    const connection = await pool.getConnection();
+    const client = await pool.connect();
+    
     try {
+      await client.query('BEGIN');
+      
+      // Vérifier que l'utilisateur ne like pas son propre contenu
       let authorQuery = '';
       switch (targetType) {
         case 'topic':
-          authorQuery = 'SELECT author_id FROM forum_topic WHERE id = ?';
+          authorQuery = 'SELECT author_id FROM forum_topic WHERE id = $1';
           break;
         case 'reply':
-          authorQuery = 'SELECT author_id FROM forum_reply WHERE id = ?';
+          authorQuery = 'SELECT author_id FROM forum_reply WHERE id = $1';
           break;
         case 'comment_reply':
-          authorQuery = 'SELECT author_id FROM comment_reply WHERE id = ?';
+          authorQuery = 'SELECT author_id FROM comment_reply WHERE id = $1';
           break;
       }
 
-      const [authorRows] = await connection.execute(authorQuery, [targetId]);
-      const authorId = (authorRows as any[])[0]?.author_id;
+      const authorResult = await client.query(authorQuery, [targetId]);
+      const authorId = authorResult.rows[0]?.author_id;
 
-      if (authorId === userId) {
+      // Récupérer l'ID de l'étudiant à partir du user_id
+      const studentResult = await client.query(
+        'SELECT id FROM student_profile WHERE user_id = $1',
+        [userId]
+      );
+      
+      const studentId = studentResult.rows[0]?.id;
+
+      if (authorId === studentId) {
+        await client.query('ROLLBACK');
         return NextResponse.json({ error: 'Vous ne pouvez pas liker votre propre contenu' }, { status: 403 });
       }
 
       // Vérifier si l'utilisateur a déjà liké
-      const [existingLike] = await connection.execute(
-        'SELECT id FROM likes WHERE user_id = ? AND target_type = ? AND target_id = ?',
+      const existingLike = await client.query(
+        'SELECT id FROM likes WHERE user_id = $1 AND target_type = $2 AND target_id = $3',
         [userId, targetType, targetId]
       );
 
       let action: 'liked' | 'unliked';
+      let likesChange = 0;
       
-      if ((existingLike as any[]).length > 0) {
+      if (existingLike.rows.length > 0) {
         // Unlike
-        await connection.execute(
-          'DELETE FROM likes WHERE user_id = ? AND target_type = ? AND target_id = ?',
+        await client.query(
+          'DELETE FROM likes WHERE user_id = $1 AND target_type = $2 AND target_id = $3',
           [userId, targetType, targetId]
         );
         action = 'unliked';
+        likesChange = -1;
       } else {
         // Like
-        await connection.execute(
-          'INSERT INTO likes (user_id, target_type, target_id) VALUES (?, ?, ?)',
+        await client.query(
+          'INSERT INTO likes (user_id, target_type, target_id, created_at) VALUES ($1, $2, $3, NOW())',
           [userId, targetType, targetId]
         );
         action = 'liked';
+        likesChange = 1;
       }
+
+      // Mettre à jour le compteur de likes dans la table correspondante
+      let updateQuery = '';
+      switch (targetType) {
+        case 'topic':
+          updateQuery = 'UPDATE forum_topic SET likes = GREATEST(likes + $1, 0) WHERE id = $2';
+          break;
+        case 'reply':
+          updateQuery = 'UPDATE forum_reply SET likes = GREATEST(likes + $1, 0) WHERE id = $2';
+          break;
+        case 'comment_reply':
+          updateQuery = 'UPDATE comment_reply SET likes = GREATEST(likes + $1, 0) WHERE id = $2';
+          break;
+      }
+      
+      await client.query(updateQuery, [likesChange, targetId]);
 
       // Récupérer le nouveau total
       let countQuery = '';
       switch (targetType) {
         case 'topic':
-          countQuery = 'SELECT likes FROM forum_topic WHERE id = ?';
+          countQuery = 'SELECT likes FROM forum_topic WHERE id = $1';
           break;
         case 'reply':
-          countQuery = 'SELECT likes FROM forum_reply WHERE id = ?';
+          countQuery = 'SELECT likes FROM forum_reply WHERE id = $1';
           break;
         case 'comment_reply':
-          countQuery = 'SELECT likes FROM comment_reply WHERE id = ?';
+          countQuery = 'SELECT likes FROM comment_reply WHERE id = $1';
           break;
       }
 
-      const [countRows] = await connection.execute(countQuery, [targetId]);
-      const totalLikes = (countRows as any[])[0]?.likes || 0;
+      const countResult = await client.query(countQuery, [targetId]);
+      const totalLikes = parseInt(countResult.rows[0]?.likes) || 0;
+
+      await client.query('COMMIT');
 
       return NextResponse.json({
         success: true,
@@ -253,22 +291,24 @@ export async function POST(request: NextRequest) {
         }
       });
 
+    } catch (error: any) {
+      await client.query('ROLLBACK');
+      
+      // Gérer les erreurs de contrainte unique
+      if (error.code === '23505') { // PostgreSQL unique violation
+        return NextResponse.json({ error: 'Vous avez déjà liké ce contenu' }, { status: 409 });
+      }
+      
+      throw error;
     } finally {
-      connection.release();
+      client.release();
     }
 
   } catch (error: any) {
     console.error('POST likes error:', error);
-    
-    // Gérer les erreurs de contrainte unique
-    if (error.code === 'ER_DUP_ENTRY') {
-      return NextResponse.json({ error: 'Vous avez déjà liké ce contenu' }, { status: 409 });
-    }
-    
     return NextResponse.json(
       { error: 'Erreur serveur', message: error.message },
       { status: 500 }
     );
   }
 }
-

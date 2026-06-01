@@ -1,15 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import mysql from '@/lib/db';
+import { Pool } from 'pg';
 import { verifyToken, getTokenFromHeader } from '@/lib/jwt';
 
-const pool = mysql.createPool({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: 'job_platform',
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
+const pool = new Pool({
+  connectionString: process.env.POSTGRES_URL || process.env.DATABASE_URL,
+  max: 10,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 20000,
 });
 
 export async function GET(
@@ -33,13 +30,13 @@ export async function GET(
       return NextResponse.json({ error: 'ID invalide' }, { status: 400 });
     }
 
-    const connection = await pool.getConnection();
+    const connection = await pool.connect();
 
     try {
       console.log('🔍 Récupération profil étudiant pour studentId:', studentId);
 
-      // Récupérer les informations complètes du profil étudiant
-      const [studentRows] = await connection.execute(`
+      // CORRIGÉ: Ne pas utiliser la déstructuration [studentRows]
+      const result = await connection.query(`
         SELECT 
           sp.id,
           sp.user_id,
@@ -63,15 +60,15 @@ export async function GET(
           u.email as user_email,
           u.created_at as account_created_at
         FROM student_profile sp
-        JOIN user u ON sp.user_id = u.id
-        WHERE sp.id = ?
+        JOIN "user" u ON sp.user_id = u.id
+        WHERE sp.id = $1
       `, [studentId]);
 
-      if ((studentRows as any[]).length === 0) {
+      if (result.rows.length === 0) {
         return NextResponse.json({ error: 'Profil étudiant non trouvé' }, { status: 404 });
       }
-
-      const student = (studentRows as any[])[0];
+     
+      const student = result.rows[0];
 
       // Formater les données pour correspondre à l'interface StudentProfile
       const formattedStudent = {

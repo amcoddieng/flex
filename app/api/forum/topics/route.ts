@@ -1,8 +1,14 @@
+// app/api/forum/topics/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import mysql from '@/lib/db';
+import { Pool } from 'pg';
 import { verifyToken, getTokenFromHeader } from '@/lib/jwt';
 
-const pool = mysql.createPool();
+const pool = new Pool({
+  connectionString: process.env.POSTGRES_URL || process.env.DATABASE_URL,
+  max: 10,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 20000,
+});
 
 export async function GET(request: NextRequest) {
   try {
@@ -21,125 +27,129 @@ export async function GET(request: NextRequest) {
     const category = searchParams.get('category');
     
     // Conversion robuste des paramètres avec valeurs par défaut
-    const page = Number(searchParams.get('page')) || 1;
-    const limit = Number(searchParams.get('limit')) || 20;
+    const page = Math.max(1, Number(searchParams.get('page')) || 1);
+    const limit = Math.min(100, Math.max(1, Number(searchParams.get('limit')) || 20));
+    const offset = (page - 1) * limit;
 
-    const connection = await pool.getConnection();
+    // Construction de la requête avec paramètres
+    let whereClause = '1=1';
+    const queryParams: any[] = [];
+    let paramCount = 1;
 
-    try {
-      let whereClause = '1=1';
-      const params: any[] = [];
-
-      if (search) {
-        whereClause += ' AND (ft.title LIKE ? OR ft.content LIKE ?)';
-        params.push(`%${search}%`, `%${search}%`);
-      }
-
-      if (category && category !== 'all') {
-        whereClause += ' AND ft.category = ?';
-        params.push(category);
-      }
-
-      // Calcul sécurisé de limit et offset
-      const safeLimit = Math.max(1, Math.min(100, Math.floor(Number(limit) || 20)));
-      const safePage = Math.max(1, Math.floor(Number(page) || 1));
-      const safeOffset = (safePage - 1) * safeLimit;
-
-      // Préparation finale des paramètres
-      const finalParams = [...params];
-      
-      console.log('Requête params:', finalParams); // Debug
-      
-      // Récupérer les sujets - utilisation de requête non préparée pour LIMIT/OFFSET
-      const [topics] = await connection.execute(`
-        SELECT 
-          ft.id,
-          ft.author_id,
-          ft.author_name,
-          ft.author_university,
-          ft.author_department,
-          ft.category,
-          ft.title,
-          ft.content,
-          ft.tags,
-          ft.likes,
-          ft.is_pinned,
-          ft.created_at
-        FROM forum_topic ft
-        WHERE ${whereClause}
-        ORDER BY ft.is_pinned DESC, ft.created_at DESC
-        LIMIT ${safeLimit} OFFSET ${safeOffset}
-      `, finalParams);
-
-      // Compter le total (sans pagination)
-      const [countResult] = await connection.execute(`
-        SELECT COUNT(*) as total
-        FROM forum_topic ft
-        WHERE ${whereClause}
-      `, params);
-
-      const total = (countResult as any)[0].total;
-
-      // Formater les résultats
-      const formattedTopics = (topics as any[]).map(topic => {
-        let parsedTags = [];
-        
-        // Gestion robuste du parsing JSON des tags
-        try {
-          if (topic.tags) {
-            // Si c'est déjà un tableau (cas rare)
-            if (Array.isArray(topic.tags)) {
-              parsedTags = topic.tags;
-            } 
-            // Si c'est une chaîne JSON valide
-            else if (typeof topic.tags === 'string') {
-              // Essayer de parser
-              const parsed = JSON.parse(topic.tags);
-              parsedTags = Array.isArray(parsed) ? parsed : [];
-            }
-            // Si c'est une chaîne simple (comma-separated)
-            else if (typeof topic.tags === 'string' && topic.tags.includes(',')) {
-              parsedTags = topic.tags.split(',').map((tag: string) => tag.trim()).filter((tag: string) => tag);
-            }
-            // Si c'est une chaîne simple sans virgules
-            else if (typeof topic.tags === 'string') {
-              parsedTags = [topic.tags.trim()];
-            }
-          }
-        } catch (error) {
-          console.warn('Erreur parsing tags pour le sujet', topic.id, ':', error);
-          parsedTags = [];
-        }
-
-        return {
-          ...topic,
-          tags: parsedTags,
-          _count: {
-            replies: 0 // Peut être calculé séparément si besoin
-          }
-        };
-      });
-
-      return NextResponse.json({
-        topics: formattedTopics,
-        pagination: {
-          page: safePage,
-          limit: safeLimit,
-          total,
-          totalPages: Math.ceil(total / safeLimit)
-        }
-      });
-
-    } finally {
-      connection.release();
+    if (search) {
+      whereClause += ` AND (ft.title ILIKE $${paramCount} OR ft.content ILIKE $${paramCount + 1})`;
+      queryParams.push(`%${search}%`, `%${search}%`);
+      paramCount += 2;
     }
 
+    if (category && category !== 'all') {
+      whereClause += ` AND ft.category = $${paramCount}`;
+      queryParams.push(category);
+      paramCount++;
+    }
+
+    // Récupérer les sujets avec pagination
+    const topicsResult = await pool.query(`
+      SELECT 
+        ft.id,
+        ft.author_id,
+        ft.author_name,
+        ft.author_university,
+        ft.author_department,
+        ft.category,
+        ft.title,
+        ft.content,
+        ft.tags,
+        ft.likes,
+        ft.is_pinned,
+        ft.created_at,
+        ft.updated_at,
+        COALESCE(
+          (SELECT COUNT(*) FROM forum_reply WHERE topic_id = ft.id), 
+          0
+        ) as reply_count
+      FROM forum_topic ft
+      WHERE ${whereClause}
+      ORDER BY ft.is_pinned DESC, ft.created_at DESC
+      LIMIT $${paramCount} OFFSET $${paramCount + 1}
+    `, [...queryParams, limit, offset]);
+
+    // Compter le total (sans pagination)
+    const countResult = await pool.query(`
+      SELECT COUNT(*) as total
+      FROM forum_topic ft
+      WHERE ${whereClause}
+    `, queryParams);
+
+    const total = parseInt(countResult.rows[0]?.total) || 0;
+
+    // Formater les résultats
+    const formattedTopics = topicsResult.rows.map(topic => {
+      let parsedTags: string[] = [];
+      
+      // Gestion robuste du parsing JSON des tags
+      try {
+        if (topic.tags) {
+          if (Array.isArray(topic.tags)) {
+            parsedTags = topic.tags;
+          } else if (typeof topic.tags === 'string') {
+            try {
+              const parsed = JSON.parse(topic.tags);
+              parsedTags = Array.isArray(parsed) ? parsed : [];
+            } catch {
+              // Si ce n'est pas du JSON valide, traiter comme une chaîne simple
+              if (topic.tags.includes(',')) {
+                parsedTags = topic.tags.split(',').map((tag: string) => tag.trim());
+              } else if (topic.tags.trim()) {
+                parsedTags = [topic.tags.trim()];
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.warn('Erreur parsing tags pour le sujet', topic.id, ':', error);
+        parsedTags = [];
+      }
+
+      return {
+        id: topic.id,
+        author_id: topic.author_id,
+        author_name: topic.author_name,
+        author_university: topic.author_university,
+        author_department: topic.author_department,
+        category: topic.category,
+        title: topic.title,
+        content: topic.content,
+        tags: parsedTags,
+        likes: parseInt(topic.likes) || 0,
+        is_pinned: Boolean(topic.is_pinned),
+        created_at: topic.created_at,
+        updated_at: topic.updated_at,
+        reply_count: parseInt(topic.reply_count) || 0
+      };
+    });
+
+    console.log(`✅ ${formattedTopics.length} sujets récupérés (page ${page})`);
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        topics: formattedTopics,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit)
+        }
+      }
+    });
+
   } catch (error: any) {
-    console.error('Erreur récupération sujets forum:', error);
+    console.error('❌ Erreur récupération sujets forum:', error);
     const message = process.env.NODE_ENV === 'production' 
       ? 'Erreur lors de la récupération des sujets' 
       : (error?.message || String(error));
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ success: false, error: message }, { status: 500 });
   }
 }
 
@@ -159,88 +169,81 @@ export async function POST(request: NextRequest) {
     const { title, content, category, tags } = body;
 
     if (!title || !content || !category) {
-      return NextResponse.json({ error: 'Titre, contenu et catégorie sont requis' }, { status: 400 });
+      return NextResponse.json({ 
+        error: 'Titre, contenu et catégorie sont requis' 
+      }, { status: 400 });
     }
 
-    const connection = await pool.getConnection();
+    // Récupérer les informations de l'auteur
+    let authorName = payload.name || 'Utilisateur';
+    let authorUniversity = '';
+    let authorDepartment = '';
+    let authorId: number | null = null;
 
-    try {
-      // Récupérer les informations de l'auteur
-      let authorInfo = {
-        name: payload.name || 'Utilisateur',
-        university: '',
-        department: '',
-        profileId: null
-      };
-
-      if (payload.role === 'STUDENT') {
-        const [studentInfo] = await connection.execute(
-          'SELECT id, first_name, last_name, university, department FROM student_profile WHERE user_id = ?',
-          [parseInt(payload.userId)]
-        );
-        
-        if ((studentInfo as any[]).length > 0) {
-          const student = (studentInfo as any[])[0];
-          authorInfo = {
-            name: `${student.first_name || ''} ${student.last_name || ''}`.trim() || payload.name || 'Étudiant',
-            university: student.university || '',
-            department: student.department || '',
-            profileId: student.id
-          };
-        }
-      } else if (payload.role === 'EMPLOYER') {
-        const [employerInfo] = await connection.execute(
-          'SELECT id, company_name FROM employer_profile WHERE user_id = ?',
-          [parseInt(payload.userId)]
-        );
-        
-        if ((employerInfo as any[]).length > 0) {
-          const employer = (employerInfo as any[])[0];
-          authorInfo = {
-            name: employer.company_name || payload.name || 'Employeur',
-            university: '',
-            department: '',
-            profileId: employer.id
-          };
-        }
+    if (payload.role === 'STUDENT') {
+      const studentResult = await pool.query(
+        'SELECT id, first_name, last_name, university, department FROM student_profile WHERE user_id = $1',
+        [parseInt(payload.userId)]
+      );
+      
+      if (studentResult.rows.length > 0) {
+        const student = studentResult.rows[0];
+        authorName = `${student.first_name || ''} ${student.last_name || ''}`.trim() || authorName;
+        authorUniversity = student.university || '';
+        authorDepartment = student.department || '';
+        authorId = student.id;
       }
-
-      // Pour les employeurs, on utilise NULL pour author_id car la contrainte est sur student_profile
-      // Pour les étudiants, on utilise leur profile_id
-      const authorId = payload.role === 'STUDENT' ? authorInfo.profileId : null;
-
-      // Créer le sujet
-      const [result] = await connection.execute(`
-        INSERT INTO forum_topic 
-        (author_id, author_name, author_university, author_department, category, title, content, tags, likes, is_pinned)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0)
-      `, [
-        authorId,
-        authorInfo.name,
-        authorInfo.university,
-        authorInfo.department,
-        category,
-        title,
-        content,
-        JSON.stringify(tags || [])
-      ]);
-
-      return NextResponse.json({
-        success: true,
-        topicId: (result as any).insertId,
-        message: 'Sujet créé avec succès'
-      }, { status: 201 });
-
-    } finally {
-      connection.release();
+    } else if (payload.role === 'EMPLOYER') {
+      const employerResult = await pool.query(
+        'SELECT id, company_name FROM employer_profile WHERE user_id = $1',
+        [parseInt(payload.userId)]
+      );
+      
+      if (employerResult.rows.length > 0) {
+        const employer = employerResult.rows[0];
+        authorName = employer.company_name || authorName;
+        authorId = employer.id;
+      }
     }
+
+    // Pour les employeurs, author_id est NULL (pas de lien avec student_profile)
+    // Pour les étudiants, on utilise leur profile_id
+    const finalAuthorId = payload.role === 'STUDENT' ? authorId : null;
+
+    // Créer le sujet
+    const result = await pool.query(`
+      INSERT INTO forum_topic 
+      (author_id, author_name, author_university, author_department, category, title, content, tags, likes, is_pinned, created_at, updated_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 0, false, NOW(), NOW())
+      RETURNING id
+    `, [
+      finalAuthorId,
+      authorName,
+      authorUniversity,
+      authorDepartment,
+      category,
+      title,
+      content,
+      JSON.stringify(tags || [])
+    ]);
+
+    const topicId = result.rows[0].id;
+
+    console.log(`✅ Nouveau sujet créé: "${title}" (ID: ${topicId}) par ${authorName}`);
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        topicId,
+        message: 'Sujet créé avec succès'
+      }
+    }, { status: 201 });
 
   } catch (error: any) {
-    console.error('Erreur création sujet forum:', error);
+    console.error('❌ Erreur création sujet forum:', error);
     const message = process.env.NODE_ENV === 'production' 
       ? 'Erreur lors de la création du sujet' 
       : (error?.message || String(error));
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ success: false, error: message }, { status: 500 });
   }
 }
-

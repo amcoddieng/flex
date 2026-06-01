@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import mysql from '@/lib/db';
+import { Pool } from 'pg';
 import { verifyToken, getTokenFromHeader } from '@/lib/jwt';
 
-const pool = mysql.createPool();
+const pool = new Pool({
+  connectionString: process.env.POSTGRES_URL || process.env.DATABASE_URL,
+  max: 10,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 20000,
+});
 
 export async function PUT(request: NextRequest) {
   try {
@@ -46,43 +51,41 @@ export async function PUT(request: NextRequest) {
       studentCardPdf,
     } = body;
 
-    const connection = await pool.getConnection();
-
     try {
-      // Récupérer le profil étudiant
-      const [rows] = await connection.execute(
-        'SELECT id FROM student_profile WHERE user_id = ?',
+      // CORRIGÉ: Vérifier si le profil étudiant existe avec PostgreSQL
+      const checkResult = await pool.query(
+        'SELECT id FROM student_profile WHERE user_id = $1',
         [userId]
       );
 
-      if (!Array.isArray(rows) || rows.length === 0) {
+      if (checkResult.rows.length === 0) {
         return NextResponse.json(
           { error: 'Profil étudiant non trouvé' },
           { status: 404 }
         );
       }
 
-      // Mettre à jour le profil
+      // CORRIGÉ: Mettre à jour le profil avec PostgreSQL ($1, $2, etc.)
       const updateQuery = `
         UPDATE student_profile SET
-          first_name = COALESCE(?, first_name),
-          last_name = COALESCE(?, last_name),
-          phone = COALESCE(?, phone),
-          email = COALESCE(?, email),
-          university = COALESCE(?, university),
-          department = COALESCE(?, department),
-          year_of_study = COALESCE(?, year_of_study),
-          bio = COALESCE(?, bio),
-          skills = COALESCE(?, skills),
-          availability = COALESCE(?, availability),
-          services = COALESCE(?, services),
-          hourly_rate = COALESCE(?, hourly_rate),
-          profile_photo = COALESCE(?, profile_photo),
-          student_card_pdf = COALESCE(?, student_card_pdf)
-        WHERE user_id = ?
+          first_name = COALESCE($1, first_name),
+          last_name = COALESCE($2, last_name),
+          phone = COALESCE($3, phone),
+          email = COALESCE($4, email),
+          university = COALESCE($5, university),
+          department = COALESCE($6, department),
+          year_of_study = COALESCE($7, year_of_study),
+          bio = COALESCE($8, bio),
+          skills = COALESCE($9, skills),
+          availability = COALESCE($10, availability),
+          services = COALESCE($11, services),
+          hourly_rate = COALESCE($12, hourly_rate),
+          profile_photo = COALESCE($13, profile_photo),
+          student_card_pdf = COALESCE($14, student_card_pdf)
+        WHERE user_id = $15
       `;
 
-      await connection.execute(updateQuery, [
+      await pool.query(updateQuery, [
         firstName || null,
         lastName || null,
         phone || null,
@@ -107,8 +110,8 @@ export async function PUT(request: NextRequest) {
         },
         { status: 200 }
       );
-    } finally {
-      connection.release();
+    } catch (error: any) {
+      throw error;
     }
   } catch (error: any) {
     console.error('Erreur lors de la mise à jour du profil étudiant:', error);
@@ -143,22 +146,21 @@ export async function GET(request: NextRequest) {
 
     const userId = payload.userId;
 
-    const connection = await pool.getConnection();
-
     try {
-      const [rows] = await connection.execute(
-        'SELECT * FROM student_profile WHERE user_id = ?',
+      // CORRIGÉ: Utiliser $1 au lieu de ?
+      const result = await pool.query(
+        'SELECT * FROM student_profile WHERE user_id = $1',
         [userId]
       );
 
-      if (!Array.isArray(rows) || rows.length === 0) {
+      if (result.rows.length === 0) {
         return NextResponse.json(
           { error: 'Profil étudiant non trouvé' },
           { status: 404 }
         );
       }
 
-      const profile = rows[0] as any;
+      const profile = result.rows[0];
       
       // Parser les champs JSON
       return NextResponse.json(
@@ -173,8 +175,8 @@ export async function GET(request: NextRequest) {
         },
         { status: 200 }
       );
-    } finally {
-      connection.release();
+    } catch (error: any) {
+      throw error;
     }
   } catch (error: any) {
     console.error('Erreur lors de la récupération du profil étudiant:', error);
@@ -185,4 +187,3 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-

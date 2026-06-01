@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import mysql from '@/lib/db';
+import { Pool } from 'pg';
 import { verifyToken, getTokenFromHeader } from '@/lib/jwt';
 
-const pool = mysql.createPool();
+const pool = new Pool({
+  connectionString: process.env.POSTGRES_URL || process.env.DATABASE_URL,
+  max: 10,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 20000,
+});
 
 export async function GET(request: NextRequest) {
   try {
@@ -17,77 +22,67 @@ export async function GET(request: NextRequest) {
     }
 
     const userId = Number(payload.userId);
-    const connection = await pool.getConnection();
+    if (isNaN(userId)) {
+      return NextResponse.json({ error: 'ID utilisateur invalide' }, { status: 400 });
+    }
 
     try {
-      // Get student_id from user_id
-      const [studentResult] = await connection.execute(
-        'SELECT id FROM student_profile WHERE user_id = ?',
+      // 1. Get student_id from user_id
+      const studentResult = await pool.query(
+        'SELECT id FROM student_profile WHERE user_id = $1',
         [userId]
       );
 
-      if (!Array.isArray(studentResult) || studentResult.length === 0) {
+      if (studentResult.rows.length === 0) {
         return NextResponse.json(
           { error: 'Profil étudiant non trouvé' },
           { status: 404 }
         );
       }
 
-      const studentId = (studentResult as any[])[0].id;
+      const studentId = studentResult.rows[0].id;
 
-      // Get student's applications statistics
-      const [applicationsStats] = await connection.execute(
-        `
+      // 2. Get student's applications statistics
+      const applicationsStats = await pool.query(`
         SELECT 
           COUNT(*) as total_applications,
-          SUM(CASE WHEN status = 'PENDING' THEN 1 ELSE 0 END) as pending_applications,
-          SUM(CASE WHEN status = 'INTERVIEW' THEN 1 ELSE 0 END) as interview_applications,
-          SUM(CASE WHEN status = 'ACCEPTED' THEN 1 ELSE 0 END) as accepted_applications,
-          SUM(CASE WHEN status = 'REJECTED' THEN 1 ELSE 0 END) as rejected_applications,
+          COUNT(*) FILTER (WHERE status = 'PENDING') as pending_applications,
+          COUNT(*) FILTER (WHERE status = 'INTERVIEW') as interview_applications,
+          COUNT(*) FILTER (WHERE status = 'ACCEPTED') as accepted_applications,
+          COUNT(*) FILTER (WHERE status = 'REJECTED') as rejected_applications,
           MAX(applied_at) as last_application_date
         FROM job_application 
-        WHERE student_id = ?
-        `,
-        [studentId]
-      );
+        WHERE student_id = $1
+      `, [studentId]);
 
-      // Get student's conversations statistics
-      const [conversationsStats] = await connection.execute(
-        `
+      // 3. Get student's conversations statistics
+      const conversationsStats = await pool.query(`
         SELECT 
           COUNT(*) as total_conversations,
-          SUM(CASE WHEN c.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY) THEN 1 ELSE 0 END) as new_conversations
+          COUNT(*) FILTER (WHERE c.created_at >= NOW() - INTERVAL '7 days') as new_conversations
         FROM conversation c
-        WHERE c.student_id = ?
-        `,
-        [studentId]
-      );
+        WHERE c.student_id = $1
+      `, [studentId]);
 
-      // Get unread messages count
-      const [messagesStats] = await connection.execute(
-        `
+      // 4. Get unread messages count
+      const messagesStats = await pool.query(`
         SELECT 
           COUNT(*) as total_messages,
-          SUM(CASE WHEN m.is_read = 0 THEN 1 ELSE 0 END) as unread_messages
+          COUNT(*) FILTER (WHERE m.is_read = 0) as unread_messages
         FROM message m
         JOIN conversation c ON m.conversation_id = c.id
-        WHERE c.student_id = ? AND m.sender_type = 'employer'
-        `,
-        [studentId]
-      );
+        WHERE c.student_id = $1 AND m.sender_type = 'employer'
+      `, [studentId]);
 
-      // Get available job offers
-      const [jobOffersStats] = await connection.execute(
-        `
+      // 5. Get available job offers
+      const jobOffersStats = await pool.query(`
         SELECT COUNT(*) as total_offers
         FROM job_offer
         WHERE 1=1
-        `
-      );
+      `);
 
-      // Get recent applications with job details
-      const [recentApplications] = await connection.execute(
-        `
+      // 6. Get recent applications with job details
+      const recentApplications = await pool.query(`
         SELECT 
           ja.id,
           ja.status,
@@ -99,81 +94,84 @@ export async function GET(request: NextRequest) {
         FROM job_application ja
         JOIN job_offer jo ON ja.job_id = jo.id
         LEFT JOIN employer_profile ep ON jo.employer_id = ep.id
-        WHERE ja.student_id = ?
+        WHERE ja.student_id = $1
         ORDER BY ja.applied_at DESC
         LIMIT 5
-        `,
-        [studentId]
-      );
+      `, [studentId]);
 
-      // Get forum activity
-      const [forumStats] = await connection.execute(
-        `
+      // 7. Get forum activity
+      const forumStats = await pool.query(`
         SELECT 
           COUNT(*) as total_topics,
-          SUM(CASE WHEN created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY) THEN 1 ELSE 0 END) as recent_topics
+          COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '7 days') as recent_topics
         FROM forum_topic
-        WHERE author_id = ?
-        `,
-        [studentId]
-      );
+        WHERE author_id = $1
+      `, [studentId]);
 
-      // Get notifications count
-      const [notificationsStats] = await connection.execute(
-        `
+      // 8. Get notifications count
+      const notificationsStats = await pool.query(`
         SELECT 
           COUNT(*) as total_notifications,
-          SUM(CASE WHEN is_read = 0 THEN 1 ELSE 0 END) as unread_notifications
+          COUNT(*) FILTER (WHERE is_read = 0) as unread_notifications
         FROM notification
-        WHERE user_id = ?
-        `,
-        [userId]
-      );
+        WHERE user_id = $1
+      `, [userId]);
 
       const stats = {
         applications: {
-          total: applicationsStats[0]?.total_applications || 0,
-          pending: applicationsStats[0]?.pending_applications || 0,
-          interview: applicationsStats[0]?.interview_applications || 0,
-          accepted: applicationsStats[0]?.accepted_applications || 0,
-          rejected: applicationsStats[0]?.rejected_applications || 0,
-          last_application_date: applicationsStats[0]?.last_application_date
+          total: parseInt(applicationsStats.rows[0]?.total_applications) || 0,
+          pending: parseInt(applicationsStats.rows[0]?.pending_applications) || 0,
+          interview: parseInt(applicationsStats.rows[0]?.interview_applications) || 0,
+          accepted: parseInt(applicationsStats.rows[0]?.accepted_applications) || 0,
+          rejected: parseInt(applicationsStats.rows[0]?.rejected_applications) || 0,
+          last_application_date: applicationsStats.rows[0]?.last_application_date || null
         },
         conversations: {
-          total: conversationsStats[0]?.total_conversations || 0,
-          new: conversationsStats[0]?.new_conversations || 0
+          total: parseInt(conversationsStats.rows[0]?.total_conversations) || 0,
+          new: parseInt(conversationsStats.rows[0]?.new_conversations) || 0
         },
         messages: {
-          total: messagesStats[0]?.total_messages || 0,
-          unread: messagesStats[0]?.unread_messages || 0
+          total: parseInt(messagesStats.rows[0]?.total_messages) || 0,
+          unread: parseInt(messagesStats.rows[0]?.unread_messages) || 0
         },
         job_offers: {
-          total: jobOffersStats[0]?.total_offers || 0
+          total: parseInt(jobOffersStats.rows[0]?.total_offers) || 0
         },
         forum: {
-          topics: forumStats[0]?.total_topics || 0,
-          recent_topics: forumStats[0]?.recent_topics || 0
+          topics: parseInt(forumStats.rows[0]?.total_topics) || 0,
+          recent_topics: parseInt(forumStats.rows[0]?.recent_topics) || 0
         },
         notifications: {
-          total: notificationsStats[0]?.total_notifications || 0,
-          unread: notificationsStats[0]?.unread_notifications || 0
+          total: parseInt(notificationsStats.rows[0]?.total_notifications) || 0,
+          unread: parseInt(notificationsStats.rows[0]?.unread_notifications) || 0
         },
-        recent_applications: recentApplications
+        recent_applications: recentApplications.rows.map(app => ({
+          id: app.id,
+          status: app.status,
+          applied_at: app.applied_at,
+          interview_date: app.interview_date,
+          interview_time: app.interview_time,
+          job_title: app.job_title,
+          company_name: app.company_name
+        }))
       };
+
+      console.log('✅ Statistiques récupérées avec succès pour studentId:', studentId);
 
       return NextResponse.json({
         success: true,
         data: stats
       });
 
-    } finally {
-      connection.release();
+    } catch (error: any) {
+      throw error;
     }
 
   } catch (error: any) {
-    console.error('Erreur récupération statistiques étudiant:', error);
+    console.error('❌ Erreur récupération statistiques étudiant:', error);
     return NextResponse.json(
       {
+        success: false,
         error: process.env.NODE_ENV === 'production'
           ? 'Erreur serveur'
           : error.message,
@@ -182,4 +180,3 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-

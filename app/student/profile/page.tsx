@@ -137,7 +137,7 @@ const fetchProfile = async () => {
       });
       
       if (!res.ok) {
-        throw new Error('Erreur lors de la récupération du profil');
+        throw new Error('Erreur lors de la récupération du profil' );
       }
 
       const data = await res.json();

@@ -46,7 +46,7 @@ export async function PUT(
 
       // Marquer comme lu
       await connection.execute(`
-        UPDATE notification SET is_read = TRUE WHERE id = ?
+        UPDATE notification SET is_read = 1 WHERE id = ?
       `, [notificationId]);
 
       console.log('✅ Notification marquée comme lue:', notificationId);

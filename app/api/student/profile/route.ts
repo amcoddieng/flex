@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import mysql from '@/lib/db';
+import { Pool } from 'pg';
 import { verifyToken, getTokenFromHeader } from '@/lib/jwt';
 
-const pool = mysql.createPool();
+const pool = new Pool({
+  connectionString: process.env.POSTGRES_URL || process.env.DATABASE_URL,
+  max: 10,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 20000,
+});
 
 export async function GET(request: NextRequest) {
   try {
@@ -22,23 +27,22 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Token invalide' }, { status: 400 });
     }
 
-    const connection = await pool.getConnection();
-
     try {
       console.log('🔍 Récupération profil étudiant pour userId:', userId);
 
       // Vérifier d'abord si l'utilisateur existe
-      const [userCheck] = await connection.execute(`
-        SELECT id, role FROM user WHERE id = ?
-      `, [userId]);
+      const userCheck = await pool.query(
+        'SELECT id, role FROM "user" WHERE id = $1',
+        [userId]
+      );
       
-      console.log('🔍 Utilisateur trouvé dans la base:', (userCheck as any[]).length > 0);
-      if ((userCheck as any[]).length > 0) {
-        console.log('🔍 Rôle utilisateur:', (userCheck as any[])[0].role);
+      console.log('🔍 Utilisateur trouvé dans la base:', userCheck.rows.length > 0);
+      if (userCheck.rows.length > 0) {
+        console.log('🔍 Rôle utilisateur:', userCheck.rows[0].role);
       }
 
       // Récupérer les informations complètes du profil étudiant
-      const [studentRows] = await connection.execute(`
+      const studentResult = await pool.query(`
         SELECT 
           sp.id,
           sp.user_id,
@@ -62,18 +66,19 @@ export async function GET(request: NextRequest) {
           u.email as user_email,
           u.created_at as account_created_at
         FROM student_profile sp
-        JOIN user u ON sp.user_id = u.id
-        WHERE sp.user_id = ?
+        JOIN "user" u ON sp.user_id = u.id
+        WHERE sp.user_id = $1
       `, [userId]);
 
-      if ((studentRows as any[]).length === 0) {
+      if (studentResult.rows.length === 0) {
         return NextResponse.json({ error: 'Profil étudiant non trouvé' }, { status: 404 });
       }
 
-      const student = (studentRows as any[])[0];
+      const student = studentResult.rows[0];
+      const studentProfileId = student.id;
 
       // Récupérer les statistiques des candidatures
-      const [applicationStats] = await connection.execute(`
+      const applicationStats = await pool.query(`
         SELECT 
           COUNT(*) as total_applications,
           SUM(CASE WHEN status = 'ACCEPTED' THEN 1 ELSE 0 END) as accepted_count,
@@ -82,11 +87,11 @@ export async function GET(request: NextRequest) {
           SUM(CASE WHEN status = 'REJECTED' THEN 1 ELSE 0 END) as rejected_count,
           MAX(applied_at) as last_application_date
         FROM job_application 
-        WHERE student_id = ?
-      `, [student.id]);
+        WHERE student_id = $1
+      `, [studentProfileId]);
 
       // Récupérer les candidatures récentes (limit 5)
-      const [recentApplications] = await connection.execute(`
+      const recentApplications = await pool.query(`
         SELECT 
           ja.id,
           ja.status,
@@ -97,30 +102,30 @@ export async function GET(request: NextRequest) {
         FROM job_application ja
         JOIN job_offer jo ON ja.job_id = jo.id
         JOIN employer_profile ep ON jo.employer_id = ep.id
-        WHERE ja.student_id = ?
+        WHERE ja.student_id = $1
         ORDER BY ja.applied_at DESC
         LIMIT 5
-      `, [student.id]);
+      `, [studentProfileId]);
 
       // Récupérer l'activité forum
-      const [forumStats] = await connection.execute(`
+      const forumStats = await pool.query(`
         SELECT 
           COUNT(DISTINCT ft.id) as topics_created,
           COUNT(DISTINCT fr.id) as replies_given,
-          SUM(ft.likes) as total_topic_likes,
-          SUM(fr.likes) as total_reply_likes
+          COALESCE(SUM(ft.likes), 0) as total_topic_likes,
+          COALESCE(SUM(fr.likes), 0) as total_reply_likes
         FROM student_profile sp
         LEFT JOIN forum_topic ft ON sp.id = ft.author_id
         LEFT JOIN forum_reply fr ON sp.id = fr.author_id
-        WHERE sp.id = ?
-      `, [student.id]);
+        WHERE sp.id = $1
+      `, [studentProfileId]);
 
       // Récupérer les notifications non lues
-      const [notifications] = await connection.execute(`
+      const notifications = await pool.query(`
         SELECT 
           COUNT(*) as unread_count
         FROM notification 
-        WHERE user_id = ? AND is_read = FALSE
+        WHERE user_id = $1 AND is_read = 0
       `, [userId]);
 
       // Formater les données
@@ -161,32 +166,32 @@ export async function GET(request: NextRequest) {
         // Statistiques
         statistics: {
           applications: {
-            total: (applicationStats as any[])[0]?.total_applications || 0,
-            accepted: (applicationStats as any[])[0]?.accepted_count || 0,
-            pending: (applicationStats as any[])[0]?.pending_count || 0,
-            interview: (applicationStats as any[])[0]?.interview_count || 0,
-            rejected: (applicationStats as any[])[0]?.rejected_count || 0,
-            successRate: (applicationStats as any[])[0]?.total_applications > 0 
-              ? Math.round(((applicationStats as any[])[0]?.accepted_count / (applicationStats as any[])[0]?.total_applications) * 100) 
+            total: parseInt(applicationStats.rows[0]?.total_applications) || 0,
+            accepted: parseInt(applicationStats.rows[0]?.accepted_count) || 0,
+            pending: parseInt(applicationStats.rows[0]?.pending_count) || 0,
+            interview: parseInt(applicationStats.rows[0]?.interview_count) || 0,
+            rejected: parseInt(applicationStats.rows[0]?.rejected_count) || 0,
+            successRate: applicationStats.rows[0]?.total_applications > 0 
+              ? Math.round((applicationStats.rows[0]?.accepted_count / applicationStats.rows[0]?.total_applications) * 100) 
               : 0,
-            responseRate: (applicationStats as any[])[0]?.total_applications > 0 
-              ? Math.round((((applicationStats as any[])[0]?.accepted_count + (applicationStats as any[])[0]?.interview_count) / (applicationStats as any[])[0]?.total_applications) * 100) 
+            responseRate: applicationStats.rows[0]?.total_applications > 0 
+              ? Math.round(((applicationStats.rows[0]?.accepted_count + applicationStats.rows[0]?.interview_count) / applicationStats.rows[0]?.total_applications) * 100) 
               : 0,
-            lastApplicationDate: (applicationStats as any[])[0]?.last_application_date
+            lastApplicationDate: applicationStats.rows[0]?.last_application_date
           },
           forum: {
-            topicsCreated: (forumStats as any[])[0]?.topics_created || 0,
-            repliesGiven: (forumStats as any[])[0]?.replies_given || 0,
-            totalTopicLikes: (forumStats as any[])[0]?.total_topic_likes || 0,
-            totalReplyLikes: (forumStats as any[])[0]?.total_reply_likes || 0
+            topicsCreated: parseInt(forumStats.rows[0]?.topics_created) || 0,
+            repliesGiven: parseInt(forumStats.rows[0]?.replies_given) || 0,
+            totalTopicLikes: parseInt(forumStats.rows[0]?.total_topic_likes) || 0,
+            totalReplyLikes: parseInt(forumStats.rows[0]?.total_reply_likes) || 0
           },
           notifications: {
-            unreadCount: (notifications as any[])[0]?.unread_count || 0
+            unreadCount: parseInt(notifications.rows[0]?.unread_count) || 0
           }
         },
         
         // Données récentes
-        recentApplications: (recentApplications as any[]).map((app: any) => ({
+        recentApplications: recentApplications.rows.map((app: any) => ({
           id: app.id,
           status: app.status,
           appliedAt: app.applied_at,
@@ -199,10 +204,6 @@ export async function GET(request: NextRequest) {
       console.log('📊 Statistiques:', formattedStudent.statistics);
       console.log('🔍 ValidationStatus retourné:', formattedStudent.validationStatus);
 
-      console.log('🔍 Données finales envoyées:', JSON.stringify(formattedStudent, null, 2));
-      console.log('🔍 Vérification présence student:', !!formattedStudent);
-      console.log('🔍 Type de formattedStudent:', typeof formattedStudent);
-
       return NextResponse.json({
         success: true,
         data: {
@@ -210,8 +211,8 @@ export async function GET(request: NextRequest) {
         }
       });
 
-    } finally {
-      connection.release();
+    } catch (error: any) {
+      throw error;
     }
 
   } catch (error: any) {
@@ -261,24 +262,22 @@ export async function PUT(request: NextRequest) {
       hourlyRate
     } = body;
 
-    const connection = await pool.getConnection();
-
     try {
-      // Mettre à jour le profil étudiant
-      await connection.execute(`
+      // Mettre à jour le profil étudiant avec PostgreSQL ($1, $2, etc.)
+      await pool.query(`
         UPDATE student_profile SET
-          first_name = ?,
-          last_name = ?,
-          phone = ?,
-          university = ?,
-          department = ?,
-          year_of_study = ?,
-          bio = ?,
-          skills = ?,
-          availability = ?,
-          services = ?,
-          hourly_rate = ?
-        WHERE user_id = ?
+          first_name = $1,
+          last_name = $2,
+          phone = $3,
+          university = $4,
+          department = $5,
+          year_of_study = $6,
+          bio = $7,
+          skills = $8,
+          availability = $9,
+          services = $10,
+          hourly_rate = $11
+        WHERE user_id = $12
       `, [
         firstName,
         lastName,
@@ -301,8 +300,8 @@ export async function PUT(request: NextRequest) {
         message: 'Profil mis à jour avec succès'
       });
 
-    } finally {
-      connection.release();
+    } catch (error: any) {
+      throw error;
     }
 
   } catch (error: any) {
@@ -319,4 +318,3 @@ export async function PUT(request: NextRequest) {
     );
   }
 }
-

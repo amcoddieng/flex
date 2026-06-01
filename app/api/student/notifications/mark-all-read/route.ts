@@ -26,8 +26,8 @@ export async function PUT(request: NextRequest) {
     try {
       // Marquer toutes les notifications de l'utilisateur comme lues
       const [result] = await connection.execute(`
-        UPDATE notification SET is_read = TRUE 
-        WHERE user_id = ? AND is_read = FALSE
+        UPDATE notification SET is_read = 1 
+        WHERE user_id = ? AND is_read = 0
       `, [userId]);
 
       const updatedCount = (result as any).affectedRows;
