@@ -2,8 +2,8 @@ import React from "react"
 import type { Metadata } from 'next'
 import { Analytics } from '@vercel/analytics/next'
 
-// import './globals.css'
-// import '../styles/animations.css'
+import './globals.css'
+import '../styles/animations.css'
 
 export const metadata: Metadata = {
   title: 'FlexJob Sénégal - Jobs étudiants flexibles',
