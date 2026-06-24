@@ -212,21 +212,31 @@ export default function AdminApplicationsPage() {
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Candidatures</h1>
-            <p className="text-gray-600 mt-1">
-              Gérez toutes les candidatures des étudiants aux offres d'emploi
-            </p>
+      <div className="min-h-screen">
+        {/* Header Banner */}
+        <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white relative overflow-hidden">
+          <div className="absolute inset-0 opacity-30">
+            <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+              <defs><pattern id="gridApp" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="0.5"/></pattern></defs>
+              <rect width="100" height="100" fill="url(#gridApp)"/>
+            </svg>
           </div>
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <FileText className="h-4 w-4" />
-            <span>{pagination.total} candidatures trouvées</span>
+          <div className="relative px-6 py-6 sm:py-8">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <p className="text-slate-400 text-sm mb-1">Suivi</p>
+                <h1 className="text-2xl sm:text-3xl font-bold">Candidatures</h1>
+                <p className="text-slate-400 text-sm mt-1">Gérez toutes les candidatures</p>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-slate-300">
+                <FileText className="h-4 w-4" />
+                <span>{pagination.total} trouvées</span>
+              </div>
+            </div>
           </div>
         </div>
 
+        <div className="px-4 sm:px-6 py-6 space-y-6 max-w-7xl">
         {/* Filters */}
         <Card>
           <CardHeader>
@@ -507,6 +517,7 @@ export default function AdminApplicationsPage() {
             </Button>
           </div>
         )}
+      </div>
       </div>
 
       {/* Modal des détails de la candidature */}

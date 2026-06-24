@@ -47,13 +47,11 @@ export async function GET(
           (SELECT COUNT(*) FROM job_offer WHERE employer_id = ep.id) as job_count,
           (SELECT COUNT(*) FROM job_offer WHERE employer_id = ep.id AND is_active = 1) as active_jobs
         FROM employer_profile ep
-        LEFT JOIN user u ON ep.user_id = u.id
+        LEFT JOIN "user" u ON ep.user_id = u.id
         WHERE ep.user_id = ?
       `;
 
       const [profiles] = await connection.execute(query, [userId]);
-
-      connection.release();
 
       if (!profiles || (profiles as any[]).length === 0) {
         return NextResponse.json(
@@ -68,12 +66,13 @@ export async function GET(
       });
 
     } catch (dbError) {
-      connection.release();
       console.error('Database error:', dbError);
       return NextResponse.json(
         { error: 'Erreur base de données' },
         { status: 500 }
       );
+    } finally {
+      connection.release();
     }
   } catch (error) {
     console.error('Admin employer profile GET error:', error);

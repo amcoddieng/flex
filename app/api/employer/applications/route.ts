@@ -51,7 +51,6 @@ export async function GET(request: NextRequest) {
       );
 
       if (!Array.isArray(empRows) || empRows.length === 0) {
-        connection.release();
         return NextResponse.json(
           { success: true, data: [], pagination: { page, limit, total: 0, pages: 0 } },
           { status: 200 }
@@ -66,7 +65,7 @@ export async function GET(request: NextRequest) {
         FROM job_application ja
         JOIN job_offer j ON ja.job_id = j.id
         JOIN student_profile sp ON ja.student_id = sp.id
-        JOIN user u ON sp.user_id = u.id
+        JOIN "user" u ON sp.user_id = u.id
         WHERE j.employer_id = ?
       `;
       const params: any[] = [employerId];
@@ -91,7 +90,7 @@ export async function GET(request: NextRequest) {
         SELECT COUNT(*) as total FROM job_application ja
         JOIN job_offer j ON ja.job_id = j.id
         JOIN student_profile sp ON ja.student_id = sp.id
-        JOIN user u ON sp.user_id = u.id
+        JOIN "user" u ON sp.user_id = u.id
         WHERE j.employer_id = ?
       `;
       const countParams: any[] = [employerId];
@@ -109,8 +108,6 @@ export async function GET(request: NextRequest) {
 
       const [countRows] = await connection.execute(countQuery, countParams);
       const total = (countRows as any)[0]?.total || 0;
-
-      connection.release();
 
       return NextResponse.json(
         {

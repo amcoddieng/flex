@@ -53,7 +53,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         FROM job_application ja
         LEFT JOIN job_offer jo ON ja.job_id = jo.id
         LEFT JOIN student_profile sp ON ja.student_id = sp.id
-        LEFT JOIN user u ON sp.user_id = u.id
+        LEFT JOIN "user" u ON sp.user_id = u.id
         WHERE ja.id = ?`,
         [applicationId]
       );
@@ -127,10 +127,10 @@ export async function PUT(
     } finally {
       connection.release();
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error updating application status:', error);
     return NextResponse.json(
-      { 
+      {
         error: error.message || 'Erreur lors de la mise à jour du statut',
         details: process.env.NODE_ENV === 'development' ? error.stack : undefined
       },

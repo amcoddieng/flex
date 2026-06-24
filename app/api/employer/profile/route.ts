@@ -38,21 +38,18 @@ export async function GET(request: NextRequest) {
       const [profileRows] = await connection.execute(
         `SELECT u.id, u.email, ep.id as employer_id, ep.company_name, ep.contact_person, ep.phone, 
                 ep.address, ep.description, ep.img, ep.identity, ep.validation_status, ep.rejection_reason, u.blocked
-         FROM user u
+         FROM "user" u
          LEFT JOIN employer_profile ep ON u.id = ep.user_id
          WHERE u.id = ? AND u.role = 'EMPLOYER'`,
         [userId]
       );
 
       if (!profileRows || (profileRows as any).length === 0) {
-        connection.release();
         return NextResponse.json(
           { error: 'Profil non trouvé' },
           { status: 404 }
         );
       }
-
-      connection.release();
 
       return NextResponse.json(
         {
@@ -97,7 +94,6 @@ export async function PUT(request: NextRequest) {
       );
 
       if (!epRows || (epRows as any).length === 0) {
-        connection.release();
         return NextResponse.json(
           { error: 'Profil employeur non trouvé' },
           { status: 404 }
@@ -148,8 +144,6 @@ export async function PUT(request: NextRequest) {
         const query = `UPDATE employer_profile SET ${updates.join(', ')} WHERE id = ?`;
         await connection.execute(query, params);
       }
-
-      connection.release();
 
       return NextResponse.json(
         { success: true, message: 'Profil mis à jour' },

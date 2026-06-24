@@ -162,7 +162,7 @@ useEffect(() => {
       if (res.ok) {
         const data = await res.json();
         if (data.success && data.data) {
-          const appliedJobIds = new Set(data.data.map((app: any) => app.job_id));
+          const appliedJobIds = new Set<number>(data.data.map((app: any) => app.job_id));
           setAppliedJobs(appliedJobIds);
         }
       }
@@ -345,22 +345,30 @@ useEffect(() => {
   ];
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Offres d'emploi</h1>
-          <p className="text-gray-600">Découvrez les opportunités qui correspondent à votre profil</p>
+    <div className="min-h-screen">
+      {/* Header Banner */}
+      <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white relative overflow-hidden">
+        <div className="absolute inset-0 opacity-30">
+          <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+            <defs><pattern id="gridSJ" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="0.5"/></pattern></defs>
+            <rect width="100" height="100" fill="url(#gridSJ)"/>
+          </svg>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="text-sm text-gray-600">
-            {filteredJobs.length} offre{filteredJobs.length > 1 ? 's' : ''} trouvée{filteredJobs.length > 1 ? 's' : ''}
+        <div className="relative px-6 py-6 sm:py-8">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <p className="text-slate-400 text-sm mb-1">Recherche d'emploi</p>
+              <h1 className="text-2xl sm:text-3xl font-bold">Offres d'emploi</h1>
+              <p className="text-slate-400 text-sm mt-1">Découvrez les opportunités pour votre profil</p>
+            </div>
+            <p className="text-sm text-slate-300">{filteredJobs.length} offre{filteredJobs.length > 1 ? 's' : ''}</p>
           </div>
         </div>
       </div>
 
+      <div className="px-4 sm:px-6 py-6 space-y-6 max-w-7xl">
       {/* Search and Filters */}
-      <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+      <div className="bg-white rounded-2xl border border-slate-200/60 p-4 shadow-sm">
         <div className="flex flex-col lg:flex-row gap-4">
           {/* Search */}
           <div className="flex-1 relative">
@@ -718,6 +726,7 @@ useEffect(() => {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

@@ -328,28 +328,27 @@ export default function StudentMessagesPage() {
   }
 
   return (
-    <div className="h-[calc(100vh-200px)] flex gap-4">
+    <div className="h-[calc(100vh-64px)] max-h-[calc(100vh-64px)] flex bg-slate-50 overflow-hidden">
       {/* Conversations List */}
-      <div className={`bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col ${
-        selectedConversation ? 'hidden md:flex md:w-96' : 'w-full md:w-96'
+      <div className={`bg-white border-r border-slate-200 flex flex-col h-full ${
+        selectedConversation ? 'hidden md:flex md:w-80' : 'w-full md:w-80'
       }`}>
         {/* Header */}
-        <div className="p-4 border-b border-gray-100">
+        <div className="p-4 border-b border-slate-100 bg-white sticky top-0 z-10">
           <div className="flex items-center gap-3 mb-3">
-            <h2 className="text-lg font-semibold text-gray-900">Messages</h2>
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+              <MessageCircle className="h-4 w-4 text-white" />
+            </div>
+            <h2 className="text-sm font-bold text-slate-900">Messages</h2>
             <div className="ml-auto flex items-center gap-2">
-              <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs ${
-                isSocketConnected ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-              }`}>
-                <div className={`w-2 h-2 rounded-full ${
-                  isSocketConnected ? 'bg-green-500' : 'bg-red-500'
-                }`}></div>
+              <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium ${isSocketConnected ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
+                <div className={`w-1.5 h-1.5 rounded-full ${isSocketConnected ? 'bg-emerald-500' : 'bg-red-500'}`}></div>
                 <span>{isSocketConnected ? 'En ligne' : 'Hors ligne'}</span>
               </div>
             </div>
           </div>
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <input
               type="text"
               placeholder="Rechercher une conversation..."

@@ -226,25 +226,35 @@ export default function StudentApplicationsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Mes candidatures</h1>
-          <p className="text-gray-600">Suivez l'état de vos candidatures</p>
+    <div className="min-h-screen">
+      {/* Header Banner */}
+      <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white relative overflow-hidden">
+        <div className="absolute inset-0 opacity-30">
+          <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+            <defs><pattern id="gridSA" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="0.5"/></pattern></defs>
+            <rect width="100" height="100" fill="url(#gridSA)"/>
+          </svg>
         </div>
-        <div className="flex items-center gap-3 ">
-          <Link href="/student/jobs">
-            <Button variant="outline" className="gap-2">
-              <Briefcase className="h-4 w-4" />
-              Nouvelle candidature
-            </Button>
-          </Link>
+        <div className="relative px-6 py-6 sm:py-8">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <p className="text-slate-400 text-sm mb-1">Suivi</p>
+              <h1 className="text-2xl sm:text-3xl font-bold">Mes candidatures</h1>
+              <p className="text-slate-400 text-sm mt-1">Suivez l'état de vos candidatures</p>
+            </div>
+            <Link href="/student/jobs">
+              <Button className="bg-white text-slate-900 hover:bg-slate-100 shadow-lg gap-2">
+                <Briefcase className="h-4 w-4" />
+                Nouvelle candidature
+              </Button>
+            </Link>
+          </div>
         </div>
       </div>
 
+      <div className="px-4 sm:px-6 py-6 space-y-6 max-w-7xl">
       {/* Status Filters */}
-      <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+      <div className="bg-white rounded-2xl border border-slate-200/60 p-4 shadow-sm">
         <div className="flex gap-2 flex-wrap">
           {statusFilters.map((filter) => (
             <Button
@@ -593,6 +603,7 @@ export default function StudentApplicationsPage() {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

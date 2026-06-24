@@ -47,15 +47,13 @@ export async function GET(
           ep.company_name,
           ep.phone as employer_phone,
           ep.validation_status as employer_validation
-        FROM user u
+        FROM "user" u
         LEFT JOIN student_profile sp ON u.id = sp.user_id
         LEFT JOIN employer_profile ep ON u.id = ep.user_id
         WHERE u.id = ?
       `;
 
       const [users] = await connection.execute(query, [userId]);
-
-      connection.release();
 
       if (!users || (users as any[]).length === 0) {
         return NextResponse.json(
@@ -70,12 +68,13 @@ export async function GET(
       });
 
     } catch (dbError) {
-      connection.release();
       console.error('Database error:', dbError);
       return NextResponse.json(
         { error: 'Erreur base de données' },
         { status: 500 }
       );
+    } finally {
+      connection.release();
     }
   } catch (error) {
     console.error('Admin user GET error:', error);
@@ -118,7 +117,7 @@ export async function PUT(
       // Mettre à jour le statut blocked seulement si fourni
       if (blocked !== undefined) {
         await connection.execute(
-          'UPDATE user SET blocked = ? WHERE id = ?',
+          'UPDATE "user" SET blocked = ? WHERE id = ?',
           [blocked ? 1 : 0, userId]
         );
       } else {
@@ -129,20 +128,19 @@ export async function PUT(
         );
       }
 
-      connection.release();
-
       return NextResponse.json({
         success: true,
         message: 'Utilisateur mis à jour avec succès'
       });
 
     } catch (dbError) {
-      connection.release();
       console.error('Database error:', dbError);
       return NextResponse.json(
         { error: 'Erreur base de données' },
         { status: 500 }
       );
+    } finally {
+      connection.release();
     }
   } catch (error) {
     console.error('Admin user PUT error:', error);
@@ -187,9 +185,7 @@ export async function DELETE(
       await connection.execute('DELETE FROM employer_profile WHERE user_id = ?', [userId]);
       
       // Supprimer l'utilisateur
-      await connection.execute('DELETE FROM user WHERE id = ?', [userId]);
-
-      connection.release();
+      await connection.execute('DELETE FROM "user" WHERE id = ?', [userId]);
 
       return NextResponse.json({
         success: true,
@@ -197,12 +193,13 @@ export async function DELETE(
       });
 
     } catch (dbError) {
-      connection.release();
       console.error('Database error:', dbError);
       return NextResponse.json(
         { error: 'Erreur base de données' },
         { status: 500 }
       );
+    } finally {
+      connection.release();
     }
   } catch (error) {
     console.error('Admin user DELETE error:', error);

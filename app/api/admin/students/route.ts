@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
           sp.department,
           sp.year_of_study,
           sp.validation_status
-        FROM user u
+        FROM "user" u
         LEFT JOIN student_profile sp ON u.id = sp.user_id
         WHERE u.role = 'STUDENT'
       `;
@@ -73,8 +73,6 @@ export async function GET(request: NextRequest) {
 
       const [students] = await connection.execute(query, params);
 
-      connection.release();
-
       return NextResponse.json({
         success: true,
         data: students,
@@ -87,12 +85,13 @@ export async function GET(request: NextRequest) {
       });
 
     } catch (dbError) {
-      connection.release();
       console.error('Database error:', dbError);
       return NextResponse.json(
         { error: 'Erreur base de données' },
         { status: 500 }
       );
+    } finally {
+      connection.release();
     }
   } catch (error) {
     console.error('Admin students GET error:', error);
@@ -123,7 +122,7 @@ export async function PUT(request: NextRequest) {
       // Mettre à jour le statut de blocage
       if (typeof blocked === 'boolean') {
         await connection.execute(
-          'UPDATE user SET blocked = ? WHERE id = ?',
+          'UPDATE "user" SET blocked = ? WHERE id = ?',
           [blocked, studentId]
         );
       }
@@ -136,20 +135,19 @@ export async function PUT(request: NextRequest) {
         );
       }
 
-      connection.release();
-
       return NextResponse.json({
         success: true,
         message: 'Étudiant mis à jour avec succès'
       });
 
     } catch (dbError) {
-      connection.release();
       console.error('Database error:', dbError);
       return NextResponse.json(
         { error: 'Erreur base de données' },
         { status: 500 }
       );
+    } finally {
+      connection.release();
     }
   } catch (error) {
     console.error('Admin students PUT error:', error);

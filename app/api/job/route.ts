@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
     const connection = await pool.getConnection();
     try {
       // Vérifier que l'utilisateur est employeur
-      const [userRows] = await connection.execute('SELECT id, role FROM user WHERE id = ?', [userId]);
+      const [userRows] = await connection.execute('SELECT id, role FROM "user" WHERE id = ?', [userId]);
       if (!Array.isArray(userRows) || userRows.length === 0) {
         return NextResponse.json({ error: 'Utilisateur non trouvé' }, { status: 404 });
       }

@@ -54,13 +54,12 @@ export async function GET(
          FROM job_application ja
          JOIN job_offer j ON ja.job_id = j.id
          JOIN student_profile sp ON ja.student_id = sp.id
-         JOIN user u ON sp.user_id = u.id
+         JOIN "user" u ON sp.user_id = u.id
          WHERE ja.id = ? AND j.employer_id = (SELECT id FROM employer_profile WHERE user_id = ?)`,
         [appId, userId]
       );
 
       if (!appRows || (appRows as any).length === 0) {
-        connection.release();
         return NextResponse.json(
           { error: 'Candidature non trouvée ou accès refusé' },
           { status: 404 }
@@ -68,8 +67,6 @@ export async function GET(
       }
 
       const appData = (appRows as any)[0];
-
-      connection.release();
 
       return NextResponse.json(
         {
@@ -149,7 +146,6 @@ export async function PUT(
       );
 
       if (!appRows || (appRows as any).length === 0) {
-        connection.release();
         return NextResponse.json(
           { error: 'Candidature non trouvée ou accès refusé' },
           { status: 404 }
@@ -186,8 +182,6 @@ export async function PUT(
 
         await connection.execute(updateQuery, updateParams);
       }
-
-      connection.release();
 
       return NextResponse.json(
         { success: true, message: 'Candidature mise à jour' },

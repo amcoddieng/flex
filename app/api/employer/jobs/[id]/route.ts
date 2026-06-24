@@ -58,7 +58,6 @@ export async function GET(
       const [jobRows] = await connection.execute(query, params);
 
       if (!jobRows || (jobRows as any).length === 0) {
-        connection.release();
         return NextResponse.json(
           { error: 'Offre non trouvée ou accès refusé' },
           { status: 404 }
@@ -72,13 +71,11 @@ export async function GET(
         `SELECT ja.id, ja.status, ja.applied_at, sp.first_name, sp.last_name, u.email as user_email
          FROM job_application ja
          JOIN student_profile sp ON ja.student_id = sp.id
-         JOIN user u ON sp.user_id = u.id
+         JOIN "user" u ON sp.user_id = u.id
          WHERE ja.job_id = ?
          ORDER BY ja.applied_at DESC`,
         [jobId]
       );
-
-      connection.release();
 
       return NextResponse.json(
         {
@@ -140,7 +137,6 @@ export async function PUT(
       const [jobRows] = await connection.execute(query, params);
 
       if (!jobRows || (jobRows as any).length === 0) {
-        connection.release();
         return NextResponse.json(
           { error: 'Offre non trouvée ou accès refusé' },
           { status: 404 }
@@ -172,7 +168,6 @@ export async function PUT(
 
         // Validate required fields
         if (!title || !title.trim() || !location || !location.trim()) {
-          connection.release();
           return NextResponse.json(
             { error: 'Titre et localisation sont requis' },
             { status: 400 }
@@ -191,7 +186,6 @@ export async function PUT(
             'Horaires flexibles',
           ];
           if (!allowed.includes(a)) {
-            connection.release();
             return NextResponse.json({ error: 'Disponibilité invalide' }, { status: 400 });
           }
           availabilityValue = a;
@@ -203,7 +197,6 @@ export async function PUT(
           const t = String(type_paiement).trim();
           const allowed = ['heure', 'jour', 'semaine', 'mois'];
           if (!allowed.includes(t)) {
-            connection.release();
             return NextResponse.json({ error: 'Type de paiement invalide' }, { status: 400 });
           }
           typePaiValue = t;
@@ -241,8 +234,6 @@ export async function PUT(
           ]
         );
       }
-
-      connection.release();
 
       return NextResponse.json(
         { success: true, message: 'Offre mise à jour' },
@@ -297,7 +288,6 @@ export async function DELETE(
       const [jobRows] = await connection.execute(query, params);
 
       if (!jobRows || (jobRows as any).length === 0) {
-        connection.release();
         return NextResponse.json(
           { error: 'Offre non trouvée ou accès refusé' },
           { status: 404 }
@@ -309,8 +299,6 @@ export async function DELETE(
         'DELETE FROM job_offer WHERE id = ?',
         [jobId]
       );
-
-      connection.release();
 
       return NextResponse.json(
         { success: true, message: 'Offre supprimée' },

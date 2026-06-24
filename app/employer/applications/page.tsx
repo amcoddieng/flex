@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ApplicationDetailModalMinimal } from "@/components/application-detail-modal-minimal";
 import { EmployerProtection } from "@/components/employer-protection";
-import { Search, X, Briefcase, Calendar } from "lucide-react";
+import { Search, X, Briefcase, Calendar, AlertTriangle, RefreshCw } from "lucide-react";
 
 type Application = {
   id: number;
@@ -319,201 +319,141 @@ export default function EmployerApplicationsPage() {
 
   return (
     <EmployerProtection>
-      <div className="space-y-6 px-4 sm:px-0">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">Candidatures reçues</h1>
-          <p className="text-slate-600 mt-2 text-sm sm:text-base">Gérez les candidatures pour vos offres</p>
-        </div>
-
-      {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mx-4 sm:mx-0">
-          {error}
-        </div>
-      )}
-
-      {/* Filters */}
-      <div className="bg-white rounded-lg shadow p-4 sm:p-6 mx-4 sm:mx-0">
-        <div className="flex items-center gap-2 mb-4">
-          <Search className="h-5 w-5 text-slate-400" />
-          <h3 className="font-semibold text-slate-900 text-lg">Filtres</h3>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              Rechercher (Nom, Email)
-            </label>
-            <Input
-              type="text"
-              placeholder="Entrez nom ou email..."
-              value={searchQuery}
-              onChange={handleSearch}
-              className="w-full"
-            />
+      <div className="min-h-screen">
+        {/* Header Banner */}
+        <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white relative overflow-hidden">
+          <div className="absolute inset-0 opacity-30">
+            <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+              <defs><pattern id="grid4" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="0.5"/></pattern></defs>
+              <rect width="100" height="100" fill="url(#grid4)"/>
+            </svg>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              Filtrer par Statut
-            </label>
-            <select
-              value={filterStatus}
-              onChange={handleStatusFilter}
-              className="w-full px-3 py-2 border border-slate-300 rounded-md text-slate-900 bg-white hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
+          <div className="relative px-6 py-6 sm:py-8">
+            <div>
+              <p className="text-slate-400 text-sm mb-1">Suivi des candidatures</p>
+              <h1 className="text-2xl sm:text-3xl font-bold">Candidatures reçues</h1>
+              <p className="text-slate-400 text-sm mt-1">Gérez les candidatures pour vos offres</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="px-4 sm:px-6 py-6 space-y-6 max-w-7xl">
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+              {error}
+            </div>
+          )}
+
+          {/* Filters */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Input type="text" placeholder="Rechercher par nom ou email..." value={searchQuery} onChange={handleSearch} className="pl-10 rounded-xl border-slate-200" />
+            </div>
+            <select value={filterStatus} onChange={handleStatusFilter} className="px-3 py-2 border border-slate-200 rounded-xl text-sm text-slate-700 bg-white hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20">
               <option value="">Tous les statuts</option>
               <option value="PENDING">En attente</option>
               <option value="ACCEPTED">Acceptée</option>
               <option value="REJECTED">Refusée</option>
               <option value="INTERVIEW">Entretien</option>
             </select>
+            <Button onClick={() => fetchApplications(page)} disabled={loading} variant="outline" className="gap-2 rounded-xl">
+              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">Rafraîchir</span>
+            </Button>
           </div>
-        </div>
-      </div>
 
-      {/* Applications Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden mx-4 sm:mx-0">
-        <div className="p-4 sm:p-6 border-b flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <p className="text-sm text-slate-600">Total: {total} candidatures</p>
-          <Button onClick={() => fetchApplications(page)} disabled={loading} className="w-full sm:w-auto">
-            {loading ? 'Rafraîchir...' : 'Rafraîchir'}
-          </Button>
-        </div>
-
-        {/* Mobile Card View */}
-        <div className="sm:hidden">
-          {applications.map((app) => (
-            <div key={app.id} className="border-b border-slate-200 p-4 hover:bg-slate-50 transition-colors">
-              <div className="flex justify-between items-start mb-3">
-                <div className="flex-1 min-w-0">
-                  <h4 className="font-semibold text-slate-900 truncate">
-                    {app.first_name} {app.last_name}
-                  </h4>
-                  <p className="text-sm text-slate-600 truncate">{app.email}</p>
-                </div>
-                <span
-                  className={`inline-block px-2 py-1 rounded-full text-xs font-medium flex-shrink-0 ml-2 ${getStatusColor(
-                    app.status
-                  )}`}
-                >
-                  {app.status}
-                </span>
-              </div>
-              
-              <div className="space-y-2 mb-3">
-                <div className="flex items-center gap-2 text-sm">
-                  <Briefcase className="h-4 w-4 text-slate-400" />
-                  <span className="text-slate-700 truncate">{app.job_title}</span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Calendar className="h-4 w-4 text-slate-400" />
-                  <span className="text-slate-700">
-                    {app.applied_at
-                      ? new Date(app.applied_at).toLocaleDateString('fr-FR')
-                      : '-'}
-                  </span>
-                </div>
-              </div>
-              
-              <Button
-                size="sm"
-                className="w-full bg-blue-600 text-white hover:bg-blue-700"
-                onClick={() => openDetailModal(app.id)}
-              >
-                Voir les détails
-              </Button>
+          {/* Applications List */}
+          <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm overflow-hidden">
+            <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between">
+              <p className="text-sm font-semibold text-slate-900">{total} candidature{total !== 1 ? 's' : ''}</p>
             </div>
-          ))}
-        </div>
-        
-        {/* Desktop Table View */}
-        <div className="hidden sm:block overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-slate-50 border-b">
-              <tr>
-                <th className="text-left p-4 font-semibold text-slate-900">Candidat</th>
-                <th className="text-left p-4 font-semibold text-slate-900">Offre</th>
-                <th className="text-left p-4 font-semibold text-slate-900">Date</th>
-                <th className="text-left p-4 font-semibold text-slate-900">Statut</th>
-                <th className="text-right p-4 font-semibold text-slate-900">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
+
+            {/* Mobile Card View */}
+            <div className="sm:hidden">
               {applications.map((app) => (
-                <tr key={app.id} className="border-b hover:bg-slate-50 transition-colors">
-                  <td className="p-4">
-                    <div className="font-medium text-slate-900">
-                      {app.first_name} {app.last_name}
+                <div key={app.id} className="border-b border-slate-100 p-4 hover:bg-slate-50/50 transition-colors">
+                  <div className="flex justify-between items-start mb-2">
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-semibold text-sm text-slate-900">{app.first_name} {app.last_name}</h4>
+                      <p className="text-xs text-slate-500">{app.email}</p>
                     </div>
-                    <div className="text-sm text-slate-600">{app.email}</div>
-                  </td>
-                  <td className="p-4 text-slate-600">{app.job_title}</td>
-                  <td className="p-4 text-slate-600">
-                    {app.applied_at
-                      ? new Date(app.applied_at).toLocaleDateString('fr-FR')
-                      : '-'}
-                  </td>
-                  <td className="p-4">
-                    <span
-                      className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
-                        app.status
-                      )}`}
-                    >
+                    <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold flex-shrink-0 ml-2 ${getStatusColor(app.status)}`}>
                       {app.status}
                     </span>
-                  </td>
-                  <td className="p-4 text-right">
-                    <Button
-                      size="sm"
-                      className="bg-blue-600 text-white hover:bg-blue-700"
-                      onClick={() => openDetailModal(app.id)}
-                    >
-                      Détails
-                    </Button>
-                  </td>
-                </tr>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-xs text-slate-500 mb-3">
+                    <Briefcase className="h-3.5 w-3.5" />
+                    <span className="truncate">{app.job_title}</span>
+                  </div>
+                  <Button size="sm" className="w-full bg-blue-600 hover:bg-blue-700 h-8 text-xs" onClick={() => openDetailModal(app.id)}>Voir les détails</Button>
+                </div>
               ))}
-            </tbody>
-          </table>
+            </div>
+            
+            {/* Desktop Table View */}
+            <div className="hidden sm:block overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-slate-50/80 border-b border-slate-100">
+                  <tr>
+                    <th className="text-left py-3 px-5 text-xs font-bold text-slate-500 uppercase tracking-wider">Candidat</th>
+                    <th className="text-left py-3 px-5 text-xs font-bold text-slate-500 uppercase tracking-wider">Offre</th>
+                    <th className="text-left py-3 px-5 text-xs font-bold text-slate-500 uppercase tracking-wider">Date</th>
+                    <th className="text-left py-3 px-5 text-xs font-bold text-slate-500 uppercase tracking-wider">Statut</th>
+                    <th className="text-right py-3 px-5 text-xs font-bold text-slate-500 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {applications.map((app) => (
+                    <tr key={app.id} className="hover:bg-slate-50/50 transition-colors">
+                      <td className="py-3 px-5">
+                        <p className="font-semibold text-sm text-slate-900">{app.first_name} {app.last_name}</p>
+                        <p className="text-xs text-slate-500">{app.email}</p>
+                      </td>
+                      <td className="py-3 px-5 text-sm text-slate-500">{app.job_title}</td>
+                      <td className="py-3 px-5 text-sm text-slate-500">{app.applied_at ? new Date(app.applied_at).toLocaleDateString('fr-FR') : '-'}</td>
+                      <td className="py-3 px-5">
+                        <span className={`inline-block px-2.5 py-1 rounded-full text-xs font-semibold ${getStatusColor(app.status)}`}>{app.status}</span>
+                      </td>
+                      <td className="py-3 px-5 text-right">
+                        <Button size="sm" className="bg-blue-600 hover:bg-blue-700 h-7 text-xs px-3" onClick={() => openDetailModal(app.id)}>Détails</Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {applications.length === 0 && !loading && (
+              <div className="p-8 text-center">
+                <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center mx-auto mb-3">
+                  <Briefcase className="h-6 w-6 text-slate-400" />
+                </div>
+                <p className="text-sm text-slate-500">Aucune candidature trouvée</p>
+              </div>
+            )}
+
+            <div className="p-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="text-sm text-slate-500 text-center sm:text-left">Page {page} sur {pages}</div>
+              <div className="flex gap-2 justify-center sm:justify-end">
+                <Button variant="outline" disabled={page === 1 || loading} onClick={() => fetchApplications(page - 1)} className="flex-1 sm:flex-none rounded-xl text-xs">Précédent</Button>
+                <Button variant="outline" disabled={page === pages || pages === 0 || loading} onClick={() => fetchApplications(page + 1)} className="flex-1 sm:flex-none rounded-xl text-xs">Suivant</Button>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {applications.length === 0 && !loading && (
-          <div className="p-8 text-center">
-            <p className="text-slate-600">Aucune candidature trouvée</p>
-          </div>
-        )}
-
-        <div className="p-4 border-t flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="text-sm text-slate-600 text-center sm:text-left">
-            Page {page} sur {pages}
-          </div>
-          <div className="flex gap-2 justify-center sm:justify-end">
-            <Button variant="outline" disabled={page === 1} onClick={() => fetchApplications(page - 1)} className="flex-1 sm:flex-none">
-              Précédent
-            </Button>
-            <Button
-              variant="outline"
-              disabled={page === pages || pages === 0}
-              onClick={() => fetchApplications(page + 1)}
-              className="flex-1 sm:flex-none"
-            >
-              Suivant
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* Detail Modal */}
-      <ApplicationDetailModalMinimal
-        open={showDetailModal}
-        loading={detailLoading}
-        application={selectedApp}
-        onClose={() => {
-          setShowDetailModal(false);
-          setSelectedApp(null);
-        }}
-        onUpdateStatus={updateApplicationStatus}
-        onStartConversation={startConversation}
-        conversationLoading={conversationLoading}
-      />
+        {/* Detail Modal */}
+        <ApplicationDetailModalMinimal
+          open={showDetailModal}
+          loading={detailLoading}
+          application={selectedApp}
+          onClose={() => { setShowDetailModal(false); setSelectedApp(null); }}
+          onUpdateStatus={updateApplicationStatus}
+          onStartConversation={startConversation}
+          conversationLoading={conversationLoading}
+        />
       </div>
     </EmployerProtection>
   );

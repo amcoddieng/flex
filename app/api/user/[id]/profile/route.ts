@@ -41,7 +41,7 @@ export async function GET(request: NextRequest, { params }: RequestParams) {
     try {
       // Récupérer les infos utilisateur
       const [userResult]: any = await connection.execute(
-        'SELECT id, email, role, created_at FROM user WHERE id = $1',
+        'SELECT id, email, role, created_at FROM "user" WHERE id = $1',
         [userId]
       );
 
@@ -121,7 +121,7 @@ export async function PUT(request: NextRequest, { params }: RequestParams) {
     try {
       // Récupérer l'utilisateur et son rôle
       const [userResult]: any = await connection.execute(
-        'SELECT id, role FROM user WHERE id = $1',
+        'SELECT id, role FROM "user" WHERE id = $1',
         [userId]
       );
 

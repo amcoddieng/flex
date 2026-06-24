@@ -73,23 +73,22 @@ export async function GET(
 
       const checkRows = conversationCheck as any[];
       if (!checkRows || checkRows.length === 0) {
-        await connection.release();
         return NextResponse.json({ error: 'Conversation non trouvée' }, { status: 404 });
       }
 
       // Récupérer les messages
       const [messages] = await connection.execute(`
-        SELECT 
+        SELECT
           m.id,
           m.sender_type,
           m.sender_id,
           m.message,
           m.is_read,
           m.created_at,
-          CASE 
-            WHEN m.sender_type = 'student' THEN 
+          CASE
+            WHEN m.sender_type = 'student' THEN
               CONCAT(sp.first_name, ' ', sp.last_name)
-            ELSE 
+            ELSE
               'Vous'
           END as sender_name
         FROM message m
@@ -100,22 +99,21 @@ export async function GET(
 
       // Marquer les messages des étudiants comme lus
       await connection.execute(`
-        UPDATE message 
-        SET is_read = TRUE 
-        WHERE conversation_id = ? AND sender_type = 'student' AND is_read = FALSE
+        UPDATE message
+        SET is_read = 1
+        WHERE conversation_id = ? AND sender_type = 'student' AND is_read = 0
       `, [conversationId]);
 
-      await connection.release();
-      
       return NextResponse.json({
         success: true,
         data: messages
       });
 
     } catch (dbError) {
-      await connection.release();
       console.error('Database error:', dbError);
       return NextResponse.json({ error: 'Erreur base de données' }, { status: 500 });
+    } finally {
+      connection.release();
     }
 
   } catch (error) {
@@ -168,7 +166,6 @@ export async function POST(
 
       const checkRows = conversationCheck as any[];
       if (!checkRows || checkRows.length === 0) {
-        await connection.release();
         return NextResponse.json({ error: 'Conversation non trouvée' }, { status: 404 });
       }
 
@@ -179,8 +176,7 @@ export async function POST(
       `, [conversationId, employerProfileId, message.trim()]);
 
       const resultRows = result as any[];
-      await connection.release();
-      
+
       return NextResponse.json({
         success: true,
         data: {
@@ -189,15 +185,16 @@ export async function POST(
           sender_type: 'employer',
           sender_id: employerProfileId,
           message: message.trim(),
-          is_read: false,
+          is_read: 0,
           created_at: new Date().toISOString()
         }
       });
 
     } catch (dbError) {
-      await connection.release();
       console.error('Database error:', dbError);
       return NextResponse.json({ error: 'Erreur base de données' }, { status: 500 });
+    } finally {
+      connection.release();
     }
 
   } catch (error) {

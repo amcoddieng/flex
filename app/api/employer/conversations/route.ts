@@ -56,53 +56,54 @@ export async function GET(request: NextRequest) {
     try {
 
       const [conversations] = await connection.execute(`
-SELECT 
-  c.id,
-  c.offer_id,
-  c.created_at,
-  o.title as offer_title,
-  sp.first_name,
-  sp.last_name,
-  sp.email as student_email,
-  (
-    SELECT COUNT(*) 
-    FROM message m 
-    WHERE m.conversation_id = c.id 
-      AND m.is_read = FALSE 
-      AND m.sender_type = 'student'
-  ) as unread_count,
-  (
-    SELECT m.message 
-    FROM message m 
-    WHERE m.conversation_id = c.id 
-    ORDER BY m.created_at DESC 
-    LIMIT 1
-  ) as last_message,
-  (
-    SELECT m.created_at 
-    FROM message m 
-    WHERE m.conversation_id = c.id 
-    ORDER BY m.created_at DESC 
-    LIMIT 1
-  ) as last_message_time
-FROM conversation c
-JOIN job_offer o ON c.offer_id = o.id
-JOIN student_profile sp ON c.student_id = sp.id
-WHERE c.employer_id = ?
+SELECT * FROM (
+  SELECT
+    c.id,
+    c.offer_id,
+    c.created_at,
+    o.title as offer_title,
+    sp.first_name,
+    sp.last_name,
+    sp.email as student_email,
+    (
+      SELECT COUNT(*)
+      FROM message m
+      WHERE m.conversation_id = c.id
+        AND m.is_read = 0
+        AND m.sender_type = 'student'
+    ) as unread_count,
+    (
+      SELECT m.message
+      FROM message m
+      WHERE m.conversation_id = c.id
+      ORDER BY m.created_at DESC
+      LIMIT 1
+    ) as last_message,
+    (
+      SELECT m.created_at
+      FROM message m
+      WHERE m.conversation_id = c.id
+      ORDER BY m.created_at DESC
+      LIMIT 1
+    ) as last_message_time
+  FROM conversation c
+  JOIN job_offer o ON c.offer_id = o.id
+  JOIN student_profile sp ON c.student_id = sp.id
+  WHERE c.employer_id = ?
+) sub
 ORDER BY last_message_time IS NULL, last_message_time DESC;
       `, [employerProfileId]);
 
-      await connection.release();
-      
       return NextResponse.json({
         success: true,
         data: conversations
       });
 
     } catch (dbError) {
-      await connection.release();
       console.error('Database error:', dbError);
-      return NextResponse.json({ error: 'Erreur base de données&' }, { status: 500 });
+      return NextResponse.json({ error: 'Erreur base de données' }, { status: 500 });
+    } finally {
+      connection.release();
     }
 
   } catch (error) {
@@ -152,7 +153,6 @@ export async function POST(request: NextRequest) {
       );
 
       if (existing.length > 0) {
-        connection.release();
         return NextResponse.json({
           success: true,
           data: {
@@ -161,7 +161,6 @@ export async function POST(request: NextRequest) {
           }
         });
       }
-      
 
       // Créer conversation
       const [result]: any = await connection.execute(
@@ -169,8 +168,6 @@ export async function POST(request: NextRequest) {
          VALUES (?, ?, ?)`,
         [employerProfileId, student_id, offer_id]
       );
-
-      connection.release();
 
       return NextResponse.json({
         success: true,
@@ -181,12 +178,13 @@ export async function POST(request: NextRequest) {
       });
 
     } catch (dbError) {
-      connection.release();
       console.error('Database error:', dbError);
       return NextResponse.json(
-        { error: 'Erreur base de données2' },
+        { error: 'Erreur base de données' },
         { status: 500 }
       );
+    } finally {
+      connection.release();
     }
 
   } catch (error) {

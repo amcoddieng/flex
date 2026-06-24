@@ -397,30 +397,39 @@ const handleProfilePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) 
 
   // Rendu principal du composant
   return (
-    <div className="">
-      {/* ========================================
-          SOUS-SECTION 9.1: HEADER DU PROFIL
-          ======================================== */}
-      <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6 border border-blue-50">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-slate-900 to-blue-900 bg-clip-text text-transparent">Mon Profil</h1>
-            <p className="text-slate-600 text-sm mt-1">Gérez vos informations et préférences</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <Button variant="outline" size="sm" className="gap-2 text-xs">
-              <Settings className="h-3 w-3" />
-              Paramètres
-            </Button>
-            <div className="w-8 h-8 rounded-full bg-gradient-to-r from-gray-900 to-gray-900 flex items-center justify-center text-white text-sm font-semibold">
-              {profile?.first_name?.charAt(0)?.toUpperCase() || 'S'}
+    <div className="min-h-screen">
+      {/* Header Banner */}
+      <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white relative overflow-hidden">
+        <div className="absolute inset-0 opacity-30">
+          <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+            <defs><pattern id="gridSP" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="0.5"/></pattern></defs>
+            <rect width="100" height="100" fill="url(#gridSP)"/>
+          </svg>
+        </div>
+        <div className="relative px-6 py-6 sm:py-8">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <p className="text-slate-400 text-sm mb-1">Votre compte</p>
+              <h1 className="text-2xl sm:text-3xl font-bold">Mon Profil</h1>
+              <p className="text-slate-400 text-sm mt-1">Gérez vos informations et documents</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="text-right hidden sm:block">
+                <p className="text-xs text-slate-400">{profile?.first_name} {profile?.last_name}</p>
+                <p className="font-semibold text-sm">{profile?.email || ''}</p>
+              </div>
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-lg font-semibold shadow-lg ring-2 ring-white/20">
+                {profile?.first_name?.charAt(0)?.toUpperCase() || 'S'}
+              </div>
             </div>
           </div>
         </div>
       </div>
 
+      <div className="px-4 sm:px-6 py-6 space-y-6 max-w-7xl">
       {error && (
-        <div className="bg-gray-100 border border-gray-300 text-gray-800 px-4 py-3 rounded-lg">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl flex items-center gap-2">
+          <AlertCircle className="h-4 w-4 flex-shrink-0" />
           {error}
         </div>
       )}
@@ -764,4 +773,7 @@ const handleProfilePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) 
           </form>
         )}
       </div>
-    </div>)}
+      </div>
+    </div>
+  );
+}

@@ -59,8 +59,6 @@ export async function GET(
 
       const [applications] = await connection.execute(query, [jobId]);
 
-      connection.release();
-
       // Formater les données pour inclure les informations de l'étudiant
       const formattedApplications = (applications as any[]).map(app => ({
         id: app.id,
@@ -92,12 +90,13 @@ export async function GET(
       });
 
     } catch (dbError) {
-      connection.release();
       console.error('Database error:', dbError);
       return NextResponse.json(
         { error: 'Erreur base de données' },
         { status: 500 }
       );
+    } finally {
+      connection.release();
     }
   } catch (error) {
     console.error('Admin job applications GET error:', error);
@@ -150,20 +149,19 @@ export async function PUT(
         applicationId
       ]);
 
-      connection.release();
-
       return NextResponse.json({
         success: true,
         message: 'Candidature mise à jour avec succès'
       });
 
     } catch (dbError) {
-      connection.release();
       console.error('Database error:', dbError);
       return NextResponse.json(
         { error: 'Erreur base de données' },
         { status: 500 }
       );
+    } finally {
+      connection.release();
     }
   } catch (error) {
     console.error('Admin job applications PUT error:', error);

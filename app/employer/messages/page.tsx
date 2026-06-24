@@ -380,27 +380,25 @@ if (!isAuthed) return <div className="p-8">Vérification...</div>;
 
   return (
     <EmployerProtection>
-      <div className="h-[calc(100vh-100px)] max-h-[calc(100vh-100px)] flex bg-slate-50 overflow-hidden">
-        {/* Conversations Sidebar - Style WhatsApp */}
+      <div className="h-[calc(100vh-64px)] max-h-[calc(100vh-64px)] flex bg-slate-50 overflow-hidden">
+        {/* Conversations Sidebar */}
         <div className={`bg-white border-r border-slate-200 flex flex-col h-full ${
           selectedConversation ? 'hidden sm:flex sm:w-80' : 'w-full sm:w-80'
         }`}>
           {/* Header */}
-          <div className="p-4 border-b border-slate-200 bg-white sticky top-0 z-10">
-            <div className="flex items-center gap-3 mb-4">
-              <MessageCircle className="h-5 w-5 text-[#075e54]" />
-              <h2 className="text-lg font-semibold text-slate-900">Messages</h2>
+          <div className="p-4 border-b border-slate-100 bg-white sticky top-0 z-10">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                <MessageCircle className="h-4 w-4 text-white" />
+              </div>
+              <h2 className="text-sm font-bold text-slate-900">Messages</h2>
               <div className="ml-auto flex items-center gap-2">
-                <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs ${
-                  isSocketConnected ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                }`}>
-                  <div className={`w-2 h-2 rounded-full ${
-                    isSocketConnected ? 'bg-green-500' : 'bg-red-500'
-                  }`}></div>
+                <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium ${isSocketConnected ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
+                  <div className={`w-1.5 h-1.5 rounded-full ${isSocketConnected ? 'bg-emerald-500' : 'bg-red-500'}`}></div>
                   <span>{isSocketConnected ? 'En ligne' : 'Hors ligne'}</span>
                 </div>
                 {totalUnreadCount > 0 && (
-                  <span className="bg-blue-500 text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center font-bold">
+                  <span className="bg-blue-600 text-white text-[11px] font-bold rounded-full px-2 py-0.5 min-w-[20px] text-center">
                     {totalUnreadCount > 99 ? '99+' : totalUnreadCount}
                   </span>
                 )}
@@ -409,12 +407,12 @@ if (!isAuthed) return <div className="p-8">Vérification...</div>;
             
             {/* Search */}
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input
-                placeholder="Rechercher une conversation..."
+                placeholder="Rechercher..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 text-sm bg-slate-50 border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="pl-10 text-sm bg-slate-50 border-slate-200 rounded-xl focus:ring-blue-500/20"
               />
             </div>
           </div>
@@ -439,41 +437,39 @@ if (!isAuthed) return <div className="p-8">Vérification...</div>;
                   <div
                     key={conversation.id}
                     onClick={() => selectConversation(conversation)}
-                    className={`p-4 hover:bg-slate-50 cursor-pointer transition-colors ${
-                      selectedConversation?.id === conversation.id ? 'bg-blue-50 border-l-4 border-l-blue-600' : ''
+                    className={`p-3 hover:bg-slate-50 cursor-pointer transition-colors border-b border-slate-50 ${
+                      selectedConversation?.id === conversation.id ? 'bg-blue-50/60 border-l-[3px] border-l-blue-600' : ''
                     }`}
                   >
                     <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm">
+                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold text-xs shadow-sm">
                         {conversation.first_name.charAt(0).toUpperCase()}
                       </div>
                       
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-1">
-                          <h3 className="font-medium text-slate-900 truncate text-sm">
+                        <div className="flex items-center justify-between mb-0.5">
+                          <h3 className="font-semibold text-slate-900 truncate text-sm">
                             {conversation.first_name} {conversation.last_name}
                           </h3>
-                          <span className="text-xs text-slate-500">
+                          <span className="text-[11px] text-slate-400">
                             {isMounted ? new Date(conversation.last_message_time || conversation.created_at).toLocaleDateString('fr-FR') : ''}
                           </span>
                         </div>
                         
-                        <div className="flex items-center gap-1 mb-2">
+                        <div className="flex items-center gap-1 mb-1">
                           <Briefcase className="h-3 w-3 text-slate-400" />
-                          <p className="text-xs text-slate-600 truncate">{conversation.offer_title}</p>
+                          <p className="text-[11px] text-slate-500 truncate">{conversation.offer_title}</p>
                         </div>
                         
                         <div className="flex items-center justify-between">
-                          <p className="text-sm text-slate-600 truncate">
+                          <p className="text-xs text-slate-500 truncate">
                             {conversation.last_message || 'Nouvelle conversation'}
                           </p>
-                          <div className="flex items-center gap-2">
-                            {conversation.unread_count > 0 && (
-                              <span className="bg-blue-600 text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center">
-                                {conversation.unread_count}
-                              </span>
-                            )}
-                          </div>
+                          {conversation.unread_count > 0 && (
+                            <span className="bg-blue-600 text-white text-[10px] font-bold rounded-full px-1.5 py-0.5 min-w-[18px] text-center">
+                              {conversation.unread_count}
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>

@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
           u.role,
           u.created_at,
           u.blocked
-        FROM user u
+        FROM "user" u
         WHERE 1=1
       `;
       
@@ -67,8 +67,6 @@ export async function GET(request: NextRequest) {
 
       const [users] = await connection.execute(query, params);
 
-      connection.release();
-
       return NextResponse.json({
         success: true,
         data: users,
@@ -81,12 +79,13 @@ export async function GET(request: NextRequest) {
       });
 
     } catch (dbError) {
-      connection.release();
       console.error('Database error:', dbError);
       return NextResponse.json(
         { error: 'Erreur base de données' },
         { status: 500 }
       );
+    } finally {
+      connection.release();
     }
   } catch (error) {
     console.error('Admin users GET error:', error);
@@ -122,11 +121,9 @@ export async function PUT(request: NextRequest) {
 
     try {
       await connection.execute(
-        'UPDATE user SET blocked = ? WHERE id = ?',
+        'UPDATE "user" SET blocked = ? WHERE id = ?',
         [blocked, userId]
       );
-
-      connection.release();
 
       return NextResponse.json({
         success: true,
@@ -134,12 +131,13 @@ export async function PUT(request: NextRequest) {
       });
 
     } catch (dbError) {
-      connection.release();
       console.error('Database error:', dbError);
       return NextResponse.json(
         { error: 'Erreur base de données' },
         { status: 500 }
       );
+    } finally {
+      connection.release();
     }
   } catch (error) {
     console.error('Admin users PUT error:', error);

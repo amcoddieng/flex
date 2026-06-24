@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
           ep.updated_at,
           u.email as user_email
         FROM employer_profile ep
-        JOIN user u ON ep.user_id = u.id
+        JOIN "user" u ON ep.user_id = u.id
         WHERE (ep.validation_status = 'PENDING' 
                OR (ep.validation_status = 'REJECTED' AND ep.updated_at IS NOT NULL AND ep.updated_at > ep.created_at))
         ORDER BY COALESCE(ep.updated_at, ep.created_at) DESC

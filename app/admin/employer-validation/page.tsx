@@ -210,25 +210,35 @@ export default function EmployerValidationPage() {
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
-            Validation des Profils Employeurs
-          </h1>
-          <p className="text-xl text-gray-600">
-            Validez ou rejetez les demandes de création de profils employeurs en attente
-          </p>
-          <div className="mt-4 flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-              <span className="text-sm text-gray-600">Nouvelles demandes</span>
+      <div className="min-h-screen">
+        {/* Header Banner */}
+        <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white relative overflow-hidden">
+          <div className="absolute inset-0 opacity-30">
+            <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+              <defs><pattern id="gridVal" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="0.5"/></pattern></defs>
+              <rect width="100" height="100" fill="url(#gridVal)"/>
+            </svg>
+          </div>
+          <div className="relative px-6 py-6 sm:py-8">
+            <div>
+              <p className="text-slate-400 text-sm mb-1">Modération</p>
+              <h1 className="text-2xl sm:text-3xl font-bold">Validation Employeurs</h1>
+              <p className="text-slate-400 text-sm mt-1">Validez ou rejetez les profils en attente</p>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
-              <span className="text-sm text-gray-600">Modifications après rejet</span>
+            <div className="mt-3 flex items-center gap-4">
+              <div className="flex items-center gap-1.5">
+                <div className="w-2 h-2 bg-amber-400 rounded-full"></div>
+                <span className="text-xs text-slate-300">Nouvelles demandes</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-2 h-2 bg-orange-400 rounded-full"></div>
+                <span className="text-xs text-slate-300">Modifications après rejet</span>
+              </div>
             </div>
           </div>
         </div>
+
+        <div className="px-4 sm:px-6 py-6 space-y-6 max-w-7xl">
 
         {employers.length === 0 ? (
           <Card>
@@ -457,6 +467,7 @@ export default function EmployerValidationPage() {
           </Button>
         </div>
       )}
+      </div>
     </AdminLayout>
   );
 }

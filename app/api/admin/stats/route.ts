@@ -24,13 +24,13 @@ export async function GET(request: NextRequest) {
     try {
       const results: any = {};
 
-      const [usersRows]: any = await connection.execute(`SELECT COUNT(*) as total FROM user`);
+      const [usersRows]: any = await connection.execute(`SELECT COUNT(*) as total FROM "user"`);
       results.total_users = usersRows[0]?.total || 0;
 
-      const [studentsRows]: any = await connection.execute(`SELECT COUNT(u.id) as total FROM user u JOIN student_profile sp ON u.id = sp.user_id`);
+      const [studentsRows]: any = await connection.execute(`SELECT COUNT(u.id) as total FROM "user" u JOIN student_profile sp ON u.id = sp.user_id`);
       results.total_students = studentsRows[0]?.total || 0;
 
-      const [employersRows]: any = await connection.execute(`SELECT COUNT(u.id) as total FROM user u JOIN employer_profile ep ON u.id = ep.user_id`);
+      const [employersRows]: any = await connection.execute(`SELECT COUNT(u.id) as total FROM "user" u JOIN employer_profile ep ON u.id = ep.user_id`);
       results.total_employers = employersRows[0]?.total || 0;
 
       const [jobsRows]: any = await connection.execute(`SELECT COUNT(*) as total FROM job_offer`);
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
       const [activeJobsRows]: any = await connection.execute(`SELECT COUNT(*) as total FROM job_offer WHERE is_active = 1`);
       results.active_jobs = activeJobsRows[0]?.total || 0;
 
-      const [blockedUsersRows]: any = await connection.execute(`SELECT COUNT(*) as total FROM user WHERE blocked = 1`);
+      const [blockedUsersRows]: any = await connection.execute(`SELECT COUNT(*) as total FROM "user" WHERE blocked = 1`);
       results.blocked_users = blockedUsersRows[0]?.total || 0;
 
       const [pendingStudentsRows]: any = await connection.execute(`SELECT COUNT(*) as total FROM student_profile WHERE validation_status = 'PENDING'`);
@@ -100,13 +100,13 @@ export async function GET(request: NextRequest) {
       results.unread_messages = messages[0]?.unread_messages || 0;
 
       // New users last 7 days
-      const [newUsersRows]: any = await connection.execute(`SELECT COUNT(*) as total FROM user WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)`);
+      const [newUsersRows]: any = await connection.execute(`SELECT COUNT(*) as total FROM "user" WHERE created_at >= NOW() - INTERVAL '7 days'`);
       results.new_users_last_7_days = newUsersRows[0]?.total || 0;
 
       // This month registrations
       const [monthlyRegistrations]: any = await connection.execute(`
-        SELECT COUNT(*) as total FROM user 
-        WHERE created_at >= DATE_FORMAT(NOW(), '%Y-%m-01')
+        SELECT COUNT(*) as total FROM "user"
+        WHERE created_at >= DATE_TRUNC('month', NOW())
       `);
       results.this_month_registrations = monthlyRegistrations[0]?.total || 0;
 

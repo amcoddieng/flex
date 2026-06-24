@@ -32,7 +32,7 @@ export async function GET(request: NextRequest, { params }: RequestParams) {
 
     try {
       const [rows] = await connection.execute(
-        'SELECT id, email, role, created_at FROM user WHERE id = ?',
+        'SELECT id, email, role, created_at FROM "user" WHERE id = ?',
         [id]
       );
 
@@ -83,7 +83,7 @@ export async function PUT(request: NextRequest, { params }: RequestParams) {
     try {
       // Vérifier que l'utilisateur existe
       const [rows] = await connection.execute(
-        'SELECT id FROM user WHERE id = ?',
+        'SELECT id FROM "user" WHERE id = ?',
         [id]
       );
 
@@ -130,7 +130,7 @@ export async function PUT(request: NextRequest, { params }: RequestParams) {
       params.push(id);
 
       await connection.execute(
-        `UPDATE user SET ${updates.join(', ')} WHERE id = ?`,
+        `UPDATE "user" SET ${updates.join(', ')} WHERE id = ?`,
         params
       );
 
@@ -180,7 +180,7 @@ export async function DELETE(request: NextRequest, { params }: RequestParams) {
     try {
       // Vérifier que l'utilisateur existe
       const [rows] = await connection.execute(
-        'SELECT id FROM user WHERE id = ?',
+        'SELECT id FROM "user" WHERE id = ?',
         [id]
       );
 
@@ -193,7 +193,7 @@ export async function DELETE(request: NextRequest, { params }: RequestParams) {
 
       // Supprimer l'utilisateur (les profils seront supprimés en cascade)
       await connection.execute(
-        'DELETE FROM user WHERE id = ?',
+        'DELETE FROM "user" WHERE id = ?',
         [id]
       );
 

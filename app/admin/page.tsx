@@ -4,8 +4,8 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { decodeToken } from "@/lib/jwt";
 import { AdminLayout } from "@/components/admin-layout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, Briefcase, FileText, CheckCircle, TrendingUp, Building } from "lucide-react";
+import { ArrowRight, Users, Briefcase, FileText, CheckCircle, TrendingUp, Building, AlertCircle } from "lucide-react";
+import Link from "next/link";
 
 export default function AdminPage() {
   const [isAuthed, setIsAuthed] = useState(false);
@@ -168,168 +168,160 @@ export default function AdminPage() {
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Tableau de Bord Administrateur
-          </h1>
-          <p className="text-gray-600">
-            Vue d'ensemble de la plateforme et statistiques clés
-          </p>
+      <div className="min-h-screen">
+        {/* Header Banner */}
+        <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white relative overflow-hidden">
+          <div className="absolute inset-0 opacity-30">
+            <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+              <defs><pattern id="gridAdmin" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="0.5"/></pattern></defs>
+              <rect width="100" height="100" fill="url(#gridAdmin)"/>
+            </svg>
+          </div>
+          <div className="relative px-6 py-6 sm:py-8">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <p className="text-slate-400 text-sm mb-1">Vue d'ensemble</p>
+                <h1 className="text-2xl sm:text-3xl font-bold">Tableau de bord</h1>
+                <p className="text-slate-400 text-sm mt-1">Statistiques et activité de la plateforme</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="text-right hidden sm:block">
+                  <p className="text-xs text-slate-400">Connecté en tant que</p>
+                  <p className="font-semibold text-sm">Administrateur</p>
+                </div>
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-semibold shadow-lg ring-2 ring-white/20">
+                  A
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Stats Grid */}
-        {loadingStats ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <Card key={i} className="animate-pulse">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-2">
-                      <div className="h-4 bg-gray-200 rounded w-24"></div>
-                      <div className="h-8 bg-gray-200 rounded w-16"></div>
+        <div className="px-4 sm:px-6 py-6 space-y-6 max-w-7xl">
+          {/* Stats Grid */}
+          {loadingStats ? (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                <div key={i} className="bg-white rounded-2xl p-5 border border-slate-200/60 shadow-sm animate-pulse">
+                  <div className="w-9 h-9 rounded-xl bg-slate-100 mb-3"></div>
+                  <div className="h-8 bg-slate-100 rounded w-16 mb-1"></div>
+                  <div className="h-3 bg-slate-100 rounded w-24"></div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+              {statCards.map((card, index) => {
+                const Icon = card.icon;
+                return (
+                  <div key={index} className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/60 shadow-sm hover:shadow-md transition-all duration-200">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="w-9 h-9 rounded-xl bg-slate-50 flex items-center justify-center">
+                        <Icon className="h-4 w-4 text-slate-600" />
+                      </div>
                     </div>
-                    <div className="h-8 w-8 bg-gray-200 rounded-full"></div>
+                    <p className="text-2xl sm:text-3xl font-bold text-slate-900">{card.value.toLocaleString()}</p>
+                    <p className="text-xs text-slate-500 mt-1">{card.title}</p>
+                    <p className={`text-[11px] font-semibold mt-1.5 ${card.changeType === 'positive' ? 'text-emerald-600' : card.changeType === 'warning' ? 'text-amber-600' : 'text-blue-600'}`}>
+                      {card.change}
+                    </p>
                   </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {statCards.map((card, index) => {
-              const Icon = card.icon;
-              return (
-                <Card key={index}>
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-2">
-                        <p className="text-sm font-medium text-gray-600">
-                          {card.title}
-                        </p>
-                        <p className="text-2xl font-bold text-gray-900">
-                          {card.value.toLocaleString()}
-                        </p>
-                        <div className="flex items-center gap-1">
-                          <TrendingUp className={`h-4 w-4 ${
-                            card.changeType === 'positive' ? 'text-green-600' : 'text-red-600'
-                          }`} />
-                          <span className={`text-sm ${
-                            card.changeType === 'positive' ? 'text-green-600' : 'text-red-600'
-                          }`}>
-                            {card.change}
-                          </span>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Quick Actions + Activity */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+            {/* Quick Actions */}
+            <div className="lg:col-span-2 space-y-4">
+              <h2 className="text-lg font-bold text-slate-900">Actions rapides</h2>
+              <div className="bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl p-5 text-white shadow-lg">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <Link href="/admin/employer-validation">
+                    <div className="group bg-white/15 hover:bg-white/25 border border-white/20 rounded-xl p-4 backdrop-blur-sm transition-all cursor-pointer">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center">
+                          <CheckCircle className="h-5 w-5 text-white" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold">Validations</p>
+                          <p className="text-xs text-blue-100">{stats?.pending_employers || 0} en attente</p>
                         </div>
                       </div>
-                      <div className={`p-3 rounded-full ${card.color}`}>
-                        <Icon className="h-6 w-6 text-white" />
+                    </div>
+                  </Link>
+                  <Link href="/admin/users">
+                    <div className="group bg-white/15 hover:bg-white/25 border border-white/20 rounded-xl p-4 backdrop-blur-sm transition-all cursor-pointer">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center">
+                          <Users className="h-5 w-5 text-white" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold">Utilisateurs</p>
+                          <p className="text-xs text-blue-100">Gérer les comptes</p>
+                        </div>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
+                  </Link>
+                  <Link href="/admin/jobs">
+                    <div className="group bg-white/15 hover:bg-white/25 border border-white/20 rounded-xl p-4 backdrop-blur-sm transition-all cursor-pointer">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center">
+                          <Briefcase className="h-5 w-5 text-white" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold">Offres</p>
+                          <p className="text-xs text-blue-100">{stats?.active_jobs || 0} actives</p>
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                  <Link href="/admin/applications">
+                    <div className="group bg-white/15 hover:bg-white/25 border border-white/20 rounded-xl p-4 backdrop-blur-sm transition-all cursor-pointer">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center">
+                          <FileText className="h-5 w-5 text-white" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold">Candidatures</p>
+                          <p className="text-xs text-blue-100">{stats?.total_applications || 0} totales</p>
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                </div>
+              </div>
+            </div>
+
+            {/* Recent Activity */}
+            <div className="space-y-4">
+              <h2 className="text-lg font-bold text-slate-900">Activité récente</h2>
+              <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-5 space-y-3">
+                <div className="flex items-center justify-between p-2 rounded-lg bg-slate-50/70">
+                  <div>
+                    <p className="text-xs text-slate-500">Nouveaux employeurs</p>
+                    <p className="text-sm font-semibold text-slate-900">Ce mois</p>
+                  </div>
+                  <span className="text-lg font-bold text-purple-600">{stats?.this_month_registrations || 0}</span>
+                </div>
+                <div className="flex items-center justify-between p-2 rounded-lg bg-slate-50/70">
+                  <div>
+                    <p className="text-xs text-slate-500">Offres actives</p>
+                    <p className="text-sm font-semibold text-slate-900">En ligne</p>
+                  </div>
+                  <span className="text-lg font-bold text-emerald-600">{stats?.active_jobs || 0}</span>
+                </div>
+                <div className="flex items-center justify-between p-2 rounded-lg bg-slate-50/70">
+                  <div>
+                    <p className="text-xs text-slate-500">Validations en attente</p>
+                    <p className="text-sm font-semibold text-slate-900">Profils</p>
+                  </div>
+                  <span className="text-lg font-bold text-amber-600">{stats?.pending_employers || 0}</span>
+                </div>
+              </div>
+            </div>
           </div>
-        )}
-
-        {/* Additional Info Cards */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CheckCircle className="h-5 w-5 text-gray-700" />
-                {/* COULEUR: Gris foncé - Couleur neutre pour le titre des actions */}
-                Actions Rapides
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 gap-3">
-                <button
-                  onClick={() => router.push('/admin/employer-validation')}
-                  className="w-full text-left p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-yellow-100 rounded-lg">
-                      {/* COULEUR: Jaune clair (bg-yellow-100) + Jaune foncé (text-yellow-600) - Couleur d'alerte pour les validations en attente */}
-                      <CheckCircle className="h-4 w-4 text-yellow-600" />
-                    </div>
-                    <div>
-                      {/* COULEUR: Gris foncé (text-gray-900) - Couleur principale pour le texte */}
-                      <p className="font-medium text-gray-900">
-                        Validations en Attente
-                      </p>
-                      {/* COULEUR: Gris moyen (text-gray-600) - Couleur secondaire pour la description */}
-                      <p className="text-sm text-gray-600">
-                        {stats?.pendingValidations || 0} profils à valider
-                      </p>
-                    </div>
-                  </div>
-                </button>
-                
-                <button
-                  onClick={() => router.push('/admin/users')}
-                  className="w-full text-left p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-gray-100 rounded-lg">
-                      {/* COULEUR: Gris très clair (bg-gray-100) + Gris foncé (text-gray-700) - Couleur neutre pour la gestion utilisateurs */}
-                      <Users className="h-4 w-4 text-gray-700" />
-                    </div>
-                    <div>
-                      {/* COULEUR: Gris foncé (text-gray-900) - Couleur principale pour le texte */}
-                      <p className="font-medium text-gray-900">
-                        Gestion Utilisateurs
-                      </p>
-                      {/* COULEUR: Gris moyen (text-gray-600) - Couleur secondaire pour la description */}
-                      <p className="text-sm text-gray-600">
-                        Administrer les comptes
-                      </p>
-                    </div>
-                  </div>
-                </button>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Building className="h-5 w-5 text-purple-600" />
-                {/* COULEUR: Violet - Couleur distinctive pour l'activité récente (données dynamiques) */}
-                Activité Récente
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-3">
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div>
-                    {/* COULEUR: Gris foncé (text-gray-900) - Titre principal */}
-                    <p className="font-medium text-gray-900">Nouveaux employeurs</p>
-                    {/* COULEUR: Gris moyen (text-gray-600) - Description secondaire */}
-                    <p className="text-sm text-gray-600">Ce mois</p>
-                  </div>
-                  {/* COULEUR: Violet (text-purple-600) - Statistique principale (cohérent avec l'icône Building) */}
-                  <span className="text-lg font-bold text-purple-600">
-                    {stats?.thisMonthRegistrations || 0}
-                  </span>
-                </div>
-                
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div>
-                    {/* COULEUR: Gris foncé (text-gray-900) - Titre principal */}
-                    <p className="font-medium text-gray-900">Offres actives</p>
-                    {/* COULEUR: Gris moyen (text-gray-600) - Description secondaire */}
-                    <p className="text-sm text-gray-600">En ligne</p>
-                  </div>
-                  {/* COULEUR: Vert (text-green-600) - Statistique positive (offres actives = bon signe) */}
-                  <span className="text-lg font-bold text-green-600">
-                    {stats?.activeJobs || 0}
-                  </span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         </div>
       </div>
     </AdminLayout>

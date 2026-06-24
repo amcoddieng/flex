@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     const connection = await pool.getConnection();
     try {
       const [rows] = await connection.execute(
-        'SELECT id, email, role FROM user WHERE id = ?',
+        'SELECT id, email, role FROM "user" WHERE id = ?',
         [payload.userId]
       );
 

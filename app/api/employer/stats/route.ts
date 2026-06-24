@@ -75,8 +75,6 @@ export async function GET(request: NextRequest) {
         [userId]
       );
 
-      connection.release();
-
       return NextResponse.json(
         {
           success: true,

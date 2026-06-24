@@ -161,17 +161,25 @@ export default function AdminJobsPage() {
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Gestion des Offres d'Emploi
-          </h1>
-          <p className="text-gray-600">
-            Consultez et gérez toutes les offres d'emploi de la plateforme
-          </p>
+      <div className="min-h-screen">
+        {/* Header Banner */}
+        <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white relative overflow-hidden">
+          <div className="absolute inset-0 opacity-30">
+            <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+              <defs><pattern id="gridJobs" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="0.5"/></pattern></defs>
+              <rect width="100" height="100" fill="url(#gridJobs)"/>
+            </svg>
+          </div>
+          <div className="relative px-6 py-6 sm:py-8">
+            <div>
+              <p className="text-slate-400 text-sm mb-1">Administration</p>
+              <h1 className="text-2xl sm:text-3xl font-bold">Gestion des Offres</h1>
+              <p className="text-slate-400 text-sm mt-1">Consultez et gérez toutes les offres d'emploi</p>
+            </div>
+          </div>
         </div>
 
+        <div className="px-4 sm:px-6 py-6 space-y-6 max-w-7xl">
         {/* Section Recherche et Filtres */}
         <Card>
           <CardContent className="p-6 space-y-4">
@@ -393,6 +401,7 @@ export default function AdminJobsPage() {
             </div>
           </div>
         )}
+      </div>
       </div>
       
       {/* Job Details Modal */}

@@ -192,29 +192,36 @@ export default function EmployerProfilePage() {
 
   return (
     <EmployerProtection requireValidation={false}>
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50/30">
-        {/* Modern Header */}
-        <div className="bg-white/80 backdrop-blur-md border-b border-slate-200/50 sticky top-0 z-40">
-        <div className="container mx-auto px-4 py-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-slate-900 to-blue-600 bg-clip-text text-transparent">Mon Profil</h1>
-              <p className="text-slate-600 text-sm mt-1">Gérez vos informations et préférences</p>
-            </div>
-            <div className="flex items-center gap-3">
-              <Button variant="outline" size="sm" className="gap-2 text-xs">
-                <Settings className="h-3 w-3" />
-                Paramètres
-              </Button>
-              <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-semibold">
-                {profile?.company_name?.charAt(0)?.toUpperCase() || 'E'}
+      <div className="min-h-screen">
+        {/* Header Banner */}
+        <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white relative overflow-hidden">
+          <div className="absolute inset-0 opacity-30">
+            <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+              <defs><pattern id="grid2" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="0.5"/></pattern></defs>
+              <rect width="100" height="100" fill="url(#grid2)"/>
+            </svg>
+          </div>
+          <div className="relative px-6 py-6 sm:py-8">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <p className="text-slate-400 text-sm mb-1">Votre compte</p>
+                <h1 className="text-2xl sm:text-3xl font-bold">Mon Profil</h1>
+                <p className="text-slate-400 text-sm mt-1">Gérez vos informations et documents</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="text-right hidden sm:block">
+                  <p className="text-xs text-slate-400">{profile?.company_name || 'Employeur'}</p>
+                  <p className="font-semibold text-sm">{profile?.email || ''}</p>
+                </div>
+                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-lg font-semibold shadow-lg ring-2 ring-white/20">
+                  {profile?.company_name?.charAt(0)?.toUpperCase() || 'E'}
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <div className="container mx-auto px-4 py-4 space-y-6">
+        <div className="px-4 sm:px-6 py-6 space-y-6 max-w-7xl">
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl flex items-center gap-3">
             <AlertCircle className="h-5 w-5" />
@@ -229,201 +236,144 @@ export default function EmployerProfilePage() {
           </div>
         )}
 
-      {/* Modern Upload Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      {/* Upload Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Profile Photo */}
-        <div className="bg-white rounded-xl shadow hover:shadow-lg transition-all duration-300 border border-slate-200/50 p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-base font-semibold text-slate-900 flex items-center gap-2">
-              <Camera className="h-4 w-4 text-blue-600" />
-              Photo de profil
-            </h3>
-            <span className="text-xs text-slate-500">JPEG, PNG • Max 5MB</span>
+        <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
+                <Camera className="h-4 w-4 text-blue-600" />
+              </div>
+              <h3 className="text-sm font-bold text-slate-900">Photo de profil</h3>
+            </div>
+            <span className="text-[11px] text-slate-400">JPEG, PNG • 5MB</span>
           </div>
           <div className="space-y-4">
-            <div className="relative group">
+            <div className="relative group cursor-pointer" onClick={() => document.getElementById("upload-img")?.click()}>
               {profile.img ? (
                 <div className="relative overflow-hidden rounded-xl">
-                  <img
-                    src={profile.img}
-                    alt="Profile"
-                    className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                    <Camera className="h-6 w-6 text-white" />
+                  <img src={profile.img} alt="Profile" className="w-full h-52 object-cover group-hover:scale-105 transition-transform duration-300" />
+                  <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <Camera className="h-8 w-8 text-white" />
                   </div>
                 </div>
               ) : (
-                <div className="w-full h-48 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 border-2 border-dashed border-slate-300 flex flex-col items-center justify-center group hover:border-blue-400 hover:bg-blue-50/30 transition-all duration-200">
-                  <Camera className="h-10 w-10 text-slate-400 group-hover:text-blue-600 transition-colors" />
-                  <p className="text-slate-600 mt-2 text-sm font-medium">Ajouter une photo</p>
-                  <p className="text-xs text-slate-500 mt-1">Cliquez pour parcourir</p>
+                <div className="w-full h-52 rounded-xl bg-slate-50 border-2 border-dashed border-slate-200 flex flex-col items-center justify-center group-hover:border-blue-300 group-hover:bg-blue-50/20 transition-all">
+                  <Camera className="h-10 w-10 text-slate-300 group-hover:text-blue-500 transition-colors" />
+                  <p className="text-slate-500 mt-2 text-sm font-medium">Ajouter une photo</p>
                 </div>
               )}
-              <input
-                type="file"
-                hidden
-                id="upload-img"
-                accept="image/*"
-                onChange={(e) => handleImageUpload(e, "img")}
-              />
+              <input type="file" hidden id="upload-img" accept="image/*" onChange={(e) => handleImageUpload(e, "img")} />
             </div>
-            <Button 
-              onClick={() => document.getElementById("upload-img")?.click()}
-              className="w-full gap-2 text-sm"
-              variant="outline"
-              disabled={uploading.img}
-            >
-              {uploading.img ? (
-                <>
-                  <div className="w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                  Upload en cours...
-                </>
-              ) : (
-                <>
-                  <Upload className="h-4 w-4" />
-                  {profile.img ? "Changer la photo" : "Ajouter une photo"}
-                </>
-              )}
+            <Button onClick={() => document.getElementById("upload-img")?.click()} variant="outline" className="w-full gap-2 text-sm" disabled={uploading.img}>
+              {uploading.img ? (<><div className="w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>Upload...</>) : (<><Upload className="h-4 w-4" />{profile.img ? "Changer" : "Ajouter"}</>)}
             </Button>
           </div>
         </div>
 
         {/* Identity Document */}
-        <div className="bg-white rounded-xl shadow hover:shadow-lg transition-all duration-300 border border-slate-200/50 p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-base font-semibold text-slate-900 flex items-center gap-2">
-              <FileText className="h-4 w-4 text-green-600" />
-              Carte d'identité
-            </h3>
-            <span className="text-xs text-slate-500">PDF, JPEG • Max 10MB</span>
+        <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center">
+                <FileText className="h-4 w-4 text-green-600" />
+              </div>
+              <h3 className="text-sm font-bold text-slate-900">Carte d'identité</h3>
+            </div>
+            <span className="text-[11px] text-slate-400">PDF, JPEG • 10MB</span>
           </div>
           <div className="space-y-4">
-            <div className="relative group">
+            <div className="relative group cursor-pointer" onClick={() => document.getElementById("upload-identity")?.click()}>
               {profile.identity ? (
                 <div className="relative overflow-hidden rounded-xl">
-                  <img
-                    src={profile.identity}
-                    alt="Identity"
-                    className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                    <FileText className="h-6 w-6 text-white" />
+                  <img src={profile.identity} alt="Identity" className="w-full h-52 object-cover group-hover:scale-105 transition-transform duration-300" />
+                  <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <FileText className="h-8 w-8 text-white" />
                   </div>
                 </div>
               ) : (
-                <div className="w-full h-48 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 border-2 border-dashed border-slate-300 flex flex-col items-center justify-center group hover:border-green-400 hover:bg-green-50/30 transition-all duration-200">
-                  <FileText className="h-10 w-10 text-slate-400 group-hover:text-green-600 transition-colors" />
-                  <p className="text-slate-600 mt-2 text-sm font-medium">Ajouter un document</p>
-                  <p className="text-xs text-slate-500 mt-1">Carte d'identité ou passeport</p>
+                <div className="w-full h-52 rounded-xl bg-slate-50 border-2 border-dashed border-slate-200 flex flex-col items-center justify-center group-hover:border-green-300 group-hover:bg-green-50/20 transition-all">
+                  <FileText className="h-10 w-10 text-slate-300 group-hover:text-green-500 transition-colors" />
+                  <p className="text-slate-500 mt-2 text-sm font-medium">Ajouter un document</p>
                 </div>
               )}
-              <input
-                type="file"
-                hidden
-                id="upload-identity"
-                accept="image/*,.pdf"
-                onChange={(e) => handleImageUpload(e, "identity")}
-              />
+              <input type="file" hidden id="upload-identity" accept="image/*,.pdf" onChange={(e) => handleImageUpload(e, "identity")} />
             </div>
-            <Button 
-              onClick={() => document.getElementById("upload-identity")?.click()}
-              className="w-full gap-2 text-sm"
-              variant="outline"
-              disabled={uploading.identity}
-            >
-              {uploading.identity ? (
-                <>
-                  <div className="w-3 h-3 border-2 border-green-600 border-t-transparent rounded-full animate-spin"></div>
-                  Upload en cours...
-                </>
-              ) : (
-                <>
-                  <Upload className="h-4 w-4" />
-                  {profile.identity ? "Changer le document" : "Ajouter un document"}
-                </>
-              )}
+            <Button onClick={() => document.getElementById("upload-identity")?.click()} variant="outline" className="w-full gap-2 text-sm" disabled={uploading.identity}>
+              {uploading.identity ? (<><div className="w-3 h-3 border-2 border-green-600 border-t-transparent rounded-full animate-spin"></div>Upload...</>) : (<><Upload className="h-4 w-4" />{profile.identity ? "Changer" : "Ajouter"}</>)}
             </Button>
           </div>
         </div>
       </div>
 
       {/* Profile Information */}
-        <div className="bg-white rounded-xl shadow hover:shadow-lg transition-all duration-300 border border-slate-200/50 p-4">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base font-semibold text-slate-900 flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
-                <User className="h-4 w-4 text-white" />
-              </div>
-              Informations du profil
-            </h3>
-            {!editing && (
-              <Button 
-                onClick={() => setEditing(true)}
-                className="gap-2 text-sm"
-                variant="outline"
-              >
-                <Edit3 className="h-3 w-3" />
-                Modifier
-              </Button>
-            )}
+      <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-5">
+        <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+              <User className="h-4 w-4 text-white" />
+            </div>
+            <h3 className="text-sm font-bold text-slate-900">Informations du profil</h3>
           </div>
+          {!editing && (
+            <Button onClick={() => setEditing(true)} variant="outline" size="sm" className="gap-1.5 text-xs">
+              <Edit3 className="h-3 w-3" />
+              Modifier
+            </Button>
+          )}
+        </div>
 
-          {!editing ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-3">
-                <div className="group p-3 rounded-lg border border-slate-200/50 hover:border-blue-200 hover:bg-blue-50/30 transition-all duration-200">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Mail className="h-3 w-3 text-blue-600" />
-                    <span className="text-xs font-medium text-slate-700">Email</span>
-                  </div>
-                  <p className="text-slate-900 text-sm font-medium">{profile.email}</p>
+        {!editing ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="space-y-3">
+              <div className="p-3 rounded-xl bg-slate-50/70 border border-slate-100">
+                <div className="flex items-center gap-2 mb-1">
+                  <Mail className="h-3.5 w-3.5 text-blue-600" />
+                  <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Email</span>
                 </div>
-
-                <div className="group p-3 rounded-lg border border-slate-200/50 hover:border-blue-200 hover:bg-blue-50/30 transition-all duration-200">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Building2 className="h-3 w-3 text-blue-600" />
-                    <span className="text-xs font-medium text-slate-700">Entreprise</span>
-                  </div>
-                  <p className="text-slate-900 text-sm font-medium">{profile.company_name || 'Non spécifié'}</p>
-                </div>
-
-                <div className="group p-3 rounded-lg border border-slate-200/50 hover:border-blue-200 hover:bg-blue-50/30 transition-all duration-200">
-                  <div className="flex items-center gap-2 mb-1">
-                    <User className="h-3 w-3 text-blue-600" />
-                    <span className="text-xs font-medium text-slate-700">Contact</span>
-                  </div>
-                  <p className="text-slate-900 text-sm font-medium">{profile.contact_person || 'Non spécifié'}</p>
-                </div>
+                <p className="text-slate-900 text-sm font-medium">{profile.email}</p>
               </div>
-
-              <div className="space-y-3">
-                <div className="group p-3 rounded-lg border border-slate-200/50 hover:border-blue-200 hover:bg-blue-50/30 transition-all duration-200">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Phone className="h-3 w-3 text-blue-600" />
-                    <span className="text-xs font-medium text-slate-700">Téléphone</span>
-                  </div>
-                  <p className="text-slate-900 text-sm font-medium">{profile.phone || 'Non spécifié'}</p>
+              <div className="p-3 rounded-xl bg-slate-50/70 border border-slate-100">
+                <div className="flex items-center gap-2 mb-1">
+                  <Building2 className="h-3.5 w-3.5 text-blue-600" />
+                  <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Entreprise</span>
                 </div>
-
-                <div className="group p-3 rounded-lg border border-slate-200/50 hover:border-blue-200 hover:bg-blue-50/30 transition-all duration-200">
-                  <div className="flex items-center gap-2 mb-1">
-                    <MapPin className="h-3 w-3 text-blue-600" />
-                    <span className="text-xs font-medium text-slate-700">Adresse</span>
-                  </div>
-                  <p className="text-slate-900 text-sm font-medium">{profile.address || 'Non spécifié'}</p>
+                <p className="text-slate-900 text-sm font-medium">{profile.company_name || 'Non spécifié'}</p>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-50/70 border border-slate-100">
+                <div className="flex items-center gap-2 mb-1">
+                  <User className="h-3.5 w-3.5 text-blue-600" />
+                  <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Contact</span>
                 </div>
-
-                <div className="group p-3 rounded-lg border border-slate-200/50 hover:border-blue-200 hover:bg-blue-50/30 transition-all duration-200">
-                  <div className="flex items-center gap-2 mb-1">
-                    <FileText className="h-3 w-3 text-blue-600" />
-                    <span className="text-xs font-medium text-slate-700">Description</span>
-                  </div>
-                  <p className="text-slate-900 text-sm font-medium">{profile.description || 'Aucune description'}</p>
-                </div>
+                <p className="text-slate-900 text-sm font-medium">{profile.contact_person || 'Non spécifié'}</p>
               </div>
             </div>
-          ) : (
+            <div className="space-y-3">
+              <div className="p-3 rounded-xl bg-slate-50/70 border border-slate-100">
+                <div className="flex items-center gap-2 mb-1">
+                  <Phone className="h-3.5 w-3.5 text-blue-600" />
+                  <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Téléphone</span>
+                </div>
+                <p className="text-slate-900 text-sm font-medium">{profile.phone || 'Non spécifié'}</p>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-50/70 border border-slate-100">
+                <div className="flex items-center gap-2 mb-1">
+                  <MapPin className="h-3.5 w-3.5 text-blue-600" />
+                  <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Adresse</span>
+                </div>
+                <p className="text-slate-900 text-sm font-medium">{profile.address || 'Non spécifié'}</p>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-50/70 border border-slate-100">
+                <div className="flex items-center gap-2 mb-1">
+                  <FileText className="h-3.5 w-3.5 text-blue-600" />
+                  <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Description</span>
+                </div>
+                <p className="text-slate-900 text-sm font-medium">{profile.description || 'Aucune description'}</p>
+              </div>
+            </div>
+          </div>
+        ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -536,66 +486,63 @@ export default function EmployerProfilePage() {
         </div>
 
         {/* Additional Sections */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {/* Account Stats */}
-          <div className="bg-white rounded-xl shadow hover:shadow-lg transition-all duration-300 border border-slate-200/50 p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center">
-                <TrendingUp className="h-4 w-4 text-white" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+          <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
+                <TrendingUp className="h-4 w-4 text-blue-600" />
               </div>
-              <h3 className="text-sm font-semibold text-slate-900">Statistiques</h3>
+              <h3 className="text-sm font-bold text-slate-900">Statistiques</h3>
             </div>
-            <div className="space-y-2">
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-slate-600">Offres publiées</span>
-                <span className="text-sm font-semibold text-slate-900">12</span>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center p-2 rounded-lg bg-slate-50/70">
+                <span className="text-xs text-slate-500">Offres publiées</span>
+                <span className="text-sm font-bold text-slate-900">12</span>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-slate-600">Candidatures reçues</span>
-                <span className="text-sm font-semibold text-slate-900">48</span>
+              <div className="flex justify-between items-center p-2 rounded-lg bg-slate-50/70">
+                <span className="text-xs text-slate-500">Candidatures</span>
+                <span className="text-sm font-bold text-slate-900">48</span>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-xs text-slate-600">Taux de réponse</span>
-                <span className="text-sm font-semibold text-green-600">85%</span>
+              <div className="flex justify-between items-center p-2 rounded-lg bg-slate-50/70">
+                <span className="text-xs text-slate-500">Taux de réponse</span>
+                <span className="text-sm font-bold text-emerald-600">85%</span>
               </div>
             </div>
           </div>
 
-          {/* Security */}
-          <div className="bg-white rounded-xl shadow hover:shadow-lg transition-all duration-300 border border-slate-200/50 p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-green-500 to-green-600 flex items-center justify-center">
-                <Shield className="h-4 w-4 text-white" />
+          <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center">
+                <Shield className="h-4 w-4 text-green-600" />
               </div>
-              <h3 className="text-sm font-semibold text-slate-900">Sécurité</h3>
+              <h3 className="text-sm font-bold text-slate-900">Sécurité</h3>
             </div>
             <div className="space-y-2">
-              <Button variant="outline" className="w-full justify-start gap-2 text-xs">
-                <Lock className="h-3 w-3" />
+              <Button variant="outline" className="w-full justify-start gap-2 text-xs h-9 border-slate-200 hover:bg-slate-50">
+                <Lock className="h-3.5 w-3.5 text-slate-500" />
                 Changer le mot de passe
               </Button>
-              <Button variant="outline" className="w-full justify-start gap-2 text-xs">
-                <Shield className="h-3 w-3" />
+              <Button variant="outline" className="w-full justify-start gap-2 text-xs h-9 border-slate-200 hover:bg-slate-50">
+                <Shield className="h-3.5 w-3.5 text-slate-500" />
                 Authentification 2FA
               </Button>
             </div>
           </div>
 
-          {/* Preferences */}
-          <div className="bg-white rounded-xl shadow hover:shadow-lg transition-all duration-300 border border-slate-200/50 p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-purple-500 to-purple-600 flex items-center justify-center">
-                <Settings className="h-4 w-4 text-white" />
+          <div className="bg-white rounded-2xl border border-slate-200/60 shadow-sm p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-8 h-8 rounded-lg bg-purple-50 flex items-center justify-center">
+                <Settings className="h-4 w-4 text-purple-600" />
               </div>
-              <h3 className="text-sm font-semibold text-slate-900">Préférences</h3>
+              <h3 className="text-sm font-bold text-slate-900">Préférences</h3>
             </div>
             <div className="space-y-2">
-              <Button variant="outline" className="w-full justify-start gap-2 text-xs">
-                <Bell className="h-3 w-3" />
+              <Button variant="outline" className="w-full justify-start gap-2 text-xs h-9 border-slate-200 hover:bg-slate-50">
+                <Bell className="h-3.5 w-3.5 text-slate-500" />
                 Notifications
               </Button>
-              <Button variant="outline" className="w-full justify-start gap-2 text-xs">
-                <Award className="h-3 w-3" />
+              <Button variant="outline" className="w-full justify-start gap-2 text-xs h-9 border-slate-200 hover:bg-slate-50">
+                <Award className="h-3.5 w-3.5 text-slate-500" />
                 Paramètres avancés
               </Button>
             </div>

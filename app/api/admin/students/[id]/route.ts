@@ -39,7 +39,7 @@ export async function GET(request: NextRequest, { params }: RequestParams) {
 
     try {
       const [userResult]: any = await connection.execute(
-        'SELECT id, email, role, blocked, created_at FROM user WHERE id = ? AND role = ?',
+        'SELECT id, email, role, blocked, created_at FROM "user" WHERE id = ? AND role = ?',
         [userId, 'STUDENT']
       );
 
@@ -106,7 +106,7 @@ export async function PUT(request: NextRequest, { params }: RequestParams) {
     try {
       // Vérifier que l'étudiant existe
       const [userResult]: any = await connection.execute(
-        'SELECT id, role FROM user WHERE id = ?',
+        'SELECT id, role FROM "user" WHERE id = ?',
         [userId]
       );
 
@@ -124,7 +124,7 @@ export async function PUT(request: NextRequest, { params }: RequestParams) {
         console.log('Updating blocked status:', body.blocked);
         
         await connection.execute(
-          'UPDATE user SET blocked = ? WHERE id = ?',
+          'UPDATE "user" SET blocked = ? WHERE id = ?',
           [body.blocked ? 1 : 0, userId]
         );
 

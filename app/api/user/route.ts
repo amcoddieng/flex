@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     const connection = await pool.getConnection();
 
     try {
-      let query = 'SELECT id, email, role, created_at FROM user WHERE 1=1';
+      let query = 'SELECT id, email, role, created_at FROM "user" WHERE 1=1';
       const params: any[] = [];
 
       if (role) {
@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
       const [users] = await connection.execute(query, params);
 
       // Compter le nombre total
-      let countQuery = 'SELECT COUNT(*) as total FROM user WHERE 1=1';
+      let countQuery = 'SELECT COUNT(*) as total FROM "user" WHERE 1=1';
       const countParams: any[] = [];
       
       if (role) {

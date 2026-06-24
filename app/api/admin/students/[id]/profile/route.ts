@@ -52,13 +52,11 @@ export async function GET(
           (SELECT COUNT(*) FROM job_application WHERE student_id = sp.id) as application_count,
           (SELECT COUNT(*) FROM job_application WHERE student_id = sp.id AND status = 'ACCEPTED') as accepted_count
         FROM student_profile sp
-        LEFT JOIN user u ON sp.user_id = u.id
+        LEFT JOIN "user" u ON sp.user_id = u.id
         WHERE sp.user_id = ?
       `;
 
       const [profiles] = await connection.execute(query, [userId]);
-
-      connection.release();
 
       if (!profiles || (profiles as any[]).length === 0) {
         return NextResponse.json(
@@ -73,12 +71,13 @@ export async function GET(
       });
 
     } catch (dbError) {
-      connection.release();
       console.error('Database error:', dbError);
       return NextResponse.json(
         { error: 'Erreur base de données' },
         { status: 500 }
       );
+    } finally {
+      connection.release();
     }
   } catch (error) {
     console.error('Admin student profile GET error:', error);

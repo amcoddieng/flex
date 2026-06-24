@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
           ep.img,
           ep.identity,
           ep.validation_status
-        FROM user u
+        FROM "user" u
         LEFT JOIN employer_profile ep ON u.id = ep.user_id
         WHERE u.role = 'EMPLOYER'
       `;
@@ -74,8 +74,6 @@ export async function GET(request: NextRequest) {
 
       const [employers] = await connection.execute(query, params);
 
-      connection.release();
-
       return NextResponse.json({
         success: true,
         data: employers,
@@ -88,12 +86,13 @@ export async function GET(request: NextRequest) {
       });
 
     } catch (dbError) {
-      connection.release();
       console.error('Database error:', dbError);
       return NextResponse.json(
         { error: 'Erreur base de données' },
         { status: 500 }
       );
+    } finally {
+      connection.release();
     }
   } catch (error) {
     console.error('Admin employers GET error:', error);
@@ -124,7 +123,7 @@ export async function PUT(request: NextRequest) {
       // Mettre à jour le statut de blocage
       if (typeof blocked === 'boolean') {
         await connection.execute(
-          'UPDATE user SET blocked = ? WHERE id = ?',
+          'UPDATE "user" SET blocked = ? WHERE id = ?',
           [blocked, employerId]
         );
       }
@@ -137,20 +136,19 @@ export async function PUT(request: NextRequest) {
         );
       }
 
-      connection.release();
-
       return NextResponse.json({
         success: true,
         message: 'Employeur mis à jour avec succès'
       });
 
     } catch (dbError) {
-      connection.release();
       console.error('Database error:', dbError);
       return NextResponse.json(
         { error: 'Erreur base de données' },
         { status: 500 }
       );
+    } finally {
+      connection.release();
     }
   } catch (error) {
     console.error('Admin employers PUT error:', error);

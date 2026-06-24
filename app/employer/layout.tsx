@@ -56,11 +56,11 @@ export default function EmployerLayout({
   }
 
   const EMPLOYER_MENU = [
-    { label: "Tableau de bord", href: "/employer" },
-    { label: "Mes offres", href: "/employer/jobs" },
-    { label: "Candidatures", href: "/employer/applications", hasBadge: true },
-    { label: "Messages", href: "/employer/messages", hasBadge: true },
-    { label: "Profil", href: "/employer/profile" },
+    { label: "Tableau de bord", href: "/employer", icon: Home },
+    { label: "Mes offres", href: "/employer/jobs", icon: Briefcase },
+    { label: "Candidatures", href: "/employer/applications", icon: Users, hasBadge: true, badgeKey: 'applications' },
+    { label: "Messages", href: "/employer/messages", icon: MessageCircle, hasBadge: true, badgeKey: 'messages' },
+    { label: "Profil", href: "/employer/profile", icon: User },
   ];
 
   return (
@@ -82,53 +82,58 @@ export default function EmployerLayout({
           </div>
 
           {/* Navigation Menu */}
-          <nav className="p-4 space-y-2">
-            {EMPLOYER_MENU.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="flex items-center justify-between px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-800 hover:text-white transition-all duration-200 font-medium group"
-              >
-                <span className="flex items-center gap-3">
-                  {item.label === "Tableau de bord" && <Home className="h-4 w-4" />}
-                  {item.label === "Mes offres" && <Briefcase className="h-4 w-4" />}
-                  {item.label === "Candidatures" && <Users className="h-4 w-4" />}
-                  {item.label === "Messages" && <MessageCircle className="h-4 w-4" />}
-                  {item.label === "Profil" && <User className="h-4 w-4" />}
-                  {item.label}
-                </span>
-                {item.hasBadge && (
-                  <span className="flex items-center gap-1">
-                    {item.href === "/employer/messages" && unreadCount > 0 && (
-                      <span className="w-2 h-2 bg-blue-600 rounded-full animate-pulse"></span>
-                    )}
-                    {item.href === "/employer/applications" && pendingCount > 0 && (
-                      <span className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></span>
-                    )}
+          <nav className="p-3 space-y-1">
+            {EMPLOYER_MENU.map((item) => {
+              const isActive = pathname ? (pathname === item.href || pathname.startsWith(item.href + '/')) : false;
+              const Icon = item.icon;
+              const badgeCount = item.badgeKey === 'messages' ? unreadCount : item.badgeKey === 'applications' ? pendingCount : 0;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`flex items-center justify-between px-3 py-2.5 rounded-lg transition-all duration-200 font-medium group ${
+                    isActive
+                      ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg shadow-blue-900/30'
+                      : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                  }`}
+                >
+                  <span className="flex items-center gap-3">
+                    <Icon className={`h-[18px] w-[18px] ${isActive ? 'text-white' : 'text-slate-500 group-hover:text-white'} transition-colors`} />
+                    {item.label}
                   </span>
-                )}
-              </Link>
-            ))}
+                  {item.hasBadge && badgeCount > 0 && (
+                    <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${
+                      isActive ? 'bg-white/20 text-white' : 'bg-blue-600 text-white'
+                    }`}>
+                      {badgeCount > 99 ? '99+' : badgeCount}
+                    </span>
+                  )}
+                </Link>
+              );
+            })}
           </nav>
 
           {/* User Section */}
-          <div className="mt-auto p-4 border-t border-slate-700">
+          <div className="mt-auto p-4 border-t border-slate-700/50">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-semibold">
+              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-semibold shadow-lg shadow-blue-900/40 ring-2 ring-slate-700">
                 E
               </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-white">Employeur</p>
-                <p className="text-xs text-slate-300">En ligne</p>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-white truncate">Espace Employeur</p>
+                <p className="text-[11px] text-emerald-400 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                  En ligne
+                </p>
               </div>
             </div>
             <Button 
               variant="outline" 
               size="sm" 
               onClick={handleLogout} 
-              className="w-full text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200 text-xs"
+              className="w-full bg-transparent hover:bg-red-500/10 border-slate-600 hover:border-red-500/30 text-slate-400 hover:text-red-400 transition-all duration-200 text-xs"
             >
-              <LogOut className="h-3 w-3 mr-2" />
+              <LogOut className="h-3.5 w-3.5 mr-2" />
               Déconnexion
             </Button>
           </div>
@@ -137,31 +142,11 @@ export default function EmployerLayout({
 
       
       {/* Main Content Wrapper */}
-      <div className="flex-1 flex flex-col min-h-screen">
+      <div className="flex-1 flex flex-col min-h-screen bg-slate-50/50">
         {/* Main Content */}
         <main className="flex-1 overflow-auto">
           {children}
         </main>
-
-        {/* Modern Footer - uniquement sur desktop */}
-        <footer className="hidden md:block bg-slate-900 text-white mt-auto">
-          <div className="container mx-auto px-4 py-4">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 flex items-center justify-center">
-                  <span className="text-white font-bold text-xs">F</span>
-                </div>
-                <div>
-                  <p className="font-semibold text-sm">FlexJob</p>
-                  <p className="text-xs text-slate-400">Plateforme d'emploi moderne</p>
-                </div>
-              </div>
-              <p className="text-xs text-slate-400">
-                © 2026 FlexJob. Tous droits réservés.
-              </p>
-            </div>
-          </div>
-        </footer>
       </div>
 
       {/* Floating Menu Button - uniquement sur mobile */}
@@ -203,47 +188,32 @@ export default function EmployerLayout({
               </div>
               
               {/* Navigation */}
-              <nav className="space-y-2">
+              <nav className="space-y-1">
                 {EMPLOYER_MENU.map((item) => {
-                  const isActive = pathname === item.href;
-                  
+                  const isActive = pathname ? (pathname === item.href || pathname.startsWith(item.href + '/')) : false;
+                  const Icon = item.icon;
+                  const badgeCount = item.badgeKey === 'messages' ? unreadCount : item.badgeKey === 'applications' ? pendingCount : 0;
+
                   return (
                     <Link
                       key={item.href}
                       href={item.href}
-                      className={`flex items-center justify-between px-3 py-3 rounded-lg font-medium transition-all duration-200 ${
-                        isActive 
-                          ? 'bg-blue-50 text-blue-600 border border-blue-200' 
-                          : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                      className={`flex items-center justify-between px-3 py-3 rounded-xl font-semibold transition-all duration-200 ${
+                        isActive
+                          ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-md shadow-blue-200'
+                          : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                       }`}
                       onClick={() => setMobileMenuOpen(false)}
                     >
                       <span className="flex items-center gap-3">
-                        {item.label === "Tableau de bord" && <Home className="h-5 w-5" />}
-                        {item.label === "Mes offres" && <Briefcase className="h-5 w-5" />}
-                        {item.label === "Candidatures" && <Users className="h-5 w-5" />}
-                        {item.label === "Messages" && <MessageCircle className="h-5 w-5" />}
-                        {item.label === "Profil" && <User className="h-5 w-5" />}
+                        <Icon className={`h-5 w-5 ${isActive ? 'text-white' : 'text-slate-400'}`} />
                         {item.label}
                       </span>
-                      {item.hasBadge && (
-                        <span className="flex items-center gap-1">
-                          {item.href === "/employer/messages" && unreadCount > 0 && (
-                            <>
-                              <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
-                              <span className="text-xs bg-blue-500 text-white rounded-full px-2 py-0.5 min-w-[20px] text-center">
-                                {unreadCount > 99 ? '99+' : unreadCount}
-                              </span>
-                            </>
-                          )}
-                          {item.href === "/employer/applications" && pendingCount > 0 && (
-                            <>
-                              <span className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></span>
-                              <span className="text-xs bg-amber-500 text-white rounded-full px-2 py-0.5 min-w-[20px] text-center">
-                                {pendingCount > 99 ? '99+' : pendingCount}
-                              </span>
-                            </>
-                          )}
+                      {item.hasBadge && badgeCount > 0 && (
+                        <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
+                          isActive ? 'bg-white/25 text-white' : 'bg-blue-100 text-blue-700'
+                        }`}>
+                          {badgeCount > 99 ? '99+' : badgeCount}
                         </span>
                       )}
                     </Link>

@@ -95,8 +95,6 @@ export async function GET(request: NextRequest) {
         })
       );
 
-      connection.release();
-
       return NextResponse.json({
         success: true,
         data: jobsWithApplicants,
@@ -109,12 +107,13 @@ export async function GET(request: NextRequest) {
       });
 
     } catch (dbError) {
-      connection.release();
       console.error('Database error:', dbError);
       return NextResponse.json(
         { error: 'Erreur base de données' },
         { status: 500 }
       );
+    } finally {
+      connection.release();
     }
   } catch (error) {
     console.error('Admin jobs GET error:', error);
@@ -154,20 +153,19 @@ export async function PUT(request: NextRequest) {
         [is_active, jobId]
       );
 
-      connection.release();
-
       return NextResponse.json({
         success: true,
         message: is_active ? 'Offre activée avec succès' : 'Offre désactivée avec succès'
       });
 
     } catch (dbError) {
-      connection.release();
       console.error('Database error:', dbError);
       return NextResponse.json(
         { error: 'Erreur base de données' },
         { status: 500 }
       );
+    } finally {
+      connection.release();
     }
   } catch (error) {
     console.error('Admin jobs PUT error:', error);

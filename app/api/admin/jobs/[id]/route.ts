@@ -72,7 +72,7 @@ export async function GET(request: NextRequest, { params }: { params: any }) {
           u.email as user_email
         FROM job_application ja
         LEFT JOIN student_profile sp ON ja.student_id = sp.id
-        LEFT JOIN user u ON sp.user_id = u.id
+        LEFT JOIN "user" u ON sp.user_id = u.id
         WHERE ja.job_id = ?
         ORDER BY ja.applied_at DESC`,
         [jobId]

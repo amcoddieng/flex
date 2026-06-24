@@ -49,20 +49,19 @@ export async function GET(
 
       const [applications] = await connection.execute(query, [userId]);
 
-      connection.release();
-
       return NextResponse.json({
         success: true,
         data: applications
       });
 
     } catch (dbError) {
-      connection.release();
       console.error('Database error:', dbError);
       return NextResponse.json(
         { error: 'Erreur base de données' },
         { status: 500 }
       );
+    } finally {
+      connection.release();
     }
   } catch (error) {
     console.error('Admin user applications GET error:', error);

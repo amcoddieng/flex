@@ -28,7 +28,7 @@ export async function GET(request: NextRequest, { params }: { params: any }) {
     try {
       const [rows]: any = await connection.execute(
         `SELECT u.id, u.email, u.role, u.blocked, u.created_at, ep.*
-         FROM user u
+         FROM "user" u
          LEFT JOIN employer_profile ep ON u.id = ep.user_id
          WHERE u.id = ? AND u.role = 'EMPLOYER'`,
         [id]
@@ -58,7 +58,7 @@ export async function PUT(request: NextRequest, { params }: { params: any }) {
     if (isNaN(id)) return NextResponse.json({ error: 'ID invalide' }, { status: 400 });
 
     const body = await request.json();
-    const { blocked, validation_status, company_name, contact_person, phone, address, description } = body;
+    const { blocked, validation_status, rejection_reason, company_name, contact_person, phone, address, description } = body;
 
     const connection = await pool.getConnection();
     try {
@@ -69,7 +69,7 @@ export async function PUT(request: NextRequest, { params }: { params: any }) {
           return NextResponse.json({ error: 'Veuillez fournir un message de notification lors du blocage.' }, { status: 400 });
         }
 
-        await connection.execute(`UPDATE user SET blocked = ? WHERE id = ?`, [blocked ? 1 : 0, id]);
+        await connection.execute(`UPDATE "user" SET blocked = ? WHERE id = ?`, [blocked ? 1 : 0, id]);
 
         if (blocked === true) {
           const title = 'Compte employeur bloqué';
@@ -90,10 +90,13 @@ export async function PUT(request: NextRequest, { params }: { params: any }) {
         const params: any[] = [];
         if (typeof validation_status !== 'undefined') {
           // require message when rejecting validation
-          if (validation_status === 'REJECTED' && !body.notification_message) {
+          if (validation_status === 'REJECTED' && !body.notification_message && !rejection_reason) {
             return NextResponse.json({ error: 'Veuillez fournir un message de notification lors du refus de validation.' }, { status: 400 });
           }
           updates.push('validation_status = ?'); params.push(validation_status);
+          updates.push('rejection_reason = ?'); params.push(
+            rejection_reason || (validation_status === 'REJECTED' ? body.notification_message : '')
+          );
         }
         if (typeof company_name !== 'undefined') { updates.push('company_name = ?'); params.push(company_name); }
         if (typeof contact_person !== 'undefined') { updates.push('contact_person = ?'); params.push(contact_person); }
@@ -107,9 +110,13 @@ export async function PUT(request: NextRequest, { params }: { params: any }) {
         }
       } else {
         // Créer le profile si nécessaire
+        const insertStatus = validation_status || 'PENDING';
+        const insertReason = insertStatus === 'REJECTED'
+          ? (rejection_reason || body.notification_message || '')
+          : '';
         await connection.execute(
-          `INSERT INTO employer_profile (user_id, company_name, contact_person, phone, email, address, description, validation_status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-          [id, company_name || null, contact_person || null, phone || null, null, address || null, description || null, validation_status || 'PENDING']
+          `INSERT INTO employer_profile (user_id, company_name, contact_person, phone, email, address, description, validation_status, rejection_reason) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [id, company_name || null, contact_person || null, phone || null, null, address || null, description || null, insertStatus, insertReason]
         );
       }
 
